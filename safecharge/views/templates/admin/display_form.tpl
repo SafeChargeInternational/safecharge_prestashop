@@ -99,6 +99,15 @@
                     </select>
                 </div>
             </div>
+                    
+            <div class="form-group">
+                <label class="control-label col-lg-3" for="SC_CREATE_LOGS">{l s='Remove oldest logs' mod='Modules.safecharge'}</label>
+                <div class="col-lg-9">
+                    <button type="button" class="btn btn-primary" onclick="scRemoveLogs()">
+                        <i class="icon-trash"></i> {l s='Remove' mod='Modules.safecharge'}
+                    </button>
+                </div>
+            </div>
                 
             {*<div class="form-group">
                 <label class="control-label col-lg-3" for="SC_SAVE_ORDER_BEFORE_REDIRECT">{l s='Save order before redirect to payment page?' mod='sc'}</label>
@@ -115,3 +124,47 @@
         </div>
     </div>
 </form>
+        
+<script type="text/javascript">
+    function scRemoveLogs() {
+        if(confirm("{l s='Are you sure you want to delete the logs?' mod='Modules.safecharge'}")) {
+            var ajax = new XMLHttpRequest();
+            var params = 'scAction=deleteLogs';
+            ajax.open("POST", "{$ajaxUrl}", true);
+            ajax.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            
+            ajax.onreadystatechange = function(){
+                if (ajax.readyState == 4 && ajax.status == 200) {
+                    var resp = JSON.parse(this.responseText);
+                    
+                    if(resp.status == 1) {
+                        alert("{l s='Done!' mod='Modules.safecharge'}");
+                    }
+                    else {
+                        try {
+                            if(typeof resp.msg != 'undefined') {
+                                alert(resp.msg);
+                            }
+                            else if(typeof resp.data.gwErrorReason != 'undefined') {
+                                alert(resp.data.gwErrorReason);
+                            }
+                            else if(typeof resp.data.reason != 'undefined') {
+                                alert(resp.data.reason);
+                            }
+                        }
+                        catch (exception) {
+                            alert("Error during AJAX call");
+                        }
+                    }
+                }
+            }
+            
+            //If an error occur during the ajax call.
+            if (ajax.readyState == 4 && ajax.status == 404) {
+                alert("Error during AJAX call");
+            }
+            
+            ajax.send(params);
+        }
+    }
+</script>

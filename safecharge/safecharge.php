@@ -43,6 +43,9 @@ class SafeCharge extends PaymentModule
         if (!Configuration::get('safecharge')) {
             $this->warning = $this->l('No name provided');
         }
+        
+        global $smarty;
+        $smarty->assign('ajaxUrl', $this->context->link->getAdminLink("AdminSafeChargeAjax"));
     }
 	
     public function install()
@@ -405,7 +408,7 @@ class SafeCharge extends PaymentModule
         $order_data = new Order($order_id);
         
         $smarty->assign('orderId', $_GET['id_order']);
-        $smarty->assign('ajaxUrl', $this->context->link->getAdminLink("AdminSafeChargeAjax"));
+    //    $smarty->assign('ajaxUrl', $this->context->link->getAdminLink("AdminSafeChargeAjax"));
         
         $sc_data = Db::getInstance()->getRow('SELECT * FROM safecharge_order_data WHERE order_id = ' . $order_id);
         

@@ -19,22 +19,31 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
     {
         parent::__construct();
         
+//        if(
+//            !isset($_POST['scOrder'])
+//            || !is_numeric($_POST['scOrder'])
+//            || intval($_POST['scOrder']) <= 0
+//        ) {
+//            SC_LOGGER::create_log(@$_POST['scOrder'], 'Missing Order ID: ');
+//            
+//            echo json_encode(array(
+//                'status' => 'error',
+//                'msg' => 'There is no Order ID'
+//            ));
+//            exit;
+//        }
+        
         if(
-            !isset($_POST['scOrder'])
-            || !is_numeric($_POST['scOrder'])
-            || intval($_POST['scOrder']) <= 0
+            isset($_POST['scOrder'])
+            && is_numeric($_POST['scOrder'])
+            && intval($_POST['scOrder']) > 0
+            && in_array(@$_POST['scAction'], array('settle', 'void'))
         ) {
-            SC_LOGGER::create_log(@$_POST['scOrder'], 'Missing Order ID: ');
-            
-            echo json_encode(array(
-                'status' => 'error',
-                'msg' => 'There is no Order ID'
-            ));
-            exit;
+            $this->order_void_settle();
         }
         
-        if(in_array(@$_POST['scAction'], array('settle', 'void'))) {
-            $this->order_void_settle();
+        if(@$_POST['scAction'] == 'deleteLogs') {
+            $this->delete_logs();
         }
             
         exit;
@@ -100,4 +109,38 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
         SC_REST_API::void_and_settle_order($params, @$_POST['scAction'], true);
     }
     
+    private function delete_logs()
+    {
+        $logs = array();
+        $logs_dir = _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR;
+
+        foreach(scandir($logs_dir) as $file) {
+            if(!in_array($file, array('.', '..', '.htaccess'))) {
+                $logs[] = $file;
+            }
+        }
+
+        if(count($logs) > 30) {
+            sort($logs);
+
+            for($cnt = 0; $cnt < 30; $cnt++) {
+                if(is_file($logs_dir . $logs[$cnt])) {
+                    if(!unlink($logs_dir . $logs[$cnt])) {
+                        echo json_encode(array(
+                            'status' => 0,
+                            'msg' => 'Error when try to delete file: ' . $logs[$cnt]
+                        ));
+                        exit;
+                    }
+                }
+            }
+
+            echo json_encode(array('status' => 1, 'msg' => ''));
+        }
+        else {
+            echo json_encode(array('status' => 0, 'msg' => 'The log files are less than 30.'));
+        }
+
+        exit;
+    }
 }
