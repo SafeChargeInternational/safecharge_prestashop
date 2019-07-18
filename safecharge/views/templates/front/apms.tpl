@@ -276,9 +276,6 @@
                 if(selectedPM == 'cc_card' || selectedPM == 'dc_card' || selectedPM == 'paydotcom') {
                     sfc.getToken(sfcFirstField).then(function(result) {
                         if (result.status !== 'SUCCESS') {
-                            $('#scForm button.btn-submit').prop('disabled', false);
-                            $('#scForm button.btn-submit .material-icons').addClass('sc_hide');
-                            
                             try {
                                 if(result.reason) {
                                     alert(result.reason);
@@ -413,7 +410,7 @@
                 classes: elementClasses
             });
             cardCvc.attach('#sc_card_cvc'); 
-        } // END of createSCFields()
+        }
 
         window.onload = function() {
             createSCFields();

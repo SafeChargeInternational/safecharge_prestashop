@@ -30,10 +30,7 @@ class SC_REST_API
         
         $time = date('YmdHis', time());
         
-    //    SC_LOGGER::create_log($refund, 'Refund data: ');
-    //    SC_LOGGER::create_log($settings, 'Refund Settings data: ');
-        
-        try {
+    	try {
             $refund_url = SC_TEST_REFUND_URL;
             $cpanel_url = SC_TEST_CPANEL_URL;
 
@@ -109,8 +106,6 @@ class SC_REST_API
      * @param array $data - all data for the void is here, pass it directly
      * @param string $action - void or settle
      * @param bool $is_ajax - is call coming via Ajax
-     * 
-     * TODO we must test the case when we call this method from another, NOT via Ajax
      */
     public static function void_and_settle_order($data, $action, $is_ajax = false)
     {
@@ -541,7 +536,7 @@ class SC_REST_API
                 'merchantId'        => $data['merchantId'],
                 'merchantSiteId'    => $data['merchantSiteId'],
                 'clientRequestId'   => $data['cri1'],
-                'timeStamp'         => date('YmdHis', time()),
+                'timeStamp'         => @$data['timeStamp'] ? $data['timeStamp'] : date('YmdHis', time()),
             );
 
             SC_LOGGER::create_log(
