@@ -428,7 +428,6 @@
 
             $('#scForm .apm_title').on('click', function(){
                 var apmCont = $(this).parent('.apm_container');
-
                 // check current radio input
                 $('input[type="radio"]', apmCont).prop('checked', true);
 

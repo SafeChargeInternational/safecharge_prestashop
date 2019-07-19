@@ -352,7 +352,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                             'county'            => '',
                         ),
                         'paResponse'        => '',
-                    //    'urlDetails'        => array('notificationUrl' => $sc_params['urlDetails']),
                         'urlDetails'        => $sc_params['urlDetails'],
                         'timeStamp'         => $sc_params['time_stamp'],
                         'checksum'          => $sc_params['checksum'],
