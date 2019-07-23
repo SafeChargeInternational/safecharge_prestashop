@@ -182,7 +182,7 @@
                                 {if isset($upo.upoData.ccCardNumber)}
                                     <span>{$upo.upoData.ccCardNumber}</span>
                                 {/if}
-                            {else}
+                            {elseif isset($icons[$upo.paymentMethodName])}
                                 <img src="{$icons[$upo.paymentMethodName]|replace:'/svg/':'/svg/solid-white/'}" />
                             {/if}
 

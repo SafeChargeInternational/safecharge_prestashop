@@ -309,7 +309,13 @@ class SafeCharge extends PaymentModule
                 
                 if($upos && $payment_methods) {
                     foreach($upos as $upo_key => $upo) {
-                        if(!@$upo['upoData']['uniqueCC']) {
+                        if(
+                            @$upo['upoStatus'] != 'enabled'
+                            || (isset($upo['upoData']['ccCardNumber'])
+                                && empty($upo['upoData']['ccCardNumber']))
+                            || (isset($upo['expiryDate'])
+                                && strtotime($upo['expiryDate']) < strtotime(date('Ymd')))
+                        ) {
                             unset($upos[$upo_key]);
                             continue;
                         }
@@ -337,6 +343,9 @@ class SafeCharge extends PaymentModule
                         }
                     }
                 }
+                
+//                echo '<pre>'.print_r($upos, true).'</pre>';
+//                echo '<pre>'.print_r($icons, true).'</pre>';
                 
                 // get a Session Token for the fields
                 $time = date('YmdHis', time());

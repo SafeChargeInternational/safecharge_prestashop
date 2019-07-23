@@ -5,9 +5,9 @@
  * @year 2019
  */
 
-if (!session_id()) {
-    session_start();
-}
+//if (!session_id()) {
+//    session_start();
+//}
 
 class SC_LOGGER
 {
