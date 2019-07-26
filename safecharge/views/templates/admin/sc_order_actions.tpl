@@ -129,11 +129,13 @@
         $('#sc_'+ action +'_btn').removeClass('disabled');
     }
     
-    // remove PS refund button
+    // remove PS refund buttons
+    $('#desc-order-standard_refund').hide();
+    
     {if
         $scData.order_state neq $state_completed
         or !in_array($scData.payment_method, array('cc_card', 'dc_card', 'apmgw_expresscheckout'))
     }
-        $('#desc-order-partial_refund').remove();
+        $('#desc-order-partial_refund').hide();
     {/if}
 </script>

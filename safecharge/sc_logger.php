@@ -31,17 +31,25 @@ class SC_LOGGER
             if(is_array($data)) {
                 if(isset($data['cardData']) && is_array($data['cardData'])) {
                     foreach($data['cardData'] as $k => $v) {
-                        $data['cardData'][$k] = 'some data';
+                        if(empty($v)) {
+                            $data['cardData'][$k] = 'empty value!';
+                        }
+                        elseif($k == 'ccTempToken') {
+                            $data['cardData'][$k] = $v;
+                        }
+                        else {
+                            $data['cardData'][$k] = 'a string';
+                        }
                     }
                 }
                 if(isset($data['userAccountDetails']) && is_array($data['userAccountDetails'])) {
                     foreach($data['userAccountDetails'] as $k => $v) {
-                        $data['userAccountDetails'][$k] = 'some data';
+                        $data['userAccountDetails'][$k] = 'a string';
                     }
                 }
                 if(isset($data['userPaymentOption']) && is_array($data['userPaymentOption'])) {
                     foreach($data['userPaymentOption'] as $k => $v) {
-                        $data['userPaymentOption'][$k] = 'some data';
+                        $data['userPaymentOption'][$k] = 'a string';
                     }
                 }
                 if(isset($data['paResponse']) && !empty($data['paResponse'])) {
