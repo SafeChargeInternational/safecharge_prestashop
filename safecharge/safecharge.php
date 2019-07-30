@@ -252,7 +252,7 @@ class SafeCharge extends PaymentModule
                     }
                 }
                 # get UPOs END
-            //    echo '<pre>upos: '.print_r($upos,true).'</pre>';
+//                echo '<pre>upos: '.print_r($upos,true).'</pre>';
 
                 # get APMs
                 $rest_params = array(
@@ -301,11 +301,13 @@ class SafeCharge extends PaymentModule
 
                 // set template data with the payment methods
                 $payment_methods = $res['paymentMethods'];
-    //            echo '<pre>apms: '.print_r($payment_methods,true).'</pre>';
+//                echo '<pre>apms: '.print_r($payment_methods,true).'</pre>';
                 # get APMs END
 
                 // add icons for the upos
                 $icons = array();
+                // show only UPOs available in APMs
+                $upos_final = array();
                 
                 if($upos && $payment_methods) {
                     foreach($upos as $upo_key => $upo) {
@@ -316,7 +318,6 @@ class SafeCharge extends PaymentModule
                             || (isset($upo['expiryDate'])
                                 && strtotime($upo['expiryDate']) < strtotime(date('Ymd')))
                         ) {
-                            unset($upos[$upo_key]);
                             continue;
                         }
                         
@@ -332,19 +333,19 @@ class SafeCharge extends PaymentModule
                                         $upo['upoData']['brand'],
                                         $pm['logoURL']
                                     );
-                                    
-                                    break;
                                 }
                                 else {
                                     $icons[$pm['paymentMethod']] = $pm['logoURL'];
-                                    break;
                                 }
+                                
+                                $upos_final[] = $upo;
+                                break;
                             }
                         }
                     }
                 }
                 
-//                echo '<pre>'.print_r($upos, true).'</pre>';
+//                echo '<pre>'.print_r($upos_final, true).'</pre>';
 //                echo '<pre>'.print_r($icons, true).'</pre>';
                 
                 // get a Session Token for the fields
@@ -373,7 +374,7 @@ class SafeCharge extends PaymentModule
                 
                 $this->context->smarty->assign('sessionToken', $resp['sessionToken']);
                 $this->context->smarty->assign('languageCode', $rest_params['languageCode']);
-                $this->context->smarty->assign('upos', $upos);
+                $this->context->smarty->assign('upos', $upos_final);
                 $this->context->smarty->assign('paymentMethods', $payment_methods);
                 $this->context->smarty->assign('icons', $icons);
                 $this->context->smarty->assign('isTestEnv', $rest_params['test']);
