@@ -63,7 +63,7 @@
             margin: 0px 10px 0px 10px;
         }
 
-        #scForm .apm_fields .apm_field:last-child, #sc_card_cvc {
+        #scForm .apm_fields .apm_field:last-child {
             border-bottom: 0px !important;
         }
 
@@ -118,10 +118,9 @@
 
         .SfcField iframe {
             min-height: 20px !important;
-            color: inherit !important;
         }
 
-        .apm_field input, .SfcField iframe:focus {
+        .apm_field input {
             border: 0 !important;
             outline: 0 !important;
             background-color: inherit !important;
@@ -216,9 +215,22 @@
                         
                         {if in_array($pm.paymentMethod, array('cc_card', 'dc_card', 'paydotcom'))}
                             <div class="apm_fields" id="sc_{$pm.paymentMethod}">
-                                <div id="sc_card_number" class="apm_field"></div>
-                                <div id="sc_card_expiry" class="apm_field"></div>
-                                <div id="sc_card_cvc" class="apm_field"></div>
+                                <div class="apm_field">
+                                    <div id="sc_card_number"></div>
+                                </div>
+
+                                <div class="apm_field">
+                                    <input type="text" id="sc_card_holder_name" name="{$pm.paymentMethod}[cardHolderName]" placeholder="Card holder name" style="padding-bottom: 2px !important;" />
+                                </div>
+
+                                <div class="apm_field">
+                                    <div id="sc_card_expiry"></div>
+                                </div>
+
+                                <div class="apm_field" style="border: 0px;">
+                                    <div id="sc_card_cvc"></div>
+                                </div>
+                                
                                 <input type="hidden" id="{$pm.paymentMethod}_ccTempToken" name="{$pm.paymentMethod}[ccTempToken]" />
                             </div>
                         {else}
@@ -394,20 +406,33 @@
                 empty: 'empty',
                 invalid: 'invalid',
             };
+            
+            var elementStyles = {
+                base: {
+                    fontSize: 14
+                    ,color: 'black'
+                    ,'::placeholder': {
+                        color: 'grey'
+                    }
+                }
+            }
 
             // describe fields
             var cardNumber = sfcFirstField = fields.create('ccNumber', {
                 classes: elementClasses
+                ,style: elementStyles
             });
             cardNumber.attach('#sc_card_number');
 
             var cardExpiry = fields.create('ccExpiration', {
                 classes: elementClasses
+                ,style: elementStyles
             });
             cardExpiry.attach('#sc_card_expiry');
 
             var cardCvc = fields.create('ccCvc', {
                 classes: elementClasses
+                ,style: elementStyles
             });
             cardCvc.attach('#sc_card_cvc'); 
         }
