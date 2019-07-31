@@ -501,7 +501,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             $p3d_resp = SC_HELPER::call_rest_api(
                Configuration::get('SC_TEST_MODE') == 'yes' ? SC_TEST_P3D_URL : SC_LIVE_P3D_URL
                 ,$_SESSION['SC_P3D_Params']
-                ,$_SESSION['SC_P3D_Params']['checksum']
             );
         }
         catch (Exception $ex) {
