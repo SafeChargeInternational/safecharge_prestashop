@@ -7,7 +7,7 @@ if (!defined('_PS_VERSION_')) {
 }
 
 require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'sc_config.php';
-require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'sc_logger.php';
+require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'SC_HELPER.php';
 require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'sc_versions_resolver.php';
 
 class SafeCharge extends PaymentModule
@@ -40,12 +40,10 @@ class SafeCharge extends PaymentModule
             $this->warning = $this->l('Merchant account details must be configured before using this module.');
         }
         
-        if (!Configuration::get('safecharge')) {
-            $this->warning = $this->l('No name provided');
-        }
-        
         global $smarty;
+        
         $smarty->assign('ajaxUrl', $this->context->link->getAdminLink("AdminSafeChargeAjax"));
+        $_SESSION['sc_create_logs'] = Configuration::get('SC_CREATE_LOGS');
     }
 	
     public function install()
@@ -161,47 +159,10 @@ class SafeCharge extends PaymentModule
         return $this->display(__FILE__, './views/templates/admin/display_form.tpl');
     }
     
-    /**
-     * TODO - do we use it ?
-     * @global type $smarty
-     * @global type $link
-     * @param array $params
-     * @return boolean
-     */
-    public function hookPayment($params)
-    {
-        SC_LOGGER::create_log($params, 'hookPayment params: ');
-        
-        if($this->isPayment() !== true){
-            return false;
-        }
-        
-        global $smarty, $link;
-        
-        $isPayment = $this->isPayment();
-        if($isPayment !== true) {
-            if($isPayment === false){
-                return false;
-            }
-            
-            $smarty->assign('error', $isPayment);
-            return $this->display(__FILE__, './views/templates/front/payment_module.tpl');
-        }
-
-        $smarty->assign(
-            'payment_l',
-            SafeChargeVersionResolver::get_payment_l($link, $this->name)
-        );
-        
-        $smarty->assign('frontend_name', Configuration::get('SC_FRONTEND_NAME'));
-        $smarty->assign('module_name', $this->name);
-
-        return $this->display(__FILE__, './views/templates/front/payment_module.tpl');
-    }
-    
     public function hookPaymentOptions($params)
     {
         if($this->isPayment() !== true){
+            SC_HELPER::create_log('hookPaymentOptions isPayment not true.');
             return false;
         }
         
@@ -213,172 +174,152 @@ class SafeCharge extends PaymentModule
         
         if($sc_api == 'rest') {
             try {
-                require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'SC_REST_API.php';
-
                 $cart               = $this->context->cart;
                 $currency           = new Currency((int)($cart->id_currency));
                 $customer           = new Customer($cart->id_customer);
                 $address_invoice    = new Address((int)($cart->id_address_invoice));
                 $country_inv        = new Country((int)($address_invoice->id_country), Configuration::get('PS_LANG_DEFAULT'));
                 $is_user_logged     = (bool)$this->context->customer->isLogged();
+                $time               = date('YmdHis', time());
+                $test_mode          = Configuration::get('SC_TEST_MODE');
+                $hash               = Configuration::get('SC_HASH_TYPE');
+                $secret             = Configuration::get('SC_SECRET_KEY');
 
-                $error_url = $this->context->link->getModuleLink(
+                $error_url          = $this->context->link->getModuleLink(
                     'safecharge',
                     'payment',
                     array('prestaShopAction' => 'showError')
                 );
                 
-                # get UPOs
-                $upos = array();
-
-                if($is_user_logged) {
-                    $upos_data = SC_REST_API::get_user_upos(
-                        array(
-                            'merchantId'        => Configuration::get('SC_MERCHANT_ID'),
-                            'merchantSiteId'    => Configuration::get('SC_MERCHANT_SITE_ID'),
-                            'userTokenId'       => $customer->email,
-                            'clientRequestId'   => $cart->id,
-                            'timeStamp'         => date('YmdHis', time()),
-                        ),
-                        array(
-                            'hash_type' => Configuration::get('SC_HASH_TYPE'),
-                            'secret'    => Configuration::get('SC_SECRET_KEY'),
-                            'test'      => Configuration::get('SC_TEST_MODE'),
-                        )
-                    );
-                    
-                    if(isset($upos_data['paymentMethods']) && $upos_data['paymentMethods']) {
-                        $upos = $upos_data['paymentMethods'];
-                    }
-                }
-                # get UPOs END
-//                echo '<pre>upos: '.print_r($upos,true).'</pre>';
-
-                # get APMs
-                $rest_params = array(
-                    'secret_key'        => Configuration::get('SC_SECRET_KEY'),
+                # get session token
+                $st_endpoint_url = $test_mode == 'yes' ? SC_TEST_SESSION_TOKEN_URL : SC_LIVE_SESSION_TOKEN_URL;
+                
+                $st_params = array(
                     'merchantId'        => Configuration::get('SC_MERCHANT_ID'),
                     'merchantSiteId'    => Configuration::get('SC_MERCHANT_SITE_ID'),
-                    'currencyCode'      => $currency->iso_code,
-                    'languageCode'      => substr($this->context->language->locale, 0, 2),
-                    'sc_country'        => $country_inv->iso_code,
-                    'payment_api'       => Configuration::get('SC_PAYMENT_METHOD'),
-                    'transaction_type'  => Configuration::get('SC_PAYMENT_ACTION'),
-                    'test'              => Configuration::get('SC_TEST_MODE'),
-                    'hash_type'         => Configuration::get('SC_HASH_TYPE'),
-                    'force_http'        => Configuration::get('SC_HTTP_NOTIFY'),
-                    'create_logs'       => Configuration::get('SC_CREATE_LOGS'),
+                    'clientRequestId'   => $time. '_' .uniqid(),
+                    'timeStamp'         => $time,
                 );
-
-                // client request id 1
-                $time = date('YmdHis', time());
-                $rest_params['cri1'] = $time. '_' .uniqid();
-
-                // checksum 1 - checksum for session token
-                $rest_params['cs1'] = hash(
-                    $rest_params['hash_type'],
-                    $rest_params['merchantId'] . $rest_params['merchantSiteId']
-                        . $rest_params['cri1'] . $time . $rest_params['secret_key']
-                );
-
-                // client request id 2
-                $time = date('YmdHis', time());
-                $rest_params['cri2'] = $time. '_' .uniqid();
-
-                // checksum 2 - checksum for get apms
-                $rest_params['cs2'] = hash(
-                    $rest_params['hash_type'],
-                    $rest_params['merchantId'] . $rest_params['merchantSiteId']
-                        . $rest_params['cri2'] . $time . $rest_params['secret_key']
-                );
-
-                $res = SC_REST_API::get_rest_apms($rest_params);
-
-                if(!is_array($res) || !isset($res['paymentMethods']) || empty($res['paymentMethods'])) {
-                    SC_LOGGER::create_log($res, 'API response: ');
-                    Tools::redirect($error_url);
-                }
-
-                // set template data with the payment methods
-                $payment_methods = $res['paymentMethods'];
-//                echo '<pre>apms: '.print_r($payment_methods,true).'</pre>';
-                # get APMs END
-
-                // add icons for the upos
-                $icons = array();
-                // show only UPOs available in APMs
-                $upos_final = array();
                 
-                if($upos && $payment_methods) {
-                    foreach($upos as $upo_key => $upo) {
-                        if(
-                            @$upo['upoStatus'] != 'enabled'
-                            || (isset($upo['upoData']['ccCardNumber'])
-                                && empty($upo['upoData']['ccCardNumber']))
-                            || (isset($upo['expiryDate'])
-                                && strtotime($upo['expiryDate']) < strtotime(date('Ymd')))
-                        ) {
-                            continue;
-                        }
-                        
-                        // search in payment methods
-                        foreach($payment_methods as $pm) {
-                            if(@$pm['paymentMethod'] == @$upo['paymentMethodName']) {
-                                if(
-                                    in_array(@$upo['paymentMethodName'], array('cc_card', 'dc_card'))
-                                    && @$upo['upoData']['brand']
-                                ) {
-                                    $icons[@$upo['upoData']['brand']] = str_replace(
-                                        'default_cc_card',
-                                        $upo['upoData']['brand'],
-                                        $pm['logoURL']
-                                    );
+                $st_params['checksum'] = hash($hash, implode('', $st_params) . $secret);
+                
+                $session_token_data = SC_HELPER::call_rest_api($st_endpoint_url, $st_params);
+                
+                if(@$session_token_data['status'] != 'SUCCESS') {
+                    SC_HELPER::create_log($session_token_data, 'getting getSessionToken error: ');
+                    return false;
+                }
+                # get session token END
+                
+                 # get APMs
+                $apms_params = array(
+                    'merchantId'        => $st_params['merchantId'],
+                    'merchantSiteId'    => $st_params['merchantSiteId'],
+                    'clientRequestId'   => $time. '_' .uniqid(),
+                    'timeStamp'         => $time,
+                );
+                
+                $apms_params['checksum']        = hash($hash, implode('', $apms_params) . $secret);
+                $apms_params['sessionToken']    = $session_token_data['sessionToken'];
+                $apms_params['currencyCode']    = $currency->iso_code;
+                $apms_params['countryCode']     = $country_inv->iso_code;
+                $apms_params['languageCode']    = substr($this->context->language->locale, 0, 2);
+                
+                $endpoint_url = $test_mode == 'yes' ? SC_TEST_REST_PAYMENT_METHODS_URL : SC_LIVE_REST_PAYMENT_METHODS_URL;
+                
+                $res = SC_HELPER::call_rest_api($endpoint_url, $apms_params);
+                
+                if(!is_array($res) || !isset($res['paymentMethods']) || empty($res['paymentMethods'])) {
+                    SC_HELPER::create_log($res, 'No APMs, response is:');
+                    return false;
+                }
+                
+                $payment_methods = $res['paymentMethods'];
+                # get APMs END
+                
+                # get UPOs
+                $upos = array();
+                $icons = array();
+
+                if($is_user_logged) {
+                    $upos_params = array(
+                        'merchantId'        => $st_params['merchantId'],
+                        'merchantSiteId'    => $st_params['merchantSiteId'],
+                        'userTokenId'       => $customer->email,
+                        'clientRequestId'   => $cart->id,
+                        'timeStamp'         => $time,
+                    );
+                    
+                    $upos_params['checksum']    = hash($hash, implode('', $upos_params) . $secret);
+                    $endpoint_url = $test_mode == 'yes' ? SC_TEST_USER_UPOS_URL : SC_LIVE_USER_UPOS_URL;
+                    
+                    $upos_data = SC_HELPER::call_rest_api($endpoint_url, $upos_params);
+                    
+                    if(isset($upos_data['paymentMethods']) && $upos_data['paymentMethods']) {
+                        // add icons for the upos and remove UPOs not present in the APMs
+                        foreach($upos_data['paymentMethods'] as $upo_key => $upo) {
+                            if(
+                                @$upo['upoStatus'] != 'enabled'
+                                || (isset($upo['upoData']['ccCardNumber'])
+                                    && empty($upo['upoData']['ccCardNumber']))
+                                || (isset($upo['expiryDate'])
+                                    && strtotime($upo['expiryDate']) < strtotime(date('Ymd')))
+                            ) {
+                                continue;
+                            }
+
+                            // search in payment methods
+                            foreach($payment_methods as $pm) {
+                                if(@$pm['paymentMethod'] == @$upo['paymentMethodName']) {
+                                    if(
+                                        in_array(@$upo['paymentMethodName'], array('cc_card', 'dc_card'))
+                                        && @$upo['upoData']['brand']
+                                    ) {
+                                        $icons[@$upo['upoData']['brand']] = str_replace(
+                                            'default_cc_card',
+                                            $upo['upoData']['brand'],
+                                            $pm['logoURL']
+                                        );
+                                    }
+                                    else {
+                                        $icons[$pm['paymentMethod']] = $pm['logoURL'];
+                                    }
+
+                                    $upos[] = $upo;
+                                    break;
                                 }
-                                else {
-                                    $icons[$pm['paymentMethod']] = $pm['logoURL'];
-                                }
-                                
-                                $upos_final[] = $upo;
-                                break;
                             }
                         }
                     }
                 }
-                
-//                echo '<pre>'.print_r($upos_final, true).'</pre>';
-//                echo '<pre>'.print_r($icons, true).'</pre>';
+                # get UPOs END
                 
                 // get a Session Token for the fields
-                $time = date('YmdHis', time());
-                $cri1 = $time. '_' .uniqid();
-
-                // checksum 1 - checksum for session token
-                $cs1 = hash(
-                    $rest_params['hash_type'],
-                    $rest_params['merchantId'] . $rest_params['merchantSiteId']
-                        . $cri1 . $time . $rest_params['secret_key']
-                );
+//                echo '<pre>'.print_r($st_params, true).'</pre>';
+//                
+//                $st_params['clientRequestId']   = $time. '_' .uniqid();
+//                $st_params['checksum']          = hash($hash, implode('', $st_params) . $secret);
+//                
+//                $session_token_data = SC_HELPER::call_rest_api($st_endpoint_url, $st_params);
+//                
+//                echo '<pre>'.print_r($st_params, true).'</pre>';
+//                echo '<pre>'.print_r($session_token_data, true).'</pre>';
+//                return;
                 
-                $resp = SC_REST_API::get_session_token(array(
-                    'merchantId'        => $rest_params['merchantId'],
-                    'merchantSiteId'    => $rest_params['merchantSiteId'],
-                    'cri1'              => $cri1,
-                    'cs1'               => $cs1,
-                    'test'              => $rest_params['test'],
-                ));
                 
-                if(!$resp || !isset($resp['sessionToken']) || !$resp['sessionToken']) {
-                    SC_LOGGER::create_log($resp, 'Error when trying to generate Session Token for Fields: ');
-                    Tools::redirect($error_url);
-                }
                 
-                $this->context->smarty->assign('sessionToken', $resp['sessionToken']);
-                $this->context->smarty->assign('languageCode', $rest_params['languageCode']);
-                $this->context->smarty->assign('upos', $upos_final);
+//                if(!$resp || !isset($resp['sessionToken']) || !$resp['sessionToken']) {
+//                    SC_HELPER::create_log($resp, 'Error when trying to generate Session Token for Fields: ');
+//                    Tools::redirect($error_url);
+//                }
+                
+                $this->context->smarty->assign('sessionToken', $session_token_data['sessionToken']);
+                $this->context->smarty->assign('languageCode', $apms_params['languageCode']);
+                $this->context->smarty->assign('upos', $upos);
                 $this->context->smarty->assign('paymentMethods', $payment_methods);
                 $this->context->smarty->assign('icons', $icons);
-                $this->context->smarty->assign('isTestEnv', $rest_params['test']);
-                $this->context->smarty->assign('merchantSideId', $rest_params['merchantSiteId']);
+                $this->context->smarty->assign('isTestEnv', $test_mode);
+                $this->context->smarty->assign('merchantSideId', $apms_params['merchantSiteId']);
                 $this->context->smarty->assign(
                     'formAction',
                     $this->context->link->getModuleLink('safecharge', 'payment')
@@ -386,7 +327,7 @@ class SafeCharge extends PaymentModule
             }
             catch(Exception $e) {
                 echo $e->getMessage();
-                SC_LOGGER::create_log($e->getMessage(), 'hookPaymentOptions Exception: ');
+                SC_HELPER::create_log($e->getMessage(), 'hookPaymentOptions Exception: ');
             }
         }
         
@@ -409,6 +350,7 @@ class SafeCharge extends PaymentModule
     public function hookDisplayBackOfficeOrderActions($params)
     {
         if($this->isPayment() !== true){
+            SC_HELPER::create_log('hookDisplayBackOfficeOrderActions isPayment not true.');
             return false;
         }
         
@@ -423,7 +365,7 @@ class SafeCharge extends PaymentModule
         $sc_data = Db::getInstance()->getRow('SELECT * FROM safecharge_order_data WHERE order_id = ' . $order_id);
         
         if(!$sc_data) {
-            SC_LOGGER::create_log('Missing safecharge_order_data for order ' . $order_id);
+            SC_HELPER::create_log('Missing safecharge_order_data for order ' . $order_id);
             return;
         }
         
@@ -452,6 +394,7 @@ class SafeCharge extends PaymentModule
     public function hookDisplayAdminOrderLeft()
     {
         if($this->isPayment() !== true){
+            SC_HELPER::create_log('hookDisplayAdminOrderLeft isPayment not true.');
             return false;
         }
         
@@ -461,25 +404,6 @@ class SafeCharge extends PaymentModule
         $smarty->assign('messages', $messages);
         
         return $this->display(__FILE__, './views/templates/admin/sc_order_notes.tpl');
-    }
-
-    /* TODO do we use it? */
-    public function success()
-    {
-        SC_LOGGER::create_log('success()');
-        
-        include(dirname(__FILE__).'/../../config/config.inc.php');
-        include(dirname(__FILE__).'/../../init.php');
-        include(dirname(__FILE__).'/payu.php');
-        $context = Context::getContext();
-        $fc=new Frontcontroller();
-        $fc->setmedia();
-        include(dirname(__FILE__).'/../../header.php');
-    }
-    
-    public function setOrderStatus($order_id, $status, $id_cart = 0, $total_amount = '', $custom_id = '')
-    {
-    //    SafeChargeVersionResolver::set_order_status($order_id, $status);
     }
 
     /**
@@ -493,6 +417,7 @@ class SafeCharge extends PaymentModule
     public function hookPaymentReturn($params)
     {
         if($this->isPayment() !== true){
+            SC_HELPER::create_log('hookPaymentReturn isPayment not true.');
             return false;
         }
         
@@ -521,66 +446,6 @@ class SafeCharge extends PaymentModule
             
             $message->add();
         }
-        
-        
-    //    global $smarty;
-
-//        if (!$this->isPayment()){
-//            return false;
-//        }
-        
-//        if ($this->generateAdvancedResponseChecksum(Tools::getAllValues) == Tools::getValue("advanceResponseChecksum")) {
-//            if (Configuration::get('SC_SAVE_ORDER_BEFORE_REDIRECT') == 'true') {
-//                $secure_cart = explode('_', Tools::getValue('invoice_id'));
-//                $order_id = (int)$secure_cart[0];
-//                $message = new Message();
-//                $message->id_order = (int)$order_id;
-//                $message->private = false;
-//
-//                switch (Tools::getValue("Status")) {
-//                    case 'APPROVED':
-//                        $this->setOrderStatus((int)$order_id,(int)(Configuration::get('PS_OS_PREPARATION')));
-//                        $smarty->assign('status', 'ok');
-//                    break;
-//
-//                    case 'DECLINED':
-//                        $this->setOrderStatus($order_id,(int)(Configuration::get('PS_OS_ERROR')));
-//                        $smarty->assign('status', 'failed');
-//                        $message->message = 'Payment failed.'.Tools::getValue("message");
-//                        $message->add();
-//                    break;
-//
-//                    case 'ERROR':
-//                        $this->setOrderStatus($order_id,(int)(Configuration::get('PS_OS_ERROR')));
-//                        $smarty->assign('status', 'failed');
-//                        $message->message = 'Payment failed.'.Tools::getValue("message");
-//                        $message->add();
-//                    break;
-//
-//                    case 'PENDING':
-//                        $this->setOrderStatus($order_id,(int)(Configuration::get('PS_OS_PREPARATION')));
-//                        $smarty->assign('status', 'pending');
-//                    break;
-//
-//                    default:
-//                        $smarty->assign('status', 'ok');
-//                    break;
-//
-//                }
-//            }
-//        }
-//        else {
-//            $smarty->assign('status', 'checksum');
-//        }
-        
-//        $smarty->assign('total_to_pay', Tools::getValue('totalAmount'));
-//        
-//        if (Configuration::get('SC_SAVE_ORDER_BEFORE_REDIRECT') == 'true') {
-//            return $this->display(__FILE__, './views/templates/front/confirmation.tpl');
-//        }
-//        else{
-//            return $this->display(__FILE__, './views/templates/front/confirmation_noorder.tpl');
-//        }
     }
     
     /**
@@ -597,13 +462,14 @@ class SafeCharge extends PaymentModule
             || !isset($_REQUEST['partialRefund'], $_REQUEST['partialRefundProduct'])
             || !is_array($_REQUEST['partialRefundProduct'])
         ) {
+            SC_HELPER::create_log('hookActionOrderSlipAdd isPayment not true or missing request parameters.');
             return false;
         }
         
         $request_amoutn = 0;
         
         try {
-            require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'SC_REST_API.php';
+        //    require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'SC_REST_API.php';
             
             foreach ($_REQUEST['partialRefundProduct'] as $id => $am) {
                 $request_amoutn += floatval($am);
@@ -635,10 +501,8 @@ class SafeCharge extends PaymentModule
             $sc_order_info = Db::getInstance()->getRow(
                 "SELECT * FROM safecharge_order_data WHERE order_id = {$order_id}");
                 
-            SC_LOGGER::create_log($last_slip_id, '$last_slip_id: ');
+            SC_HELPER::create_log($last_slip_id, '$last_slip_id: ');
                 
-            $_SESSION['sc_create_logs'] = Configuration::get('SC_CREATE_LOGS');
-            
             $notify_url = $this->context->link
                 ->getModuleLink('safecharge', 'payment', array(
                     'prestaShopAction'  => 'getDMN',
@@ -650,31 +514,39 @@ class SafeCharge extends PaymentModule
                 $notify_url = str_repeat('https://', 'http://', $notify_url);
             }
             
-            // execute refund, the response must be array('msg' => 'some msg', 'new_order_status' => 'some status')
-            $json_arr = SC_REST_API::refund_order(
-                array(
-                    'test'              => Configuration::get('SC_TEST_MODE'),
-                    'merchantId'        => Configuration::get('SC_MERCHANT_ID'),
-                    'merchantSiteId'    => Configuration::get('SC_MERCHANT_SITE_ID'),
-                    'hash_type'         => Configuration::get('SC_HASH_TYPE'),
-                    'secret'            => Configuration::get('SC_SECRET_KEY'),
-                )
-                ,array(
-                    'id'            => $last_slip_id,
-                    'amount'        => $request_amoutn,
-                    'reason'        => '', // no reason field
-                    'webMasterId'   => 'PreastaShop ' . _PS_VERSION_
-                )
-                ,array(
-                    'order_tr_id'   => $sc_order_info['related_transaction_id'],
-                    'auth_code'     => $sc_order_info['auth_code'],
-                )
-                ,$currency->iso_code
-                ,$notify_url
+            $time = date('YmdHis', time());
+            $test_mode = Configuration::get('SC_TEST_MODE');
+            
+            $ref_parameters = array(
+                'merchantId'            => Configuration::get('SC_MERCHANT_ID'),
+                'merchantSiteId'        => Configuration::get('SC_MERCHANT_SITE_ID'),
+                'clientRequestId'       => $time . '_' . $sc_order_info['related_transaction_id'],
+                'clientUniqueId'        => $last_slip_id,
+                'amount'                => number_format($request_amoutn, 2, '.', ''),
+                'currency'              => $currency->iso_code,
+                'relatedTransactionId'  => $sc_order_info['related_transaction_id'], // GW Transaction ID
+                'authCode'              => $sc_order_info['auth_code'],
+                'url'                   => $notify_url,
+                'timeStamp'             => $time,
             );
+            
+            $checksum_str = implode('', $ref_parameters);
+            
+            $checksum = hash(
+                Configuration::get('SC_HASH_TYPE'),
+                $checksum_str . Configuration::get('SC_SECRET_KEY')
+            );
+            
+            $ref_parameters['checksum']     = $checksum;
+            $ref_parameters['urlDetails']   = array('notificationUrl' => $notify_url);
+            $ref_parameters['webMasterId']  = 'PreastaShop ' . _PS_VERSION_;
+            
+            $refund_url = $test_mode == 'yes' ? SC_TEST_REFUND_URL : SC_LIVE_REFUND_URL;
+            
+            $json_arr = SC_HELPER::call_rest_api($refund_url, $ref_parameters);
         }
         catch(Exception $e) {
-            SC_LOGGER::create_log($e->getMessage(), 'hookActionOrderSlipAdd Exception: ');
+            SC_HELPER::create_log($e->getMessage(), 'hookActionOrderSlipAdd Exception: ');
             $this->context->controller->errors[] = $this->l('Error while trying to colect refund data.');
             return false;
         }
@@ -696,13 +568,7 @@ class SafeCharge extends PaymentModule
             return false;
         }
         
-        $refund_url = SC_TEST_REFUND_URL;
-        $cpanel_url = SC_TEST_CPANEL_URL;
-
-        if(Configuration::get('SC_TEST_MODE') == 'no') {
-            $refund_url = SC_LIVE_REFUND_URL;
-            $cpanel_url = SC_LIVE_CPANEL_URL;
-        }
+        $cpanel_url = $test_mode == 'yes' ? SC_TEST_CPANEL_URL : SC_LIVE_CPANEL_URL;
         
         $msg = '';
         $error_note = $this->l('Request Refund #' . $last_slip_id . ' fail, if you want login into <i>' . $cpanel_url
@@ -716,10 +582,6 @@ class SafeCharge extends PaymentModule
             $message->add();
             
             return false;
-        }
-        
-        if(!is_array($json_arr)) {
-            parse_str($resp, $json_arr);
         }
         
         if(!is_array($json_arr)) {
@@ -753,7 +615,7 @@ class SafeCharge extends PaymentModule
         return true;
     }
 
-        /**
+    /**
      * Function isPayment
      * Actually here we check if the SC plugin is active and configured
      * 
@@ -766,131 +628,22 @@ class SafeCharge extends PaymentModule
         }
         
         if (!Configuration::get('SC_MERCHANT_SITE_ID')) {
-            SC_LOGGER::create_log('Error: (invalid or undefined site id)');
+            SC_HELPER::create_log('Error: (invalid or undefined site id)');
             return $this->l($this->displayName.' Error: (invalid or undefined site id)');
         }
           
         if (!Configuration::get('SC_MERCHANT_ID')) {
-            SC_LOGGER::create_log('Error: (invalid or undefined merchant id)');
+            SC_HELPER::create_log('Error: (invalid or undefined merchant id)');
             return $this->l($this->displayName.' Error: (invalid or undefined merchant id)');
         }
         
         if (!Configuration::get('SC_SECRET_KEY')) {
-            SC_LOGGER::create_log('Error: (invalid or undefined secure key)');
+            SC_HELPER::create_log('Error: (invalid or undefined secure key)');
             return $this->l($this->displayName.' Error: (invalid or undefined secure key)');
-        }
-          
-        if (Tools::getValue('ppp_status') == "FAIL" || !empty(Tools::getValue('Error'))) {
-            SC_LOGGER::create_log('Error: (payment failed, please select another payment method)');
-            
-            return $this->l($this->displayName.' Error: (payment failed, please select another payment method. "'
-              . (!empty(Tools::getValue('Error')) ? urldecode(Tools::getValue('Error')) : '').'")');
         }
           
         return true;
     }
-    
-    /**
-     * TODO - check it, may be useful
-     * @return string
-     */
-    public function getTransactionMessage()
-    {
-        SC_LOGGER::create_log('getTransactionMessage');
-        
-        $result = "";
-        
-        if(!isset($_GET)) {
-            return $result;
-        }
-
-        $result .=
-            $this->l(' PPP_TransactionID = ') . Tools::getValue('PPP_TransactionID')
-            .$this->l(', Status = ') . Tools::getValue('Status')
-            .$this->l(', TransactionType = ') . Tools::getValue('transactionType')
-            .$this->l(', GW_TransactionID = ') . Tools::getValue('TransactionID').', ';
-
-        if(intval(Tools::getValue('ErrCode')) != 0) {
-            $result .= $this->l('ErrorStr: ') . urldecode(Tools::getValue('Error'))."\n"
-                .$this->l('ErrorCode: ').urldecode(Tools::getValue('ErrCode'))."\n"
-                .$this->l('ExtendedErrorCode: ').urldecode(Tools::getValue('ExErrCode'))."\n"
-                .$this->l('ErrorMessage: ').urldecode(Tools::getValue('message'))."\n";  
-        }
-
-        return $result;
-    }
-    
-    /**
-     * TODO - update it !
-     * @return type
-     */
-//    public function getTRansactionStatus()
-//	{
-//		$status = Tools::getValue('Status');
-//
-//		if (
-//            Tools::getValue("transactionType") == 'Void'
-//            || Tools::getValue("transactionType") == 'Chargeback'
-//            || Tools::getValue("transactionType") == 'Credit'
-//        ) {
-//            $status = 'HOLDED';
-//		}
-//		
-//		switch ($status) {	
-//			case 'HOLDED':
-//					$orderState = (int)(Configuration::get('PS_OS_CANCELED'));
-//				break;
-//				
-//				case 'APPROVED':
-//					$orderState = (int)(Configuration::get('PS_OS_PAYMENT'));	
-//				break;
-//				
-//				case 'DECLINED':
-//					$orderState = (int)(Configuration::get('PS_OS_CANCELED'));
-//				break;
-//				
-//				case 'ERROR':
-//					$orderState = (int)(Configuration::get('PS_OS_CANCELED'));
-//				break;
-//				
-//				case 'PENDING':
-//					$orderState = (int)(Configuration::get('PS_OS_PREPARATION'));
-//				break;
-//				
-//				case 'DNM_ERROR':
-//				break;
-//		}
-//        
-//		return $orderState;
-//	}
-    
-    /**
-     * TODO - update it !
-     * @param type $status
-     * @param type $transaction_id
-     * @return type
-     */
-//    public function generateDMNResponseChecksum($status, $transaction_id)
-//    {
-//       return md5(stripslashes(Configuration::get('SC_SECRET_KEY')) . $status . $transaction_id);
-//    }
-    
-    /**
-     * TODO - do we use this ?
-     * @param type $response
-     */
-//    public function setTransactionDetail($response)
-//    {
-//        if (isset($this->pcc))
-//        {
-//            $this->pcc->transaction_id = (string)$response['PPP_TransactionID'];
-//            $this->pcc->card_number = '';
-//            $this->pcc->card_brand = (string)$response['payment_method'];
-//            $this->pcc->card_expiration = '';
-//            $this->pcc->card_holder = (string)(isset($response['email']) ?
-//                $response['email'] : $response['merchant_unique_id']);
-//        }
-//    }
     
     /**
      * Function checkCurrency
@@ -915,30 +668,6 @@ class SafeCharge extends PaymentModule
 		return false;
 	}
     
-    /**
-     * TODO - do we use it ?
-     * 
-     * @param int $id_lang
-     * @return string
-     */
-//    private function getLocale($id_lang)
-//    {
-//        $iso = Language::getIsoById(intval($id_lang));
-//        
-//        $locale = array(
-//            'de' => 'de_DE', 'en' => 'en_US','it' => 'it_IT','es' => 'Es_ES',
-//            'fr' => 'fr_FR','iw' => 'iw_IL','ar' => 'ar_AA','ru' => 'ru_RU',
-//            'nl' => 'nl_NL','bg' => 'bg_BG','zh' => 'zh_CN','ja' => 'ja_JP',
-//            'ko' => 'ko_KR','tr' => 'tr_TR','pt' => 'pt_BR'
-//        );
-//
-//        if(isset($locale[$iso])) {
-//            return $locale[$iso];
-//        }
-//        
-//        return 'en_US';     
-//    }
-
     /**
      * Function getRequestStatus
      * We need this stupid function because as response request variable
@@ -971,7 +700,7 @@ class SafeCharge extends PaymentModule
             );
         }
         catch(Exception $e) {
-            SC_LOGGER::create_log($e->getMessage(), 'checkAdvancedCheckSum Exception: ');
+            SC_HELPER::create_log($e->getMessage(), 'checkAdvancedCheckSum Exception: ');
             return false;
         }
 

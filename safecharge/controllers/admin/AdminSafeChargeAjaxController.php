@@ -10,28 +10,13 @@ if (!session_id()) {
 }
 
 require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'sc_config.php';
-require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'sc_logger.php';
-require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'SC_REST_API.php';
+require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'SC_HELPER.php';
 
 class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
 {
     public function __construct()
     {
         parent::__construct();
-        
-//        if(
-//            !isset($_POST['scOrder'])
-//            || !is_numeric($_POST['scOrder'])
-//            || intval($_POST['scOrder']) <= 0
-//        ) {
-//            SC_LOGGER::create_log(@$_POST['scOrder'], 'Missing Order ID: ');
-//            
-//            echo json_encode(array(
-//                'status' => 'error',
-//                'msg' => 'There is no Order ID'
-//            ));
-//            exit;
-//        }
         
         if(
             isset($_POST['scOrder'])
@@ -56,15 +41,21 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
      */
     private function order_void_settle()
     {
-        $order_id = intval($_POST['scOrder']);
-        $order_info = new Order($order_id);
-        $currency = new Currency($order_info->id_currency);
+        SC_HELPER::create_log('Void/Settle');
         
-        $sc_data = Db::getInstance()->getRow('SELECT * FROM safecharge_order_data WHERE order_id = ' . $order_id);
+        if(!$_POST['scAction'] or empty($_POST['scAction'])) {
+            echo json_encode(array('status' => 0, 'msg' => 'There is no action.'));
+            exit;
+        }
+        
+        $order_id   = intval($_POST['scOrder']);
+        $order_info = new Order($order_id);
+        $currency   = new Currency($order_info->id_currency);
+        $sc_data    = Db::getInstance()->getRow('SELECT * FROM safecharge_order_data WHERE order_id = ' . $order_id);
+        $time       = date('YmdHis', time());
+        $status     = 1; // default status of the response
         
         $_SESSION['sc_create_logs'] = Configuration::get('SC_CREATE_LOGS');
-        
-        $time = date('YmdHis', time());
         
         $notify_url = $this->context->link->getModuleLink('safecharge', 'payment', array(
             'prestaShopAction'  => 'getDMN',
@@ -75,6 +66,8 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
         if(Configuration::get('SC_HTTP_NOTIFY') == 'yes') {
             $notify_url = str_repeat('https://', 'http://', $notify_url);
         }
+        
+        $test_mode = Configuration::get('SC_TEST_MODE');
         
         $params = array(
             'merchantId'            => Configuration::get('SC_MERCHANT_ID'),
@@ -87,7 +80,6 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
             'authCode'              => $sc_data['auth_code'],
             'urlDetails'            => array('notificationUrl' => $notify_url),
             'timeStamp'             => $time,
-            'test'                  => Configuration::get('SC_TEST_MODE'), // need to define the endpoint
         );
         
         if(defined('_PS_VERSION_')) {
@@ -104,9 +96,26 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
         
         $params['checksum'] = $checksum;
         
-        SC_LOGGER::create_log($params, 'The params for Void/Settle: ');
+        if($_POST['scAction'] == 'settle') {
+            $url = $test_mode == 'no' ? SC_LIVE_SETTLE_URL : SC_TEST_SETTLE_URL;
+        }
+        elseif($_POST['scAction'] == 'void') {
+            $url = $test_mode == 'no' ? SC_LIVE_VOID_URL : SC_TEST_VOID_URL;
+        }
         
-        SC_REST_API::void_and_settle_order($params, @$_POST['scAction'], true);
+        $resp = SC_HELPER::call_rest_api($url, $params);
+        
+        if(
+            !$resp || !is_array($resp)
+            || @$resp['status'] == 'ERROR'
+            || @$resp['transactionStatus'] == 'ERROR'
+            || @$resp['transactionStatus'] == 'DECLINED'
+        ) {
+            $status = 0;
+        }
+        
+        echo json_encode(array('status' => $status, 'data' => $resp));
+        exit;
     }
     
     private function delete_logs()
