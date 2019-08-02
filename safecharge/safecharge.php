@@ -294,25 +294,6 @@ class SafeCharge extends PaymentModule
                 }
                 # get UPOs END
                 
-                // get a Session Token for the fields
-//                echo '<pre>'.print_r($st_params, true).'</pre>';
-//                
-//                $st_params['clientRequestId']   = $time. '_' .uniqid();
-//                $st_params['checksum']          = hash($hash, implode('', $st_params) . $secret);
-//                
-//                $session_token_data = SC_HELPER::call_rest_api($st_endpoint_url, $st_params);
-//                
-//                echo '<pre>'.print_r($st_params, true).'</pre>';
-//                echo '<pre>'.print_r($session_token_data, true).'</pre>';
-//                return;
-                
-                
-                
-//                if(!$resp || !isset($resp['sessionToken']) || !$resp['sessionToken']) {
-//                    SC_HELPER::create_log($resp, 'Error when trying to generate Session Token for Fields: ');
-//                    Tools::redirect($error_url);
-//                }
-                
                 $this->context->smarty->assign('sessionToken', $session_token_data['sessionToken']);
                 $this->context->smarty->assign('languageCode', $apms_params['languageCode']);
                 $this->context->smarty->assign('upos', $upos);
