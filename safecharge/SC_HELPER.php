@@ -221,12 +221,14 @@ class SC_HELPER
             if(!empty($title)) {
                 $d = $title . "\r\n" . $d;
             }
+            
+            $d .= "\r\n\r\n";
             // same for all plugins
 
             try {
                 file_put_contents(
                     SC_LOGS_DIR . date('Y-m-d', time()) . '.txt',
-                    date('H:i:s', time()) . ': ' . $d . "\r\n", FILE_APPEND
+                    date('H:i:s', time()) . ': ' . $d, FILE_APPEND
                 );
             }
             catch (Exception $exc) {
