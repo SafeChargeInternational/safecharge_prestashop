@@ -156,7 +156,7 @@ class SafeCharge extends PaymentModule
         
         $this->smarty->assign('img_path', '/modules/safecharge/views/img/');
 
-        return $this->display(__FILE__, './views/templates/admin/display_form.tpl');
+        return $this->display(__FILE__, 'views/templates/admin/display_form.tpl');
     }
     
     public function hookPaymentOptions($params)
@@ -362,7 +362,7 @@ class SafeCharge extends PaymentModule
             .'order_slip WHERE id_order = ' . $order_id . ' AND amount > 0');
         $smarty->assign('isRefunded', $rows ? 1 : 0);
         
-        return $this->display(__FILE__, './views/templates/admin/sc_order_actions.tpl');
+        return $this->display(__FILE__, 'views/templates/admin/sc_order_actions.tpl');
     }
     
     /**
@@ -384,7 +384,7 @@ class SafeCharge extends PaymentModule
         $messages = MessageCore::getMessagesByOrderId($_GET['id_order'], true);
         $smarty->assign('messages', $messages);
         
-        return $this->display(__FILE__, './views/templates/admin/sc_order_notes.tpl');
+        return $this->display(__FILE__, 'views/templates/admin/sc_order_notes.tpl');
     }
 
     /**
