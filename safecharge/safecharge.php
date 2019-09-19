@@ -156,9 +156,9 @@ class SafeCharge extends PaymentModule
         
         $this->smarty->assign('img_path', '/modules/safecharge/views/img/');
 
-        return $this->display(__FILE__, 'views/templates/admin/display_form.tpl');
+        return $this->display(__FILE__, 'views/templates/admin/display_forma.tpl');
     }
-    
+     
     public function hookPaymentOptions($params)
     {
         if($this->isPayment() !== true){
@@ -241,7 +241,7 @@ class SafeCharge extends PaymentModule
                 $upos = array();
                 $icons = array();
 
-                if($is_user_logged) {
+                if(false && $is_user_logged) {
                     $upos_params = array(
                         'merchantId'        => $st_params['merchantId'],
                         'merchantSiteId'    => $st_params['merchantSiteId'],

@@ -251,8 +251,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             
             $resp = SC_HELPER::call_rest_api($endpoint_url, $sc_params);
             
-            SC_HELPER::create_log($resp, 'process order response:');
-            
             $req_status = $this->getRequestStatus($resp);
             
             if(
