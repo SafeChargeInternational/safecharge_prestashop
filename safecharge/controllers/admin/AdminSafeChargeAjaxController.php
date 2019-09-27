@@ -30,6 +30,10 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
         if(@$_POST['scAction'] == 'deleteLogs') {
             $this->delete_logs();
         }
+		
+		if(@$_POST['scAction'] == 'saveOrder') {
+			$this->save_order();
+		}
             
         exit;
     }
@@ -152,4 +156,31 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
 
         exit;
     }
+	
+	private function save_order()
+	{
+		if(
+			empty($_POST['cart_id'])
+			|| empty($_POST['orderStatus'])
+			|| empty($_POST['amount'])
+			|| empty($_POST['moduleName'])
+			|| empty($_POST['customerKey'])
+		) {
+			echo json_encode(array('status' => 0, 'msg' => 'Missing mandatory data'));
+			exit;
+		}
+		
+		$this->module->validateOrder(
+			(int)$cart->id
+			,Configuration::get('PS_OS_PREPARATION') // the status
+			,$sc_params['amount']
+			,$this->module->displayName
+		//    ,null
+		//    ,null // for the mail
+		//    ,(int)$currency->id
+		//    ,false
+		//    ,$customer->secure_key
+		);
+		
+	}
 }

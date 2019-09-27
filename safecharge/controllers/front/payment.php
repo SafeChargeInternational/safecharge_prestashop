@@ -20,6 +20,10 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
     {
         parent::initContent();
         
+		if(isset($_SESSION['sc_order_vars'])) {
+			unset($_SESSION['sc_order_vars']);
+		}
+		
         if(
             !Configuration::get('SC_MERCHANT_ID')
             || !Configuration::get('SC_MERCHANT_SITE_ID')
@@ -32,16 +36,22 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         
         $_SESSION['sc_create_logs'] = Configuration::get('SC_CREATE_LOGS');
 
-        // continie d3d p3d payment
-        if(isset($_REQUEST['PaRes']) && !empty($_REQUEST['PaRes'])) {
-            $this->payWithD3dP3d();
-            return;
-        }
-        elseif(Tools::getValue('prestaShopAction', false) == 'showError') {
+        // continue d3d p3d payment
+//        if(isset($_REQUEST['PaRes']) && !empty($_REQUEST['PaRes'])) {
+//            $this->payWithD3dP3d();
+//            return;
+//        }
+        if(Tools::getValue('prestaShopAction', false) == 'showError') {
             $this->scOrderError();
             return;
         }
-        elseif(Tools::getValue('prestaShopAction', false) == 'getDMN') {
+        
+		if(Tools::getValue('prestaShopAction', false) == 'showCompleted') {
+            $this->scOrderCompleted();
+            return;
+        }
+        
+		if(Tools::getValue('prestaShopAction', false) == 'getDMN') {
             $this->scGetDMN();
             return;
         }
@@ -60,6 +70,77 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             $order_time     = date('YmdHis', time());
             $is_user_logged = (bool)$this->context->customer->isLogged();
             $test_mode      = Configuration::get('SC_TEST_MODE');
+			
+			$total_amount	= number_format($cart->getOrderTotal(), 2, '.', '');
+			
+			# when use WebSDK
+			if(!empty($_POST['sc_transaction_id'])) {
+				SC_HELPER::create_log('WebSDK Order');
+				
+				// save order
+				$res = $this->module->validateOrder(
+					(int)$cart->id
+					,Configuration::get('PS_OS_PREPARATION') // the status
+					,$total_amount
+					,$this->module->displayName
+				);
+
+				if(!$res) {
+					SC_HELPER::create_log('Order was not validated');
+
+					Tools::redirect($this->context->link->getModuleLink(
+						'safecharge',
+						'payment',
+						array('prestaShopAction' => 'showError')
+					));
+				}
+
+				$path_to_dmn_file = SC_CACHE_DIR . $cart->id . '.txt';
+
+				if(file_exists($path_to_dmn_file)) {
+					if(!is_readable($path_to_dmn_file)) {
+						SC_HELPER::create_log('The DMN file for Order with Cart ID : ' 
+							. $cart->id . ' is not readable!');
+
+						Tools::redirect($this->context->link->getModuleLink(
+							'safecharge',
+							'payment',
+							array('prestaShopAction' => 'showError')
+						));
+					}
+
+					$dmn_params = json_decode(file_get_contents($path_to_dmn_file), true);
+					
+					// call the DMN URL to update STATUS
+					$url = $this->context->link
+						->getModuleLink('safecharge', 'payment', $dmn_params);
+
+					SC_HELPER::create_log('Internal DMN call');
+
+					@unlink($path_to_dmn_file);
+
+					$ch = curl_init();
+
+					curl_setopt($ch, CURLOPT_URL, $url);
+					curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+					curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+					curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+					curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+					$resp = curl_exec($ch);
+					curl_close($ch);
+
+				}
+				else {
+					SC_HELPER::create_log('DMN file does not exists.');
+				}
+
+				Tools::redirect($this->context->link->getModuleLink(
+					'safecharge',
+					'payment',
+					array('prestaShopAction' => 'showCompleted')
+				));
+			}
 
             # get order data
             $success_url    = $this->context->link->getPageLink(
@@ -73,18 +154,24 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                     'key'       => $customer->secure_key,
                 )
             );
-            
+			
             $_SESSION['SC_SUCCESS_URL'] = $success_url;
             
             $pending_url    = $success_url;
-            $error_url      = $this->context->link
+			$back_url       = $this->context->link->getPageLink('order');
+            
+			$error_url      = $this->context->link
                 ->getModuleLink('safecharge', 'payment', array('prestaShopAction' => 'showError'));
-            $back_url       = $this->context->link->getPageLink('order');
-            $notify_url     = $this->context->link
-                ->getModuleLink('safecharge', 'payment', array(
-                    'prestaShopAction'  => 'getDMN',
-                    'sc_create_logs'       => $_SESSION['sc_create_logs'],
-                ));
+            
+			$notify_url     = $this->context->link
+                ->getModuleLink(
+					'safecharge', 
+					'payment', 
+					array(
+						'prestaShopAction'  => 'getDMN',
+						'sc_create_logs'       => $_SESSION['sc_create_logs'],
+					)
+				);
             
             if(Configuration::get('SC_HTTP_NOTIFY') == 'yes') {
                 $notify_url = str_repeat('https://', 'http://', $notify_url);
@@ -103,7 +190,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 
             $country_del = new Country((int)($address_delivery->id_country), Configuration::get('PS_LANG_DEFAULT'));
             
-            $total_amount = number_format($cart->getOrderTotal(), 2, '.', '');
             if($total_amount < 0) {
                 $total_amount = number_format(0, 2, '.', '');
             }
@@ -111,8 +197,12 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         }
         catch(Exception $e) {
             SC_HELPER::create_log($e->getMessage(), 'Process payment Exception: ');
-            Tools::redirect($this->context->link
-                ->getModuleLink('safecharge', 'payment', array('prestaShopAction' => 'showError')));
+            
+			Tools::redirect($this->context->link->getModuleLink(
+				'safecharge', 
+				'payment', 
+				array('prestaShopAction' => 'showError')
+			));
         }
         
         # REST API flow
@@ -213,34 +303,35 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             ));
             
             // in case of UPO
-            if(is_numeric(@$_POST['sc_payment_method'])) {
-                $sc_params['userPaymentOption'] = array(
-                    'userPaymentOptionId' => $_POST['sc_payment_method'],
-                    'CVV' => $_POST['upo_cvv_field_' . $_POST['sc_payment_method']],
-                );
-                
-                $sc_params['isDynamic3D'] = 1;
-                $endpoint_url = $test_mode == 'no' ? SC_LIVE_D3D_URL : SC_TEST_D3D_URL;
-            }
+//            if(is_numeric(@$_POST['sc_payment_method'])) {
+//                $sc_params['userPaymentOption'] = array(
+//                    'userPaymentOptionId' => $_POST['sc_payment_method'],
+//                    'CVV' => $_POST['upo_cvv_field_' . $_POST['sc_payment_method']],
+//                );
+//                
+//                $sc_params['isDynamic3D'] = 1;
+//                $endpoint_url = $test_mode == 'no' ? SC_LIVE_D3D_URL : SC_TEST_D3D_URL;
+//            }
             // in case of Card
-            elseif(in_array(@$_POST['sc_payment_method'], array('cc_card', 'dc_card'))) {
-                if(isset($_POST[$_POST['sc_payment_method']]['ccTempToken'])) {
-                    $sc_params['cardData']['ccTempToken'] = $_POST[$_POST['sc_payment_method']]['ccTempToken'];
-                }
-                
-                if(isset($_POST[$_POST['sc_payment_method']]['CVV'])) {
-                    $sc_params['cardData']['CVV'] = $_POST[$_POST['sc_payment_method']]['CVV'];
-                }
-                
-                if(isset($_POST[$_POST['sc_payment_method']]['cardHolderName'])) {
-                    $sc_params['cardData']['cardHolderName'] = $_POST[$_POST['sc_payment_method']]['cardHolderName'];
-                }
-
-                $sc_params['isDynamic3D'] = 1;
-                $endpoint_url = $test_mode == 'no' ? SC_LIVE_D3D_URL : SC_TEST_D3D_URL;
-            }
+//            elseif(in_array(@$_POST['sc_payment_method'], array('cc_card', 'dc_card'))) {
+//                if(isset($_POST[$_POST['sc_payment_method']]['ccTempToken'])) {
+//                    $sc_params['cardData']['ccTempToken'] = $_POST[$_POST['sc_payment_method']]['ccTempToken'];
+//                }
+//                
+//                if(isset($_POST[$_POST['sc_payment_method']]['CVV'])) {
+//                    $sc_params['cardData']['CVV'] = $_POST[$_POST['sc_payment_method']]['CVV'];
+//                }
+//                
+//                if(isset($_POST[$_POST['sc_payment_method']]['cardHolderName'])) {
+//                    $sc_params['cardData']['cardHolderName'] = $_POST[$_POST['sc_payment_method']]['cardHolderName'];
+//                }
+//
+//                $sc_params['isDynamic3D'] = 1;
+//                $endpoint_url = $test_mode == 'no' ? SC_LIVE_D3D_URL : SC_TEST_D3D_URL;
+//            }
             // in case of APM
-            elseif(@$_POST['sc_payment_method']) {
+//            else
+			if(@$_POST['sc_payment_method']) {
                 $endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_URL : SC_TEST_PAYMENT_URL;
                 $sc_params['paymentMethod'] = $_POST['sc_payment_method'];
                 
@@ -263,17 +354,16 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             }
             
             // save order
-            $this->module->validateOrder(
+            $res = $this->module->validateOrder(
                 (int)$cart->id
                 ,Configuration::get('PS_OS_PREPARATION') // the status
                 ,$sc_params['amount']
                 ,$this->module->displayName
-            //    ,null
-            //    ,null // for the mail
-            //    ,(int)$currency->id
-            //    ,false
-            //    ,$customer->secure_key
             );
+			
+			if(!$res) {
+				Tools::redirect($error_url);
+			}
             
             $final_url = $success_url;
             
@@ -285,63 +375,64 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                  * Possible Scenarios for Dynamic 3D (isDynamic3D = 1)
                  * prepare the new session data
                  */
-                if($payment_method == 'd3d') {
-                    $params_p3d = $params;
-                    
-                    $params_p3d['orderId']          = $resp['orderId'];
-                    $params_p3d['transactionType']  = @$resp['transactionType'];
-                    $params_p3d['paResponse']       = '';
-                    
-                    $_SESSION['SC_P3D_Params'] = $params_p3d;
-                    
-                    // case 1
-                    if(
-                        isset($resp['acsUrl'], $resp['threeDFlow'])
-                        && !empty($resp['acsUrl'])
-                        && intval($resp['threeDFlow']) == 1
-                    ) {
-                        SC_HELPER::create_log('D3D case 1');
-                        SC_HELPER::create_log($sc_params['acsUrl'], 'acsUrl: ');
-                    
-                        // step 1 - go to acsUrl, it will return us to Pending page
-                        $final_url = $resp['acsUrl'];
-                        
-                        $this->context->smarty->assign('PaReq',  $resp['paRequest']);
-                        // continue the payment here
-                        $this->context->smarty->assign(
-                            'TermUrl',
-                            $this->context->link->getModuleLink(
-                                'safecharge',
-                                'payment',
-                                array('sc_create_logs' => $_SESSION['sc_create_logs'])
-                            )
-                        );
-                        
-                        SC_HELPER::create_log(
-                            array(
-                                $resp['acsUrl'],
-                                $resp['paRequest'],
-                                $this->context->link->getModuleLink(
-                                    'safecharge',
-                                    'payment',
-                                    array('sc_create_logs' => $_SESSION['sc_create_logs'])
-                                )
-                            ),
-                            'params for acsUrl: '
-                        );
-                        
-                        // step 2 - wait for the DMN
-                    }
-                    // case 2
-                    elseif(isset($resp['threeDFlow']) && intval($resp['threeDFlow']) == 1) {
-                        SC_HELPER::create_log('process_payment() D3D case 2.');
-                        $this->payWithD3dP3d(); // we exit there
-                    }
-                    // case 3 do nothing
-                }
+//                if($payment_method == 'd3d') {
+//                    $params_p3d = $params;
+//                    
+//                    $params_p3d['orderId']          = $resp['orderId'];
+//                    $params_p3d['transactionType']  = @$resp['transactionType'];
+//                    $params_p3d['paResponse']       = '';
+//                    
+//                    $_SESSION['SC_P3D_Params'] = $params_p3d;
+//                    
+//                    // case 1
+//                    if(
+//                        isset($resp['acsUrl'], $resp['threeDFlow'])
+//                        && !empty($resp['acsUrl'])
+//                        && intval($resp['threeDFlow']) == 1
+//                    ) {
+//                        SC_HELPER::create_log('D3D case 1');
+//                        SC_HELPER::create_log($sc_params['acsUrl'], 'acsUrl: ');
+//                    
+//                        // step 1 - go to acsUrl, it will return us to Pending page
+//                        $final_url = $resp['acsUrl'];
+//                        
+//                        $this->context->smarty->assign('PaReq',  $resp['paRequest']);
+//                        // continue the payment here
+//                        $this->context->smarty->assign(
+//                            'TermUrl',
+//                            $this->context->link->getModuleLink(
+//                                'safecharge',
+//                                'payment',
+//                                array('sc_create_logs' => $_SESSION['sc_create_logs'])
+//                            )
+//                        );
+//                        
+//                        SC_HELPER::create_log(
+//                            array(
+//                                $resp['acsUrl'],
+//                                $resp['paRequest'],
+//                                $this->context->link->getModuleLink(
+//                                    'safecharge',
+//                                    'payment',
+//                                    array('sc_create_logs' => $_SESSION['sc_create_logs'])
+//                                )
+//                            ),
+//                            'params for acsUrl: '
+//                        );
+//                        
+//                        // step 2 - wait for the DMN
+//                    }
+//                    // case 2
+//                    elseif(isset($resp['threeDFlow']) && intval($resp['threeDFlow']) == 1) {
+//                        SC_HELPER::create_log('process_payment() D3D case 2.');
+//                        $this->payWithD3dP3d(); // we exit there
+//                    }
+//                    // case 3 do nothing
+//                }
                 // The case with D3D and P3D END
                 // in case we have redirectURL
-                elseif(isset($resp['redirectURL']) && !empty($resp['redirectURL'])) {
+//                else
+				if(isset($resp['redirectURL']) && !empty($resp['redirectURL'])) {
                     SC_HELPER::create_log($resp['redirectURL'], 'redirectURL:');
                     $final_url = $resp['redirectURL'];
                 }
@@ -350,124 +441,124 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             $this->context->smarty->assign('finalUrl',  $final_url);
         }
         # Cashier flow
-        else {
-            $this->context->smarty->assign('scApi', 'cashier');
-            
-            $sc_params = array(
-                'merchant_id'           => Configuration::get('SC_MERCHANT_ID'),
-                'merchant_site_id'      => Configuration::get('SC_MERCHANT_SITE_ID'),
-                'time_stamp'            => $order_time,
-                'encoding'              => 'utf-8',
-                'version'               => '4.0.0',
-                'success_url'           => $success_url,
-                'pending_url'           => $pending_url,
-                'error_url'             => $error_url,
-                'back_url'              => $back_url,
-                'notify_url'            => $notify_url,
-                'invoice_id'            => $cart->id . '_' . $order_time,
-                'merchant_unique_id'    => $cart->id,
-                'first_name'            => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->firstname)),
-                'last_name'             => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->lastname)),
-                'address1'              => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->address1)),
-                'address2'              => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->address2)),
-                'zip'                   => $address_invoice->postcode,
-                'city'                  => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->city)),
-                'state'                 => strlen($address_invoice->id_state) == 2
-                    ? $address_invoice->id_state : substr($address_invoice->id_state, 0, 2),
-                'country'               => $country_inv->iso_code,
-                'phone1'                => urlencode(preg_replace("/[[:punct:]]/", '', $phone)),
-                'email'                 => $customer->email,
-                'user_token_id'         => $is_user_logged ? $customer->email : '',
-                'shippingFirstName'     => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->firstname)),
-                'shippingLastName'      => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->lastname)),
-                'shippingAddress'       => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->address1)),
-                'shippingCity'          => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->city)),
-                'shippingCountry'       => $country_del->iso_code,
-                'shippingZip'           => $address_delivery->postcode,
-                'user_token'            => 'auto',
-                'total_amount'          => $total_amount,
-                'merchantLocale'        => $this->context->language->locale,
-                'currency'              => $currency->iso_code,
-                'webMasterId'           => 'PrestsShop ' . _PS_VERSION_,
-            );
-            
-            $items = $items_price = 0;
-            $products = $cart->getProducts(true);
-            foreach($products as $product) {
-                $items++;
-
-                $single_price = number_format(($product['total_wt'] / $product['quantity']), 2, '.', '');
-                $items_price += $product['total_wt'];
-
-                $sc_params['item_name_'.$items]      = urlencode($product['name']);
-                $sc_params['item_number_'.$items]    = $product['id_product'];
-                $sc_params['item_quantity_'.$items]  = $product['quantity'];
-                $sc_params['item_amount_'.$items]    = $single_price;
-            }
-            
-            $sc_params['numberofitems'] = $items;
-            
-            $discount = number_format($cart->getOrderTotal(true, Cart::ONLY_DISCOUNTS), 2, '.', '');
-            $handling = number_format($cart->getOrderTotal(true, Cart::ONLY_SHIPPING), 2, '.', '');
-            
-            // last check for correct calculations
-            $test_diff = round($items_price + $handling - $discount - $sc_params['total_amount'], 2);
-            
-            if($test_diff != 0) {
-                SC_HELPER::create_log($handling, 'handling before $test_diff: ');
-                SC_HELPER::create_log($discount, 'discount_total before $test_diff: ');
-                SC_HELPER::create_log($test_diff, '$test_diff: ');
-                
-                if($test_diff > 0) {
-                    if($handling - $test_diff >= 0) {
-						$handling -= $test_diff; // will decrease
-					}
-                    else {
-                        $discount += $test_diff; // will increase
-                    }
-					
-				}
-				else {
-                    if($discount + $test_diff > 0) {
-                        $discount += $test_diff; // will decrease
-                    }
-                    else {
-                        $handling += abs($test_diff); // will increase
-                    }
-				}
-            }
-            
-            $sc_params['discount'] = number_format($discount, 2, '.', '');
-            $sc_params['handling'] = number_format($handling, 2, '.', '');
-            
-            // the end point URL depends of the test mode and selected payment api
-            $action_url = Configuration::get('SC_TEST_MODE') == 'yes'
-                ? SC_TEST_CASHIER_URL : SC_LIVE_CASHIER_URL;
-            $this->context->smarty->assign('action_url',    $action_url);
-            
-            $for_checksum = Configuration::get('SC_SECRET_KEY') . implode('', $sc_params);
-            
-            $sc_params['checksum'] = hash(
-                Configuration::get('SC_HASH_TYPE'),
-                stripslashes($for_checksum)
-            );
-            
-            SC_HELPER::create_log($sc_params, 'Cashier inputs: ');
-            
-            $this->module->validateOrder(
-                (int)$cart->id
-                ,Configuration::get('PS_OS_PREPARATION')
-                ,$sc_params['total_amount']
-                ,$this->module->displayName
-            //    ,null
-            //    ,null // for the mail
-            //    ,(int)$currency->id
-            //    ,false
-            //    ,$customer->secure_key
-            );
-            
-            $this->context->smarty->assign('order_params',  $sc_params);
-        }
+//        else {
+//            $this->context->smarty->assign('scApi', 'cashier');
+//            
+//            $sc_params = array(
+//                'merchant_id'           => Configuration::get('SC_MERCHANT_ID'),
+//                'merchant_site_id'      => Configuration::get('SC_MERCHANT_SITE_ID'),
+//                'time_stamp'            => $order_time,
+//                'encoding'              => 'utf-8',
+//                'version'               => '4.0.0',
+//                'success_url'           => $success_url,
+//                'pending_url'           => $pending_url,
+//                'error_url'             => $error_url,
+//                'back_url'              => $back_url,
+//                'notify_url'            => $notify_url,
+//                'invoice_id'            => $cart->id . '_' . $order_time,
+//                'merchant_unique_id'    => $cart->id,
+//                'first_name'            => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->firstname)),
+//                'last_name'             => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->lastname)),
+//                'address1'              => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->address1)),
+//                'address2'              => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->address2)),
+//                'zip'                   => $address_invoice->postcode,
+//                'city'                  => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->city)),
+//                'state'                 => strlen($address_invoice->id_state) == 2
+//                    ? $address_invoice->id_state : substr($address_invoice->id_state, 0, 2),
+//                'country'               => $country_inv->iso_code,
+//                'phone1'                => urlencode(preg_replace("/[[:punct:]]/", '', $phone)),
+//                'email'                 => $customer->email,
+//                'user_token_id'         => $is_user_logged ? $customer->email : '',
+//                'shippingFirstName'     => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->firstname)),
+//                'shippingLastName'      => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->lastname)),
+//                'shippingAddress'       => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->address1)),
+//                'shippingCity'          => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->city)),
+//                'shippingCountry'       => $country_del->iso_code,
+//                'shippingZip'           => $address_delivery->postcode,
+//                'user_token'            => 'auto',
+//                'total_amount'          => $total_amount,
+//                'merchantLocale'        => $this->context->language->locale,
+//                'currency'              => $currency->iso_code,
+//                'webMasterId'           => 'PrestsShop ' . _PS_VERSION_,
+//            );
+//            
+//            $items = $items_price = 0;
+//            $products = $cart->getProducts(true);
+//            foreach($products as $product) {
+//                $items++;
+//
+//                $single_price = number_format(($product['total_wt'] / $product['quantity']), 2, '.', '');
+//                $items_price += $product['total_wt'];
+//
+//                $sc_params['item_name_'.$items]      = urlencode($product['name']);
+//                $sc_params['item_number_'.$items]    = $product['id_product'];
+//                $sc_params['item_quantity_'.$items]  = $product['quantity'];
+//                $sc_params['item_amount_'.$items]    = $single_price;
+//            }
+//            
+//            $sc_params['numberofitems'] = $items;
+//            
+//            $discount = number_format($cart->getOrderTotal(true, Cart::ONLY_DISCOUNTS), 2, '.', '');
+//            $handling = number_format($cart->getOrderTotal(true, Cart::ONLY_SHIPPING), 2, '.', '');
+//            
+//            // last check for correct calculations
+//            $test_diff = round($items_price + $handling - $discount - $sc_params['total_amount'], 2);
+//            
+//            if($test_diff != 0) {
+//                SC_HELPER::create_log($handling, 'handling before $test_diff: ');
+//                SC_HELPER::create_log($discount, 'discount_total before $test_diff: ');
+//                SC_HELPER::create_log($test_diff, '$test_diff: ');
+//                
+//                if($test_diff > 0) {
+//                    if($handling - $test_diff >= 0) {
+//						$handling -= $test_diff; // will decrease
+//					}
+//                    else {
+//                        $discount += $test_diff; // will increase
+//                    }
+//					
+//				}
+//				else {
+//                    if($discount + $test_diff > 0) {
+//                        $discount += $test_diff; // will decrease
+//                    }
+//                    else {
+//                        $handling += abs($test_diff); // will increase
+//                    }
+//				}
+//            }
+//            
+//            $sc_params['discount'] = number_format($discount, 2, '.', '');
+//            $sc_params['handling'] = number_format($handling, 2, '.', '');
+//            
+//            // the end point URL depends of the test mode and selected payment api
+//            $action_url = Configuration::get('SC_TEST_MODE') == 'yes'
+//                ? SC_TEST_CASHIER_URL : SC_LIVE_CASHIER_URL;
+//            $this->context->smarty->assign('action_url',    $action_url);
+//            
+//            $for_checksum = Configuration::get('SC_SECRET_KEY') . implode('', $sc_params);
+//            
+//            $sc_params['checksum'] = hash(
+//                Configuration::get('SC_HASH_TYPE'),
+//                stripslashes($for_checksum)
+//            );
+//            
+//            SC_HELPER::create_log($sc_params, 'Cashier inputs: ');
+//            
+//            $this->module->validateOrder(
+//                (int)$cart->id
+//                ,Configuration::get('PS_OS_PREPARATION')
+//                ,$sc_params['total_amount']
+//                ,$this->module->displayName
+//            //    ,null
+//            //    ,null // for the mail
+//            //    ,(int)$currency->id
+//            //    ,false
+//            //    ,$customer->secure_key
+//            );
+//            
+//            $this->context->smarty->assign('order_params',  $sc_params);
+//        }
         
         $this->setTemplate('module:safecharge/views/templates/front/form.tpl');
     }
@@ -475,6 +566,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
     /**
      * Function payWithD3dP3d
      * After we get the DMN form the issuer/bank call this method to continue the flow.
+	 * 
+	 * @deprecated
      */
     private function payWithD3dP3d()
     {
@@ -547,6 +640,15 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
     {
         $this->setTemplate('module:safecharge/views/templates/front/order_error.tpl');
     }
+	
+    /**
+     * Function scOrderError
+     * Shows a message when there is an error with the order
+     */
+    private function scOrderCompleted()
+    {
+        $this->setTemplate('module:safecharge/views/templates/front/order_completed.tpl');
+    }
     
     /**
      * Function scGetDMN
@@ -571,35 +673,66 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             && in_array($_REQUEST['transactionType'], array('Sale', 'Auth'))
         ) {
             // Cashier
-            if(!empty($_REQUEST['invoice_id'])) {
-                SC_HELPER::create_log('Cashier sale.');
+//            if(!empty($_REQUEST['invoice_id'])) {
+//                SC_HELPER::create_log('Cashier sale.');
+//                
+//                try {
+//                    $arr = explode("_", $_REQUEST['invoice_id']);
+//                    $cart_id  = intval($arr[0]);
+//                }
+//                catch (Exception $ex) {
+//                    SC_HELPER::create_log($ex->getMessage(), 'Cashier DMN Exception when try to get Order ID: ');
+//                    echo 'DMN Exception: ' . $ex->getMessage();
+//                    exit;
+//                }
+//            }
+			// REST and WebSDK
+//            else {
+			SC_HELPER::create_log('REST sale.');
+			
+			if(empty($_REQUEST['merchant_unique_id'])) {
+				SC_HELPER::create_log('Sale/Auth Error - merchant_unique_id is empty!');
+				echo 'Sale/Auth Error - merchant_unique_id is empty!';
+				exit;
+			}
                 
-                try {
-                    $arr = explode("_", $_REQUEST['invoice_id']);
-                    $cart_id  = intval($arr[0]);
-                }
-                catch (Exception $ex) {
-                    SC_HELPER::create_log($ex->getMessage(), 'Cashier DMN Exception when try to get Order ID: ');
-                    echo 'DMN Exception: ' . $ex->getMessage();
-                    exit;
-                }
-            }
-            // REST
-            else {
-                SC_HELPER::create_log('REST sale.');
-                
-                try {
-                    $cart_id = intval($_REQUEST['merchant_unique_id']);
-                }
-                catch (Exception $ex) {
-                    SC_HELPER::create_log($ex->getMessage(), 'REST DMN Exception when try to get Order ID: ');
-                    echo 'DMN Exception: ' . $ex->getMessage();
-                    exit;
-                }
-            }
+			try {
+//					$cart_id = intval($_REQUEST['merchant_unique_id']);
+//                }
+//                catch (Exception $ex) {
+//                    SC_HELPER::create_log($ex->getMessage(), 'REST DMN Exception when try to get Order ID: ');
+//                    echo 'DMN Exception: ' . $ex->getMessage();
+//                    exit;
+//                }
+//            }
             
-            try {
-                $order_id = Order::getOrderByCartId($cart_id);
+//            try {
+//                $order_id = Order::getIdByCartId($cart_id);
+                $order_id = Order::getIdByCartId($_REQUEST['merchant_unique_id']);
+				
+				// in case when DMN came before the system save the Order
+				// save the DMN as temp file
+				if(false === $order_id) {
+					if(!is_dir(SC_CACHE_DIR)) {
+						SC_HELPER::create_log('Error: Cache directory does not exists!');
+						echo 'Error: Cache directory does not exists!';
+						exit;
+					}
+					
+					if(file_put_contents(
+						SC_CACHE_DIR . $_REQUEST['merchant_unique_id'] . '.txt', 
+						json_encode($_REQUEST))
+					) {
+						SC_HELPER::create_log('The DMN was saved into cache file.');
+						echo 'The DMN was saved into cache file.';
+						exit;
+					}
+					
+					SC_HELPER::create_log('Error when tried to save the DMN into file!');
+					echo 'Error when tried to save the DMN into file!';
+					exit;
+				}
+				
                 $order_info = new Order($order_id);
                 $this->updateCustomPaymentFields($order_id);
 

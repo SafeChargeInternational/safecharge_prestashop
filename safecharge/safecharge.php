@@ -6,6 +6,10 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+if(!isset($_SESSION)) {
+	session_start();
+}
+
 require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'sc_config.php';
 require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'SC_HELPER.php';
 require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'sc_versions_resolver.php';
@@ -54,7 +58,7 @@ class SafeCharge extends PaymentModule
             || !Configuration::updateValue('SC_MERCHANT_ID', '')
             || !Configuration::updateValue('SC_SECRET_KEY', '')
             || !$this->registerHook('payment')
-            || !$this->registerHook('paymentReturn')
+//            || !$this->registerHook('paymentReturn')
             || !$this->registerHook('paymentOptions')
             || !$this->registerHook('displayBackOfficeOrderActions')
             || !$this->registerHook('displayAdminOrderLeft')
@@ -137,7 +141,8 @@ class SafeCharge extends PaymentModule
             Configuration::updateValue('SC_MERCHANT_SITE_ID',   Tools::getValue('SC_MERCHANT_SITE_ID'));
             Configuration::updateValue('SC_SECRET_KEY',         Tools::getValue('SC_SECRET_KEY'));
             Configuration::updateValue('SC_HASH_TYPE',          Tools::getValue('SC_HASH_TYPE'));
-            Configuration::updateValue('SC_PAYMENT_METHOD',     Tools::getValue('SC_PAYMENT_METHOD'));
+        //    Configuration::updateValue('SC_PAYMENT_METHOD',     Tools::getValue('SC_PAYMENT_METHOD'));
+            Configuration::updateValue('SC_PAYMENT_METHOD',     'rest');
             Configuration::updateValue('SC_PAYMENT_ACTION',     Tools::getValue('SC_PAYMENT_ACTION'));
             Configuration::updateValue('SC_TEST_MODE',          Tools::getValue('SC_TEST_MODE'));
             Configuration::updateValue('SC_HTTP_NOTIFY',        Tools::getValue('SC_HTTP_NOTIFY'));
@@ -161,166 +166,28 @@ class SafeCharge extends PaymentModule
      
     public function hookPaymentOptions($params)
     {
-        if($this->isPayment() !== true){
+		SC_HELPER::create_log('hookPaymentOptions');
+		
+		if($this->isPayment() !== true){
             SC_HELPER::create_log('hookPaymentOptions isPayment not true.');
             return false;
         }
-        
-        global $smarty;
-        
-        // check and prepare the data for the APMs
-        $sc_api = Configuration::get('SC_PAYMENT_METHOD');
-        $smarty->assign('scApi', $sc_api);
-        
-        if($sc_api == 'rest') {
-            try {
-                $cart               = $this->context->cart;
-                $currency           = new Currency((int)($cart->id_currency));
-                $customer           = new Customer($cart->id_customer);
-                $address_invoice    = new Address((int)($cart->id_address_invoice));
-                $country_inv        = new Country((int)($address_invoice->id_country), Configuration::get('PS_LANG_DEFAULT'));
-                $is_user_logged     = (bool)$this->context->customer->isLogged();
-                $time               = date('YmdHis', time());
-                $test_mode          = Configuration::get('SC_TEST_MODE');
-                $hash               = Configuration::get('SC_HASH_TYPE');
-                $secret             = Configuration::get('SC_SECRET_KEY');
-
-                $error_url          = $this->context->link->getModuleLink(
-                    'safecharge',
-                    'payment',
-                    array('prestaShopAction' => 'showError')
-                );
-                
-                # get session token
-                $st_endpoint_url = $test_mode == 'yes' ? SC_TEST_SESSION_TOKEN_URL : SC_LIVE_SESSION_TOKEN_URL;
-                
-                $st_params = array(
-                    'merchantId'        => Configuration::get('SC_MERCHANT_ID'),
-                    'merchantSiteId'    => Configuration::get('SC_MERCHANT_SITE_ID'),
-                    'clientRequestId'   => $time. '_' .uniqid(),
-                    'timeStamp'         => $time,
-                );
-                
-                $st_params['checksum'] = hash($hash, implode('', $st_params) . $secret);
-                
-                $session_token_data = SC_HELPER::call_rest_api($st_endpoint_url, $st_params);
-                
-                if(@$session_token_data['status'] != 'SUCCESS') {
-                    SC_HELPER::create_log($session_token_data, 'getting getSessionToken error: ');
-                    return false;
-                }
-                # get session token END
-                
-                 # get APMs
-                $apms_params = array(
-                    'merchantId'        => $st_params['merchantId'],
-                    'merchantSiteId'    => $st_params['merchantSiteId'],
-                    'clientRequestId'   => $time. '_' .uniqid(),
-                    'timeStamp'         => $time,
-                );
-                
-                $apms_params['checksum']        = hash($hash, implode('', $apms_params) . $secret);
-                $apms_params['sessionToken']    = $session_token_data['sessionToken'];
-                $apms_params['currencyCode']    = $currency->iso_code;
-                $apms_params['countryCode']     = $country_inv->iso_code;
-                $apms_params['languageCode']    = substr($this->context->language->locale, 0, 2);
-                
-                $endpoint_url = $test_mode == 'yes' ? SC_TEST_REST_PAYMENT_METHODS_URL : SC_LIVE_REST_PAYMENT_METHODS_URL;
-                
-                $res = SC_HELPER::call_rest_api($endpoint_url, $apms_params);
-                
-                if(!is_array($res) || !isset($res['paymentMethods']) || empty($res['paymentMethods'])) {
-                    SC_HELPER::create_log($res, 'No APMs, response is:');
-                    return false;
-                }
-                
-                $payment_methods = $res['paymentMethods'];
-                # get APMs END
-                
-                # get UPOs
-                $upos = array();
-                $icons = array();
-
-                if(false && $is_user_logged) {
-                    $upos_params = array(
-                        'merchantId'        => $st_params['merchantId'],
-                        'merchantSiteId'    => $st_params['merchantSiteId'],
-                        'userTokenId'       => $customer->email,
-                        'clientRequestId'   => $cart->id,
-                        'timeStamp'         => $time,
-                    );
-                    
-                    $upos_params['checksum']    = hash($hash, implode('', $upos_params) . $secret);
-                    $endpoint_url = $test_mode == 'yes' ? SC_TEST_USER_UPOS_URL : SC_LIVE_USER_UPOS_URL;
-                    
-                    $upos_data = SC_HELPER::call_rest_api($endpoint_url, $upos_params);
-                    
-                    if(isset($upos_data['paymentMethods']) && $upos_data['paymentMethods']) {
-                        // add icons for the upos and remove UPOs not present in the APMs
-                        foreach($upos_data['paymentMethods'] as $upo_key => $upo) {
-                            if(
-                                @$upo['upoStatus'] != 'enabled'
-                                || (isset($upo['upoData']['ccCardNumber'])
-                                    && empty($upo['upoData']['ccCardNumber']))
-                                || (isset($upo['expiryDate'])
-                                    && strtotime($upo['expiryDate']) < strtotime(date('Ymd')))
-                            ) {
-                                continue;
-                            }
-
-                            // search in payment methods
-                            foreach($payment_methods as $pm) {
-                                if(@$pm['paymentMethod'] == @$upo['paymentMethodName']) {
-                                    if(
-                                        in_array(@$upo['paymentMethodName'], array('cc_card', 'dc_card'))
-                                        && @$upo['upoData']['brand']
-                                    ) {
-                                        $icons[@$upo['upoData']['brand']] = str_replace(
-                                            'default_cc_card',
-                                            $upo['upoData']['brand'],
-                                            $pm['logoURL']
-                                        );
-                                    }
-                                    else {
-                                        $icons[$pm['paymentMethod']] = $pm['logoURL'];
-                                    }
-
-                                    $upos[] = $upo;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-                # get UPOs END
-                
-                $this->context->smarty->assign('sessionToken', $session_token_data['sessionToken']);
-                $this->context->smarty->assign('languageCode', $apms_params['languageCode']);
-                $this->context->smarty->assign('upos', $upos);
-                $this->context->smarty->assign('paymentMethods', $payment_methods);
-                $this->context->smarty->assign('icons', $icons);
-                $this->context->smarty->assign('isTestEnv', $test_mode);
-                $this->context->smarty->assign('merchantSideId', $apms_params['merchantSiteId']);
-                $this->context->smarty->assign(
-                    'formAction',
-                    $this->context->link->getModuleLink('safecharge', 'payment')
-                );
-            }
-            catch(Exception $e) {
-                echo $e->getMessage();
-                SC_HELPER::create_log($e->getMessage(), 'hookPaymentOptions Exception: ');
-            }
-        }
-        
+		
+		$this->prepareOrderData();
+		
+		global $smarty;
+		
         $newOption = new PaymentOption();
-        $newOption->setModuleName($this->name)
+		
+        $newOption
+			->setModuleName($this->name)
             ->setCallToActionText($this->trans('Pay by SafeCharge', array(), 'Modules.safecharge'))
             ->setAction($this->context->link->getModuleLink($this->name, 'payment'))
             ->setAdditionalInformation($smarty->fetch('module:safecharge/views/templates/front/apms.tpl'));
         
         return [$newOption];
     }
-    
+	
     /**
      * Function hookDisplayBackOfficeOrderActions
      * Hook to display SC specific order actions
@@ -394,6 +261,8 @@ class SafeCharge extends PaymentModule
      * @global type $smarty
      * @param Order $params
      * @return boolean
+	 * 
+	 * @deprecated do not support Cashier anymore
      */
     public function hookPaymentReturn($params)
     {
@@ -647,6 +516,226 @@ class SafeCharge extends PaymentModule
         }
         
 		return false;
+	}
+	
+	private function prepareOrderData()
+	{
+		SC_HELPER::create_log('prepareOrderData');
+		
+		global $smarty;
+        
+        // check and prepare the data for the APMs
+        $sc_api = Configuration::get('SC_PAYMENT_METHOD');
+        $smarty->assign('scApi', $sc_api);
+        
+//        if($sc_api == 'rest') {
+		try {
+			$cart               = $this->context->cart;
+			$currency           = new Currency((int)($cart->id_currency));
+			$customer           = new Customer($cart->id_customer);
+			$address_invoice    = new Address((int)($cart->id_address_invoice));
+			$country_inv        = new Country((int)($address_invoice->id_country), Configuration::get('PS_LANG_DEFAULT'));
+//                $is_user_logged     = (bool)$this->context->customer->isLogged();
+			$time               = date('YmdHis', time());
+			$test_mode          = Configuration::get('SC_TEST_MODE');
+			$hash               = Configuration::get('SC_HASH_TYPE');
+			$secret             = Configuration::get('SC_SECRET_KEY');
+			$amount				= (string) number_format($cart->getOrderTotal(), 2, '.', '');
+			
+			if(
+				$_SESSION['sc_order_vars']['amount'] != $amount
+				|| $_SESSION['sc_order_vars']['currency'] != $currency->iso_code
+				|| $_SESSION['sc_order_vars']['languageCode'] != substr($this->context->language->locale, 0, 2)
+				|| $_SESSION['sc_order_vars']['isTestEnv'] != $test_mode
+				|| $_SESSION['sc_order_vars']['country'] != $country_inv->iso_code
+				|| (time() - $_SESSION['sc_order_vars']['create_time'] > 10*60*60)
+			) {
+
+				$error_url          = $this->context->link->getModuleLink(
+					'safecharge',
+					'payment',
+					array('prestaShopAction' => 'showError')
+				);
+
+				$success_url		= $this->context->link->getModuleLink(
+					'safecharge',
+					'payment',
+					array(
+						'prestaShopAction'	=> 'showCompleted',
+						'id_cart'			=> (int)$cart->id,
+						'id_module'			=> $this->id,
+						'status'			=> Configuration::get('PS_OS_PREPARATION'),
+						'amount'			=> $amount,
+						'module'			=> $this->displayName,
+						'key'				=> $customer->secure_key,
+					)
+				);
+
+				$notify_url     = $this->context->link
+					->getModuleLink('safecharge', 'payment', array(
+						'prestaShopAction'  => 'getDMN',
+						'sc_create_logs'       => $_SESSION['sc_create_logs'],
+					));
+
+				# Open Order
+				$oo_endpoint_url = 'yes' == $test_mode
+					? SC_TEST_OPEN_ORDER_URL : SC_LIVE_OPEN_ORDER_URL;
+
+				$oo_params = array(
+					'merchantId'        => Configuration::get('SC_MERCHANT_ID'),
+					'merchantSiteId'    => Configuration::get('SC_MERCHANT_SITE_ID'),
+					'clientRequestId'   => $time . '_' . uniqid(),
+					'clientUniqueId'	=> (int)$cart->id,
+					'amount'            => $amount,
+					'currency'          => $currency->iso_code,
+					'timeStamp'         => $time,
+					'urlDetails'        => array(
+						'successUrl'        => $success_url,
+						'failureUrl'        => $error_url,
+						'pendingUrl'        => $success_url,
+						'backUrl'			=> $this->context->link->getPageLink('order'),
+						'notificationUrl'   => $notify_url,
+					),
+					'deviceDetails'     => SC_HELPER::get_device_details(),
+					'userTokenId'       => $customer->email,
+					'billingAddress'    => array(
+						'country' => $country_inv->iso_code,
+					),
+				);
+
+				$oo_params['checksum'] = hash(
+					$hash,
+					$oo_params['merchantId'] . $oo_params['merchantSiteId'] . $oo_params['clientRequestId']
+						. $oo_params['amount'] . $oo_params['currency'] . $time . $secret
+				);
+
+				$resp = SC_HELPER::call_rest_api($oo_endpoint_url, $oo_params);
+
+				if(
+					empty($resp['sessionToken'])
+					|| empty($resp['status'])
+					|| 'SUCCESS' != $resp['status']
+				) {
+					return false;
+				}
+
+				$session_token = $resp['sessionToken'];
+				# Open Order END
+
+				 # get APMs
+				$apms_params = array(
+					'merchantId'        => $oo_params['merchantId'],
+					'merchantSiteId'    => $oo_params['merchantSiteId'],
+					'clientRequestId'   => $time. '_' .uniqid(),
+					'timeStamp'         => $time,
+				);
+
+				$apms_params['checksum']        = hash($hash, implode('', $apms_params) . $secret);
+				$apms_params['sessionToken']    = $session_token;
+				$apms_params['currencyCode']    = $currency->iso_code;
+				$apms_params['countryCode']     = $country_inv->iso_code;
+				$apms_params['languageCode']    = substr($this->context->language->locale, 0, 2);
+
+				$endpoint_url = $test_mode == 'yes' ? SC_TEST_REST_PAYMENT_METHODS_URL : SC_LIVE_REST_PAYMENT_METHODS_URL;
+
+				$res = SC_HELPER::call_rest_api($endpoint_url, $apms_params);
+
+				if(!is_array($res) || !isset($res['paymentMethods']) || empty($res['paymentMethods'])) {
+					SC_HELPER::create_log($res, 'No APMs, response is:');
+					return false;
+				}
+
+				$payment_methods = $res['paymentMethods'];
+				# get APMs END
+
+				# get UPOs
+				$upos = array();
+				$icons = array();
+
+	//                if(false && $is_user_logged) {
+	//                    $upos_params = array(
+	//                        'merchantId'        => $oo_params['merchantId'],
+	//                        'merchantSiteId'    => $oo_params['merchantSiteId'],
+	//                        'userTokenId'       => $customer->email,
+	//                        'clientRequestId'   => $cart->id,
+	//                        'timeStamp'         => $time,
+	//                    );
+	//                    
+	//                    $upos_params['checksum']    = hash($hash, implode('', $upos_params) . $secret);
+	//                    $endpoint_url = $test_mode == 'yes' ? SC_TEST_USER_UPOS_URL : SC_LIVE_USER_UPOS_URL;
+	//                    
+	//                    $upos_data = SC_HELPER::call_rest_api($endpoint_url, $upos_params);
+	//                    
+	//                    if(isset($upos_data['paymentMethods']) && $upos_data['paymentMethods']) {
+	//                        // add icons for the upos and remove UPOs not present in the APMs
+	//                        foreach($upos_data['paymentMethods'] as $upo_key => $upo) {
+	//                            if(
+	//                                @$upo['upoStatus'] != 'enabled'
+	//                                || (isset($upo['upoData']['ccCardNumber'])
+	//                                    && empty($upo['upoData']['ccCardNumber']))
+	//                                || (isset($upo['expiryDate'])
+	//                                    && strtotime($upo['expiryDate']) < strtotime(date('Ymd')))
+	//                            ) {
+	//                                continue;
+	//                            }
+	//
+	//                            // search in payment methods
+	//                            foreach($payment_methods as $pm) {
+	//                                if(@$pm['paymentMethod'] == @$upo['paymentMethodName']) {
+	//                                    if(
+	//                                        in_array(@$upo['paymentMethodName'], array('cc_card', 'dc_card'))
+	//                                        && @$upo['upoData']['brand']
+	//                                    ) {
+	//                                        $icons[@$upo['upoData']['brand']] = str_replace(
+	//                                            'default_cc_card',
+	//                                            $upo['upoData']['brand'],
+	//                                            $pm['logoURL']
+	//                                        );
+	//                                    }
+	//                                    else {
+	//                                        $icons[$pm['paymentMethod']] = $pm['logoURL'];
+	//                                    }
+	//
+	//                                    $upos[] = $upo;
+	//                                    break;
+	//                                }
+	//                            }
+	//                        }
+	//                    }
+	//                }
+				# get UPOs END
+
+				$_SESSION['sc_order_vars'] = array(
+					'create_time'		=> time(),
+					'sessionToken'		=> $session_token,
+					'amount'			=> $oo_params['amount'],
+					'currency'			=> $oo_params['currency'],
+					'languageCode'		=> $apms_params['languageCode'],
+					'country'			=> $country_inv->iso_code,
+					'upos'				=> $upos,
+					'paymentMethods'	=> $payment_methods,
+					'icons'				=> $icons,
+					'isTestEnv'			=> $test_mode,
+				);
+			}
+			
+			$this->context->smarty->assign('sessionToken',		$_SESSION['sc_order_vars']['sessionToken']);
+			$this->context->smarty->assign('amount',			$_SESSION['sc_order_vars']['amount']);
+			$this->context->smarty->assign('currency',			$_SESSION['sc_order_vars']['currency']);
+			$this->context->smarty->assign('languageCode',		$_SESSION['sc_order_vars']['languageCode']);
+			$this->context->smarty->assign('upos',				$_SESSION['sc_order_vars']['upos']);
+			$this->context->smarty->assign('paymentMethods',	$_SESSION['sc_order_vars']['paymentMethods']);
+			$this->context->smarty->assign('icons',				$_SESSION['sc_order_vars']['icons']);
+			$this->context->smarty->assign('isTestEnv',			$_SESSION['sc_order_vars']['isTestEnv']);
+			$this->context->smarty->assign('merchantId',		Configuration::get('SC_MERCHANT_ID'));
+			$this->context->smarty->assign('merchantSideId',	Configuration::get('SC_MERCHANT_SITE_ID'));
+			$this->context->smarty->assign('formAction',		$this->context->link->getModuleLink('safecharge', 'payment'));
+		}
+		catch(Exception $e) {
+			echo $e->getMessage();
+			SC_HELPER::create_log($e->getMessage(), 'hookPaymentOptions Exception: ');
+		}
+//        }
 	}
     
     /**

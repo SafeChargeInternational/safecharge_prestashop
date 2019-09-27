@@ -168,7 +168,7 @@
     </div>
 
     <form method="post" id="scForm" action="{$formAction}">
-        {if $upos}
+        {*{if $upos}
             <h3>{l s='Choose from you prefered payment methods:' mod='Modules.safecharge'}</h3>
             <ul id="sc_upos_list" class="">
                 {foreach $upos as $upo}
@@ -199,7 +199,7 @@
                 {/foreach}
             </ul>
             <br/>
-        {/if}
+        {/if}*}
 
         {if $paymentMethods}
             <h3>{l s='Choose from the other payment methods:' mod='Modules.safecharge'}</h3>
@@ -215,23 +215,27 @@
                         
                         {if in_array($pm.paymentMethod, array('cc_card', 'dc_card', 'paydotcom'))}
                             <div class="apm_fields" id="sc_{$pm.paymentMethod}">
-                                <div class="apm_field">
+                                {*<div class="apm_field">
                                     <div id="sc_card_number"></div>
-                                </div>
+                                </div>*}
 
                                 <div class="apm_field">
                                     <input type="text" id="sc_card_holder_name" name="{$pm.paymentMethod}[cardHolderName]" placeholder="Card holder name" style="padding-bottom: 2px !important;" />
                                 </div>
 
                                 <div class="apm_field">
+                                    <div id="card-field-placeholder"></div>
+                                </div>
+                                
+                                {*<div class="apm_field">
                                     <div id="sc_card_expiry"></div>
                                 </div>
 
                                 <div class="apm_field" style="border: 0px;">
                                     <div id="sc_card_cvc"></div>
-                                </div>
+                                </div>*}
                                 
-                                <input type="hidden" id="{$pm.paymentMethod}_ccTempToken" name="{$pm.paymentMethod}[ccTempToken]" />
+{*                                <input type="hidden" id="{$pm.paymentMethod}_ccTempToken" name="{$pm.paymentMethod}[ccTempToken]" />*}
                             </div>
                         {else}
                             <div class="apm_fields">
@@ -256,19 +260,21 @@
         {/if}
         
         <input type="hidden" name="lst" id="sc_lst" value="{$sessionToken}" />
+        <input type="hidden" name="sc_transaction_id" id="sc_transaction_id" value="" />
     </form>
 
     <script type="text/javascript">
         var selectedPM  = "";
         var payloadURL  = "";
-        var tokAPMs     = ['cc_card', 'dc_card', 'paydotcom'];
         
         // for the fields
-        var sfc = null;
-        var sfcFirstField = null;
-        var scData = {
-            merchantSiteId: {$merchantSideId}
-            ,sessionToken: "{$sessionToken}"
+        var sfc             = null;
+        var sfcFirstField   = null;
+        var card            = null;
+        var scData          = {
+            merchantSiteId  : "{$merchantSideId}",
+            merchantId      : "{$merchantId}",
+            sessionToken    : "{$sessionToken}"
         };
 
         {if $isTestEnv eq 'yes'}
@@ -285,30 +291,48 @@
 
             if(typeof selectedPM != 'undefined' && selectedPM != '') {
                 // use cards
-                if(selectedPM == 'cc_card' || selectedPM == 'dc_card' || selectedPM == 'paydotcom') {
-                    sfc.getToken(sfcFirstField).then(function(result) {
-                        if (result.status !== 'SUCCESS') {
-                            try {
-                                if(result.reason) {
-                                    alert(result.reason);
-                                }
-                                else if(result.error.message) {
-                                    alert(result.error.message);
-                                }
-                            }
-                            catch (exception) {
-                                console.log(exception);
-                                alert("{l s='Unexpected error, please try again later!' mod='Modules.safecharge'}");
-                            }
+                if(selectedPM == 'cc_card' || selectedPM == 'dc_card') {
+                    // create payment with WebSDK
+                    sfc.createPayment({
+                        sessionToken    : "{$sessionToken}",
+                        merchantId      : "{$merchantId}",
+                        merchantSiteId  : "{$merchantSiteId}",
+                        currency        : "{$currency}",
+                        amount          : "{$amount}",
+                        cardHolderName  : document.getElementById('sc_card_holder_name').value,
+                    //    paymentOption   : sfcFirstField
+                        paymentOption   : card
+                    }, function(resp){
+                        console.log(resp);
 
-                            $('#payment-confirmation button.btn.btn-primary').prop('disabled', false);
-                            $('#payment-confirmation button.btn.btn-primary .fast-right-spinner').addClass('sc_hide');
+                        if(typeof resp.result != 'undefined') {
+                            console.log(resp.result)
+
+                            if(resp.result == 'APPROVED' && resp.transactionId != 'undefined') {
+                                jQuery('#sc_transaction_id').val(resp.transactionId);
+                                jQuery('#scForm').submit();
+                                return;
+                            }
+                            else if(resp.result == 'DECLINED') {
+                                alert("{l s='Your Payment was DECLINED. Please try another payment method!' mod='Modules.safecharge'}");
+                            }
+                            else {
+                                if(resp.errorDescription != 'undefined' && resp.errorDescription != '') {
+                                    alert(resp.errorDescription);
+                                }
+                                else {
+                                    alert("{l s='Error with your Payment. Please try again later!' mod='Modules.safecharge'}");
+                                }
+                            }
                         }
                         else {
-                            jQuery('#' + selectedPM + '_ccTempToken').val(result.ccTempToken);
-                            jQuery('#sc_lst').val(result.sessionToken);
-                            jQuery('#scForm').submit();
+                            alert("{l s='Unexpected error, please try again later!' mod='Modules.safecharge'}");
+                            console.error('Error with SDK response: ' + resp);
+                            return;
                         }
+                        
+                        $('#payment-confirmation button.btn.btn-primary').prop('disabled', false);
+                        $('#payment-confirmation button.btn.btn-primary .fast-right-spinner').addClass('sc_hide');
                     });
                 }
                 // use APM data
@@ -407,7 +431,7 @@
                 invalid: 'invalid',
             };
             
-            var elementStyles = {
+            {*var elementStyles = {
                 base: {
                     fontSize: 14
                     ,color: 'black'
@@ -434,7 +458,34 @@
                 classes: elementClasses
                 ,style: elementStyles
             });
-            cardCvc.attach('#sc_card_cvc'); 
+            cardCvc.attach('#sc_card_cvc'); *}
+            
+            card = fields.create('card', {
+                iconStyle: 'solid',
+                style: {
+                    base: {
+                        iconColor: "#c4f0ff",
+                        color: "#000",
+                        fontWeight: 500,
+                        fontFamily: "Roboto, Open Sans, Segoe UI, sans-serif",
+                        fontSize: '15px',
+                        fontSmoothing: "antialiased",
+                        ":-webkit-autofill": {
+                            color: "#fce883"
+                        },
+                        "::placeholder": {
+                            color: "grey" 
+                        }
+                    },
+                    invalid: {
+                        iconColor: "#FFC7EE",
+                        color: "#FFC7EE"
+                    }
+                },
+                classes: elementClasses
+            });
+
+            card.attach('#card-field-placeholder');
         }
 
         window.onload = function() {

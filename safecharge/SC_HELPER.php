@@ -27,10 +27,10 @@ class SC_HELPER
             $params['deviceDetails'] = self::get_device_details();
         }
         
-        self::create_log($params, 'SC_REST_API, parameters for the REST API call: ');
+		self::create_log($url, 'REST API URL:');
+        self::create_log($params, 'SC_REST_API, parameters for the REST API call:');
         
         $json_post = json_encode($params);
-    //    self::create_log($json_post, 'params as json: ');
         
         try {
             $header =  array(
@@ -51,8 +51,6 @@ class SC_HELPER
 
             $resp = curl_exec($ch);
             curl_close ($ch);
-            
-            self::create_log($url, 'REST API URL: ');
         }
         catch(Exception $e) {
             self::create_log($e->getMessage(), 'Exception ERROR when call REST API: ');

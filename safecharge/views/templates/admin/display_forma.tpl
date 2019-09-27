@@ -50,7 +50,7 @@
                 </div>
             </div>
                     
-            <div class="form-group">
+            {*<div class="form-group">
                 <label class="control-label col-lg-3"> {l s='Payment solution' mod='Modules.safecharge'}</label>
                 <div class="col-lg-9">
                     <select name="SC_PAYMENT_METHOD">
@@ -58,7 +58,7 @@
                         <option value="cashier" {if Configuration::get('SC_PAYMENT_METHOD') eq 'cashier'}selected{/if}>{l s='Hosted payment page' mod='Modules.safecharge'}</option>
                     </select>
                 </div>
-            </div>
+            </div>*}
             
             <div class="form-group">
                 <label class="control-label col-lg-3"> {l s='Payment action' mod='Modules.safecharge'}</label>
