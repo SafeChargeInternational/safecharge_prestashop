@@ -164,8 +164,6 @@ class SafeCharge extends PaymentModule
      
     public function hookPaymentOptions($params)
     {
-		SC_HELPER::create_log('hookPaymentOptions');
-		
 		if($this->isPayment() !== true){
             SC_HELPER::create_log('hookPaymentOptions isPayment not true.');
             return false;
@@ -471,8 +469,6 @@ class SafeCharge extends PaymentModule
 	
 	private function prepareOrderData()
 	{
-		SC_HELPER::create_log('prepareOrderData');
-		
 		global $smarty;
         
         // check and prepare the data for the APMs
