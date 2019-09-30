@@ -36,11 +36,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         
         $_SESSION['sc_create_logs'] = Configuration::get('SC_CREATE_LOGS');
 
-        // continue d3d p3d payment
-//        if(isset($_REQUEST['PaRes']) && !empty($_REQUEST['PaRes'])) {
-//            $this->payWithD3dP3d();
-//            return;
-//        }
         if(Tools::getValue('prestaShopAction', false) == 'showError') {
             $this->scOrderError();
             return;
@@ -82,7 +77,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					(int)$cart->id
 					,Configuration::get('PS_OS_PREPARATION') // the status
 					,$total_amount
-					,$this->module->displayName
+					,$this->module->displayName . ' - ' . $this->l('Card')
 				);
 
 				if(!$res) {
@@ -155,8 +150,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 )
             );
 			
-            $_SESSION['SC_SUCCESS_URL'] = $success_url;
-            
             $pending_url    = $success_url;
 			$back_url       = $this->context->link->getPageLink('order');
             
@@ -205,433 +198,146 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			));
         }
         
-        # REST API flow
-        if(Configuration::get('SC_PAYMENT_METHOD') == 'rest') {
-            if(empty($_POST)) {
-                SC_HELPER::create_log('REST API Order, but post array is empty.');
-                Tools::redirect($error_url);
-            }
-            
-            SC_HELPER::create_log('REST API Order');
-            
-            $this->context->smarty->assign('scApi', 'rest');
-            
-            $sc_params = array(
-                'merchantId'        => Configuration::get('SC_MERCHANT_ID'),
-                'merchantSiteId'    => Configuration::get('SC_MERCHANT_SITE_ID'),
-                'userTokenId'       => $is_user_logged ? $customer->email : '',
-                'clientUniqueId'    => $cart->id,
-                'clientRequestId'   => date('YmdHis', time()) .'_'. uniqid(),
-                'currency'          => $currency->iso_code,
-                'amount'            => (string) $total_amount,
-                'amountDetails'     => array(
-                    'totalShipping'     => '0.00',
-                    'totalHandling'     => '0.00',
-                    'totalDiscount'     => '0.00',
-                    'totalTax'          => '0.00',
-                ),
-                'userDetails'       => array(
-                    'firstName'         => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->firstname)),
-                    'lastName'          => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->lastname)),
-                    'address'           => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->address1)),
-                    'phone'             => urlencode(preg_replace("/[[:punct:]]/", '', $phone)),
-                    'zip'               => $address_invoice->postcode,
-                    'city'              => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->city)),
-                    'country'           => $country_inv->iso_code,
-                    'state'             => strlen($address_invoice->id_state) == 2
-											? $address_invoice->id_state : substr($address_invoice->id_state, 0, 2),
-                    'email'             => $customer->email,
-                    'county'            => '',
-                ),
-                'shippingAddress'   => array(
-                    'firstName'         => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->firstname)),
-                    'lastName'          => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->lastname)),
-                    'address'           => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->address1)),
-                    'cell'              => '',
-                    'phone'             => '',
-                    'zip'               => $address_delivery->postcode,
-                    'city'              => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->city)),
-                    'country'           => $country_del->iso_code,
-                    'state'             => '',
-                    'email'             => '',
-                    'shippingCounty'    => '',
-                ),
-                'urlDetails'        => array(
-                    'successUrl'        => $success_url,
-                    'failureUrl'        => $error_url,
-                    'pendingUrl'        => $pending_url,
-                    'notificationUrl'   => $notify_url,
-                ),
-                'timeStamp'         => $order_time,
-                'sessionToken'      => @$_POST['lst'],
-                'deviceDetails'     => SC_HELPER::get_device_details(),
-                'languageCode'      => substr($this->context->language->locale, 0, 2),
-                'webMasterId'       => 'PrestsShop ' . _PS_VERSION_,
-            );
-			
-			$sc_params['billingAddress'] = array(
-                'firstName'         => $sc_params['userDetails']['firstName'],
-                'lastName'          => $sc_params['userDetails']['lastName'],
-                'address'           => $sc_params['userDetails']['address'],
-                'cell'              => '',
-                'phone'             => $sc_params['userDetails']['phone'],
-                'zip'               => $sc_params['userDetails']['zip'],
-                'city'              => $sc_params['userDetails']['city'],
-                'country'           => $sc_params['userDetails']['country'],
-                'state'             => $sc_params['userDetails']['state'],
-                'email'             => $sc_params['userDetails']['email'],
-                'county'            => '',
-            );
-            
-            // for the REST set one combined item only
-            $sc_params['items'][0] = array(
-                'name'      => $cart->id,
-                'price'     => $sc_params['amount'],
-                'quantity'  => 1
-            );
-            
-            $sc_params['checksum'] = hash(
-                Configuration::get('SC_HASH_TYPE'),
-                stripslashes(
-                    $sc_params['merchantId']
-                    . $sc_params['merchantSiteId']
-                    . $sc_params['clientRequestId']
-                    . $sc_params['amount']
-                    . $sc_params['currency']
-                    . $sc_params['timeStamp']
-                    . Configuration::get('SC_SECRET_KEY')
-            ));
-            
-            // in case of UPO
-//            if(is_numeric(@$_POST['sc_payment_method'])) {
-//                $sc_params['userPaymentOption'] = array(
-//                    'userPaymentOptionId' => $_POST['sc_payment_method'],
-//                    'CVV' => $_POST['upo_cvv_field_' . $_POST['sc_payment_method']],
-//                );
-//                
-//                $sc_params['isDynamic3D'] = 1;
-//                $endpoint_url = $test_mode == 'no' ? SC_LIVE_D3D_URL : SC_TEST_D3D_URL;
-//            }
-            // in case of Card
-//            elseif(in_array(@$_POST['sc_payment_method'], array('cc_card', 'dc_card'))) {
-//                if(isset($_POST[$_POST['sc_payment_method']]['ccTempToken'])) {
-//                    $sc_params['cardData']['ccTempToken'] = $_POST[$_POST['sc_payment_method']]['ccTempToken'];
-//                }
-//                
-//                if(isset($_POST[$_POST['sc_payment_method']]['CVV'])) {
-//                    $sc_params['cardData']['CVV'] = $_POST[$_POST['sc_payment_method']]['CVV'];
-//                }
-//                
-//                if(isset($_POST[$_POST['sc_payment_method']]['cardHolderName'])) {
-//                    $sc_params['cardData']['cardHolderName'] = $_POST[$_POST['sc_payment_method']]['cardHolderName'];
-//                }
-//
-//                $sc_params['isDynamic3D'] = 1;
-//                $endpoint_url = $test_mode == 'no' ? SC_LIVE_D3D_URL : SC_TEST_D3D_URL;
-//            }
-            // in case of APM
-//            else
-			if(@$_POST['sc_payment_method']) {
-                $endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_URL : SC_TEST_PAYMENT_URL;
-                $sc_params['paymentMethod'] = $_POST['sc_payment_method'];
-                
-                if(isset($_POST[@$_POST['sc_payment_method']]) && is_array($_POST[$_POST['sc_payment_method']])) {
-                    $sc_params['userAccountDetails'] = $_POST[$_POST['sc_payment_method']];
-                }
-            }
-            
-            $resp = SC_HELPER::call_rest_api($endpoint_url, $sc_params);
-            
-            $req_status = $this->getRequestStatus($resp);
-            
-            if(
-                !$resp
-                || $req_status == 'ERROR'
-                || @$resp['transactionStatus'] == 'ERROR'
-                || @$resp['transactionStatus'] == 'DECLINED'
-            ) {
-                Tools::redirect($error_url);
-            }
-            
-            // save order
-            $res = $this->module->validateOrder(
-                (int)$cart->id
-                ,Configuration::get('PS_OS_PREPARATION') // the status
-                ,$sc_params['amount']
-                ,$this->module->displayName
-            );
-			
-			if(!$res) {
-				Tools::redirect($error_url);
+		if(empty($_POST)) {
+			SC_HELPER::create_log('REST API Order, but post array is empty.');
+			Tools::redirect($error_url);
+		}
+
+		$this->context->smarty->assign('scApi', 'rest');
+
+		$sc_params = array(
+			'merchantId'        => Configuration::get('SC_MERCHANT_ID'),
+			'merchantSiteId'    => Configuration::get('SC_MERCHANT_SITE_ID'),
+			'userTokenId'       => $is_user_logged ? $customer->email : '',
+			'clientUniqueId'    => $cart->id,
+			'clientRequestId'   => date('YmdHis', time()) .'_'. uniqid(),
+			'currency'          => $currency->iso_code,
+			'amount'            => (string) $total_amount,
+			'amountDetails'     => array(
+				'totalShipping'     => '0.00',
+				'totalHandling'     => '0.00',
+				'totalDiscount'     => '0.00',
+				'totalTax'          => '0.00',
+			),
+			'userDetails'       => array(
+				'firstName'         => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->firstname)),
+				'lastName'          => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->lastname)),
+				'address'           => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->address1)),
+				'phone'             => urlencode(preg_replace("/[[:punct:]]/", '', $phone)),
+				'zip'               => $address_invoice->postcode,
+				'city'              => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->city)),
+				'country'           => $country_inv->iso_code,
+				'state'             => strlen($address_invoice->id_state) == 2
+										? $address_invoice->id_state : substr($address_invoice->id_state, 0, 2),
+				'email'             => $customer->email,
+				'county'            => '',
+			),
+			'shippingAddress'   => array(
+				'firstName'         => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->firstname)),
+				'lastName'          => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->lastname)),
+				'address'           => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->address1)),
+				'cell'              => '',
+				'phone'             => '',
+				'zip'               => $address_delivery->postcode,
+				'city'              => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->city)),
+				'country'           => $country_del->iso_code,
+				'state'             => '',
+				'email'             => '',
+				'shippingCounty'    => '',
+			),
+			'urlDetails'        => array(
+				'successUrl'        => $success_url,
+				'failureUrl'        => $error_url,
+				'pendingUrl'        => $pending_url,
+				'notificationUrl'   => $notify_url,
+			),
+			'timeStamp'         => $order_time,
+			'sessionToken'      => @$_POST['lst'],
+			'deviceDetails'     => SC_HELPER::get_device_details(),
+			'languageCode'      => substr($this->context->language->locale, 0, 2),
+			'webMasterId'       => 'PrestsShop ' . _PS_VERSION_,
+		);
+
+		$sc_params['billingAddress'] = array(
+			'firstName'         => $sc_params['userDetails']['firstName'],
+			'lastName'          => $sc_params['userDetails']['lastName'],
+			'address'           => $sc_params['userDetails']['address'],
+			'cell'              => '',
+			'phone'             => $sc_params['userDetails']['phone'],
+			'zip'               => $sc_params['userDetails']['zip'],
+			'city'              => $sc_params['userDetails']['city'],
+			'country'           => $sc_params['userDetails']['country'],
+			'state'             => $sc_params['userDetails']['state'],
+			'email'             => $sc_params['userDetails']['email'],
+			'county'            => '',
+		);
+
+		$sc_params['items'][0] = array(
+			'name'      => $cart->id,
+			'price'     => $sc_params['amount'],
+			'quantity'  => 1
+		);
+
+		$sc_params['checksum'] = hash(
+			Configuration::get('SC_HASH_TYPE'),
+			stripslashes(
+				$sc_params['merchantId']
+				. $sc_params['merchantSiteId']
+				. $sc_params['clientRequestId']
+				. $sc_params['amount']
+				. $sc_params['currency']
+				. $sc_params['timeStamp']
+				. Configuration::get('SC_SECRET_KEY')
+		));
+
+		if(@$_POST['sc_payment_method']) {
+			$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_URL : SC_TEST_PAYMENT_URL;
+			$sc_params['paymentMethod'] = $_POST['sc_payment_method'];
+
+			if(isset($_POST[@$_POST['sc_payment_method']]) && is_array($_POST[$_POST['sc_payment_method']])) {
+				$sc_params['userAccountDetails'] = $_POST[$_POST['sc_payment_method']];
 			}
-            
-            $final_url = $success_url;
-            
-            if($req_status == 'SUCCESS') {
-                # The case with D3D and P3D
-                /* 
-                 * isDynamic3D is hardcoded to be 1, see SC_REST_API line 509
-                 * for the three cases see: https://www.safecharge.com/docs/API/?json#dynamic3D,
-                 * Possible Scenarios for Dynamic 3D (isDynamic3D = 1)
-                 * prepare the new session data
-                 */
-//                if($payment_method == 'd3d') {
-//                    $params_p3d = $params;
-//                    
-//                    $params_p3d['orderId']          = $resp['orderId'];
-//                    $params_p3d['transactionType']  = @$resp['transactionType'];
-//                    $params_p3d['paResponse']       = '';
-//                    
-//                    $_SESSION['SC_P3D_Params'] = $params_p3d;
-//                    
-//                    // case 1
-//                    if(
-//                        isset($resp['acsUrl'], $resp['threeDFlow'])
-//                        && !empty($resp['acsUrl'])
-//                        && intval($resp['threeDFlow']) == 1
-//                    ) {
-//                        SC_HELPER::create_log('D3D case 1');
-//                        SC_HELPER::create_log($sc_params['acsUrl'], 'acsUrl: ');
-//                    
-//                        // step 1 - go to acsUrl, it will return us to Pending page
-//                        $final_url = $resp['acsUrl'];
-//                        
-//                        $this->context->smarty->assign('PaReq',  $resp['paRequest']);
-//                        // continue the payment here
-//                        $this->context->smarty->assign(
-//                            'TermUrl',
-//                            $this->context->link->getModuleLink(
-//                                'safecharge',
-//                                'payment',
-//                                array('sc_create_logs' => $_SESSION['sc_create_logs'])
-//                            )
-//                        );
-//                        
-//                        SC_HELPER::create_log(
-//                            array(
-//                                $resp['acsUrl'],
-//                                $resp['paRequest'],
-//                                $this->context->link->getModuleLink(
-//                                    'safecharge',
-//                                    'payment',
-//                                    array('sc_create_logs' => $_SESSION['sc_create_logs'])
-//                                )
-//                            ),
-//                            'params for acsUrl: '
-//                        );
-//                        
-//                        // step 2 - wait for the DMN
-//                    }
-//                    // case 2
-//                    elseif(isset($resp['threeDFlow']) && intval($resp['threeDFlow']) == 1) {
-//                        SC_HELPER::create_log('process_payment() D3D case 2.');
-//                        $this->payWithD3dP3d(); // we exit there
-//                    }
-//                    // case 3 do nothing
-//                }
-                // The case with D3D and P3D END
-                // in case we have redirectURL
-//                else
-				if(isset($resp['redirectURL']) && !empty($resp['redirectURL'])) {
-                    SC_HELPER::create_log($resp['redirectURL'], 'redirectURL:');
-                    $final_url = $resp['redirectURL'];
-                }
-            }
-            
-            $this->context->smarty->assign('finalUrl',  $final_url);
-        }
-        # Cashier flow
-//        else {
-//            $this->context->smarty->assign('scApi', 'cashier');
-//            
-//            $sc_params = array(
-//                'merchant_id'           => Configuration::get('SC_MERCHANT_ID'),
-//                'merchant_site_id'      => Configuration::get('SC_MERCHANT_SITE_ID'),
-//                'time_stamp'            => $order_time,
-//                'encoding'              => 'utf-8',
-//                'version'               => '4.0.0',
-//                'success_url'           => $success_url,
-//                'pending_url'           => $pending_url,
-//                'error_url'             => $error_url,
-//                'back_url'              => $back_url,
-//                'notify_url'            => $notify_url,
-//                'invoice_id'            => $cart->id . '_' . $order_time,
-//                'merchant_unique_id'    => $cart->id,
-//                'first_name'            => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->firstname)),
-//                'last_name'             => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->lastname)),
-//                'address1'              => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->address1)),
-//                'address2'              => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->address2)),
-//                'zip'                   => $address_invoice->postcode,
-//                'city'                  => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->city)),
-//                'state'                 => strlen($address_invoice->id_state) == 2
-//                    ? $address_invoice->id_state : substr($address_invoice->id_state, 0, 2),
-//                'country'               => $country_inv->iso_code,
-//                'phone1'                => urlencode(preg_replace("/[[:punct:]]/", '', $phone)),
-//                'email'                 => $customer->email,
-//                'user_token_id'         => $is_user_logged ? $customer->email : '',
-//                'shippingFirstName'     => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->firstname)),
-//                'shippingLastName'      => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->lastname)),
-//                'shippingAddress'       => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->address1)),
-//                'shippingCity'          => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->city)),
-//                'shippingCountry'       => $country_del->iso_code,
-//                'shippingZip'           => $address_delivery->postcode,
-//                'user_token'            => 'auto',
-//                'total_amount'          => $total_amount,
-//                'merchantLocale'        => $this->context->language->locale,
-//                'currency'              => $currency->iso_code,
-//                'webMasterId'           => 'PrestsShop ' . _PS_VERSION_,
-//            );
-//            
-//            $items = $items_price = 0;
-//            $products = $cart->getProducts(true);
-//            foreach($products as $product) {
-//                $items++;
-//
-//                $single_price = number_format(($product['total_wt'] / $product['quantity']), 2, '.', '');
-//                $items_price += $product['total_wt'];
-//
-//                $sc_params['item_name_'.$items]      = urlencode($product['name']);
-//                $sc_params['item_number_'.$items]    = $product['id_product'];
-//                $sc_params['item_quantity_'.$items]  = $product['quantity'];
-//                $sc_params['item_amount_'.$items]    = $single_price;
-//            }
-//            
-//            $sc_params['numberofitems'] = $items;
-//            
-//            $discount = number_format($cart->getOrderTotal(true, Cart::ONLY_DISCOUNTS), 2, '.', '');
-//            $handling = number_format($cart->getOrderTotal(true, Cart::ONLY_SHIPPING), 2, '.', '');
-//            
-//            // last check for correct calculations
-//            $test_diff = round($items_price + $handling - $discount - $sc_params['total_amount'], 2);
-//            
-//            if($test_diff != 0) {
-//                SC_HELPER::create_log($handling, 'handling before $test_diff: ');
-//                SC_HELPER::create_log($discount, 'discount_total before $test_diff: ');
-//                SC_HELPER::create_log($test_diff, '$test_diff: ');
-//                
-//                if($test_diff > 0) {
-//                    if($handling - $test_diff >= 0) {
-//						$handling -= $test_diff; // will decrease
-//					}
-//                    else {
-//                        $discount += $test_diff; // will increase
-//                    }
-//					
-//				}
-//				else {
-//                    if($discount + $test_diff > 0) {
-//                        $discount += $test_diff; // will decrease
-//                    }
-//                    else {
-//                        $handling += abs($test_diff); // will increase
-//                    }
-//				}
-//            }
-//            
-//            $sc_params['discount'] = number_format($discount, 2, '.', '');
-//            $sc_params['handling'] = number_format($handling, 2, '.', '');
-//            
-//            // the end point URL depends of the test mode and selected payment api
-//            $action_url = Configuration::get('SC_TEST_MODE') == 'yes'
-//                ? SC_TEST_CASHIER_URL : SC_LIVE_CASHIER_URL;
-//            $this->context->smarty->assign('action_url',    $action_url);
-//            
-//            $for_checksum = Configuration::get('SC_SECRET_KEY') . implode('', $sc_params);
-//            
-//            $sc_params['checksum'] = hash(
-//                Configuration::get('SC_HASH_TYPE'),
-//                stripslashes($for_checksum)
-//            );
-//            
-//            SC_HELPER::create_log($sc_params, 'Cashier inputs: ');
-//            
-//            $this->module->validateOrder(
-//                (int)$cart->id
-//                ,Configuration::get('PS_OS_PREPARATION')
-//                ,$sc_params['total_amount']
-//                ,$this->module->displayName
-//            //    ,null
-//            //    ,null // for the mail
-//            //    ,(int)$currency->id
-//            //    ,false
-//            //    ,$customer->secure_key
-//            );
-//            
-//            $this->context->smarty->assign('order_params',  $sc_params);
-//        }
+		}
+
+		$resp = SC_HELPER::call_rest_api($endpoint_url, $sc_params);
+
+		$req_status = $this->getRequestStatus($resp);
+
+		if(
+			!$resp
+			|| $req_status == 'ERROR'
+			|| @$resp['transactionStatus'] == 'ERROR'
+			|| @$resp['transactionStatus'] == 'DECLINED'
+		) {
+			Tools::redirect($error_url);
+		}
+
+		// save order
+		$res = $this->module->validateOrder(
+			(int)$cart->id
+			,Configuration::get('PS_OS_PREPARATION') // the status
+			,$sc_params['amount']
+			,$this->module->displayName . ' - ' . str_replace('ampgw_', '', $sc_params['paymentMethod'])
+		);
+
+		if(!$res) {
+			Tools::redirect($error_url);
+		}
+
+		$final_url = $success_url;
+
+		if($req_status == 'SUCCESS') {
+			if(isset($resp['redirectURL']) && !empty($resp['redirectURL'])) {
+				SC_HELPER::create_log($resp['redirectURL'], 'redirectURL:');
+				$final_url = $resp['redirectURL'];
+			}
+		}
+
+		$this->context->smarty->assign('finalUrl',  $final_url);
         
         $this->setTemplate('module:safecharge/views/templates/front/form.tpl');
     }
     
-    /**
-     * Function payWithD3dP3d
-     * After we get the DMN form the issuer/bank call this method to continue the flow.
-	 * 
-	 * @deprecated
-     */
-    private function payWithD3dP3d()
-    {
-        if(!isset($_SESSION['SC_P3D_Params'])) {
-            SC_HELPER::create_log('payWithD3dP3d(): SC_P3D_Params array is missing');
-            Tools::redirect($this->context->link
-                ->getModuleLink('safecharge', 'payment', array('prestaShopAction' => 'showError')));
-        }
-        
-        SC_HELPER::create_log('payWithD3dP3d()');
-        
-        if(isset($_REQUEST['PaRes'])) {
-            $_SESSION['SC_P3D_Params']['paResponse'] = $_REQUEST['PaRes'];
-        }
-        
-        try {
-            $order_id = Order::getOrderByCartId($_SESSION['SC_P3D_Params']['clientUniqueId']);
-            $order_info = new Order($order_id);
-            
-            
-            
-            $p3d_resp = SC_HELPER::call_rest_api(
-               Configuration::get('SC_TEST_MODE') == 'yes' ? SC_TEST_P3D_URL : SC_LIVE_P3D_URL
-                ,$_SESSION['SC_P3D_Params']
-            );
-        }
-        catch (Exception $ex) {
-            SC_HELPER::create_log($ex->getMessage(), 'P3D fail Exception: ');
-            Tools::redirect($this->context->link
-                ->getModuleLink('safecharge', 'payment', array('prestaShopAction' => 'showError')));
-        }
-        
-        SC_HELPER::create_log($p3d_resp, 'D3D / P3D, REST API Call response: ');
-
-        if(!$p3d_resp) {
-            if(intval($order_info->current_state) == (int)(Configuration::get('PS_OS_PREPARATION'))) {
-                $this->changeOrderStatus(
-                    array(
-                        'id'            => $order_id,
-                        'current_state' => $order_info->current_state,
-                        'currency'      => $currency->iso_code
-                    ),
-                    'FAIL'
-                );
-            }
-            else {
-                // save order message
-                $message = new MessageCore();
-                $message->id_order = $order_info['id'];
-                $message->private = true;
-                $message->message = $this->l('Payment 3D API response fails.');
-                $message->add();
-            }
-
-            SC_HELPER::create_log('Payment 3D API response fails.');
-            Tools::redirect($this->context->link
-                ->getModuleLink('safecharge', 'payment', array('prestaShopAction' => 'showError')));
-        }
-
-        header('Location: ' . $_SESSION['SC_SUCCESS_URL']);
-        exit;
-        // now wait for the DMN
-    }
-
     /**
      * Function scOrderError
      * Shows a message when there is an error with the order
@@ -672,22 +378,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             isset($_REQUEST['transactionType'], $_REQUEST['invoice_id'])
             && in_array($_REQUEST['transactionType'], array('Sale', 'Auth'))
         ) {
-            // Cashier
-//            if(!empty($_REQUEST['invoice_id'])) {
-//                SC_HELPER::create_log('Cashier sale.');
-//                
-//                try {
-//                    $arr = explode("_", $_REQUEST['invoice_id']);
-//                    $cart_id  = intval($arr[0]);
-//                }
-//                catch (Exception $ex) {
-//                    SC_HELPER::create_log($ex->getMessage(), 'Cashier DMN Exception when try to get Order ID: ');
-//                    echo 'DMN Exception: ' . $ex->getMessage();
-//                    exit;
-//                }
-//            }
 			// REST and WebSDK
-//            else {
 			SC_HELPER::create_log('REST sale.');
 			
 			if(empty($_REQUEST['merchant_unique_id'])) {
@@ -697,17 +388,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			}
                 
 			try {
-//					$cart_id = intval($_REQUEST['merchant_unique_id']);
-//                }
-//                catch (Exception $ex) {
-//                    SC_HELPER::create_log($ex->getMessage(), 'REST DMN Exception when try to get Order ID: ');
-//                    echo 'DMN Exception: ' . $ex->getMessage();
-//                    exit;
-//                }
-//            }
-            
-//            try {
-//                $order_id = Order::getIdByCartId($cart_id);
                 $order_id = Order::getIdByCartId($_REQUEST['merchant_unique_id']);
 				
 				// in case when DMN came before the system save the Order
