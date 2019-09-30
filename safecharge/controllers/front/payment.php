@@ -203,8 +203,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			Tools::redirect($error_url);
 		}
 
-		$this->context->smarty->assign('scApi', 'rest');
-
 		$sc_params = array(
 			'merchantId'        => Configuration::get('SC_MERCHANT_ID'),
 			'merchantSiteId'    => Configuration::get('SC_MERCHANT_SITE_ID'),
@@ -317,7 +315,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			(int)$cart->id
 			,Configuration::get('PS_OS_PREPARATION') // the status
 			,$sc_params['amount']
-			,$this->module->displayName . ' - ' . str_replace('ampgw_', '', $sc_params['paymentMethod'])
+			,$this->module->displayName . ' - ' . str_replace('apmgw_', '', $sc_params['paymentMethod'])
 		);
 
 		if(!$res) {
@@ -333,9 +331,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			}
 		}
 
-		$this->context->smarty->assign('finalUrl',  $final_url);
-        
-        $this->setTemplate('module:safecharge/views/templates/front/form.tpl');
+		Tools::redirect($final_url);
     }
     
     /**

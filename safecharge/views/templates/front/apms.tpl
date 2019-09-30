@@ -177,7 +177,7 @@
                         <input type="radio" id="sc_payment_method_{$pm.paymentMethod}" class="sc_hide" name="sc_payment_method" value="{$pm.paymentMethod}" />
                     </div>
 
-                    {if in_array($pm.paymentMethod, array('cc_card', 'dc_card', 'paydotcom'))}
+                    {if in_array($pm.paymentMethod, array('cc_card', 'dc_card'))}
                         <div class="apm_fields" id="sc_{$pm.paymentMethod}">
                             {*<div class="apm_field">
                                 <div id="sc_card_number"></div>
@@ -205,9 +205,16 @@
                         <div class="apm_fields">
                             {foreach $pm.fields as $field}
                                 <div class="apm_field">
-                                    <input id="{$pm.paymentMethod}_{$field.name}" name="{$pm.paymentMethod}[{$field.name}]" type="{$field.type}" {if isset($field.regex) and $field.regex}pattern="{$field.regex}"{/if} {if isset($field.caption[0].message)}placeholder="{$field.caption[0].message}"{/if} />
+                                    <input id="{$pm.paymentMethod}_{$field.name}" 
+                                           name="{$pm.paymentMethod}[{$field.name}]" 
+                                           type="{$field.type}" 
+                                           {if isset($field.regex) and $field.regex}pattern="{$field.regex}"{/if} 
+                                           {if !empty($field.caption[0].message)}placeholder="{$field.caption[0].message}"
+                                           {elseif !empty($field.name)}placeholder="{$field.name}"
+                                           {/if}
+                                    />
 
-                                    {if isset($field.regex) and $field.regex}
+                                    {if isset($field.regex) and $field.regex and !empty($field.validationmessage[0].message)}
                                         <i class="material-icons field_icon" onclick="showErrorLikeInfo('sc_{$field.name}')">error_outline</i>
                                         <div class="apm_error sc_hide" id="error_sc_{$field.name}">
                                             <label>{$field.validationmessage[0].message}</label>

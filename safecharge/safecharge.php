@@ -477,7 +477,6 @@ class SafeCharge extends PaymentModule
         
         // check and prepare the data for the APMs
         $sc_api = Configuration::get('SC_PAYMENT_METHOD');
-        $smarty->assign('scApi', $sc_api);
         
 		try {
 			$cart               = $this->context->cart;
