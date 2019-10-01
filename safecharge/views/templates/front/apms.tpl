@@ -133,6 +133,14 @@
         -webkit-animation: glyphicon-spin-r 1s infinite linear;
         animation: glyphicon-spin-r 1s infinite linear;
     }
+    
+    /* for the 3DS popup */
+    .sfcModal-dialog {
+        width: 50%;
+        margin-top: 10%;
+        margin: 0 auto;
+        margin-top: 10%;
+    }
 
     @-webkit-keyframes glyphicon-spin-r {
         0% {
