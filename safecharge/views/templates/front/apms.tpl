@@ -1,4 +1,8 @@
-<script type="text/javascript" src="https://dev-mobile.safecharge.com/cdn/WebSdk/dist/safecharge.js"></script>
+{if $isTestEnv eq 'yes'}
+    <script type="text/javascript" src="https://dev-mobile.safecharge.com/cdn/WebSdk/dist/safecharge.js"></script>
+{elseif $isTestEnv eq 'no'}
+    <script type="text/javascript" src="https://cdn-int.safecharge.com/safecharge_resources/v1/websdk/safecharge.js"></script>
+{/if}
 
 <style type="text/css">
     #safechargesubmit #sc_pm_error {
