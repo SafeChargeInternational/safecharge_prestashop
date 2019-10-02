@@ -46,13 +46,19 @@
     and in_array($scData.payment_method, array('cc_card', 'dc_card'))
     and $isRefunded eq 0
 }
-<button type="button" id="sc_void_btn" class="btn btn-default" onclick="scOrderAction('void', {$orderId})">
-    <i class="icon-retweet"></i>
-    <i class="icon-repeat fast-right-spinner hidden"></i>
-    {l s='Void' d='Module.safecharge'}
-</button>
+    <button type="button" id="sc_void_btn" class="btn btn-default" onclick="scOrderAction('void', {$orderId})">
+        <i class="icon-retweet"></i>
+        <i class="icon-repeat fast-right-spinner hidden"></i>
+        {l s='Void' d='Module.safecharge'}
+    </button>
 {/if}
-
+    
+{if $scDataError}
+    <span class="span label label-danger">
+        <i class="icon-warning-sign"></i>&nbsp;{$scDataError}
+    </span>
+{/if}
+    
 <script type="text/javascript">
     function scOrderAction(action, orderId) {
         var question = '';

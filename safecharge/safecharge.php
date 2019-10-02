@@ -207,9 +207,9 @@ class SafeCharge extends PaymentModule
         
         $sc_data = Db::getInstance()->getRow('SELECT * FROM safecharge_order_data WHERE order_id = ' . $order_id);
         
-        if(!$sc_data) {
+        if(empty($sc_data)) {
             SC_HELPER::create_log('Missing safecharge_order_data for order ' . $order_id);
-            return;
+			$smarty->assign('scDataError', 'Error - The Payment miss specific SafeCharge data!');
         }
         
         $sc_data['plugin_tr_type']  = Configuration::get('SC_PAYMENT_ACTION');
