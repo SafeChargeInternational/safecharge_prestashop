@@ -359,7 +359,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
      */
     private function scGetDMN()
     {
-        SC_HELPER::create_log(@$_REQUEST, 'DMN request: ');
+        SC_HELPER::create_log(@$_REQUEST, 'DMN request:');
         
         if(!$this->checkAdvancedCheckSum()) {
             SC_HELPER::create_log('DMN report: You receive DMN from not trusted source. The process ends here.');

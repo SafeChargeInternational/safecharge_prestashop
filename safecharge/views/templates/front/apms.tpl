@@ -178,7 +178,7 @@
 
 <form method="post" id="scForm" action="{$formAction}">
     {if $paymentMethods}
-        <h3>{l s='Choose from the other payment methods:' mod='Modules.safecharge'}</h3>
+        <h3>{l s='Choose a payment method:' mod='Modules.safecharge'}</h3>
         <ul id="sc_apms_list" class="">
             {foreach $paymentMethods as $pm}
                 <li class="apm_container" style="height: auto;">
