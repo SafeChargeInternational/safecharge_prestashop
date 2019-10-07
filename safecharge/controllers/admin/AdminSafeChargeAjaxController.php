@@ -66,7 +66,7 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
             'prestaShopOrderID' => $order_id,
             'create_logs'       => $_SESSION['sc_create_logs'],
         ));
-        
+		
         if(Configuration::get('SC_HTTP_NOTIFY') == 'yes') {
             $notify_url = str_repeat('https://', 'http://', $notify_url);
         }
