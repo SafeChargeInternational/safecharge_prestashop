@@ -545,6 +545,7 @@ class SafeCharge extends PaymentModule
 					'billingAddress'    => array(
 						'country' => $country_inv->iso_code,
 					),
+					'webMasterId'       => 'PrestsShop ' . _PS_VERSION_,
 				);
 
 				$oo_params['checksum'] = hash(
