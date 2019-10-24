@@ -280,13 +280,12 @@
                     amount          : "{$amount}",
                     cardHolderName  : document.getElementById('sc_card_holder_name').value,
                 //    paymentOption   : sfcFirstField
-                    paymentOption   : card
+                    paymentOption   : card,
+                    isDynamic3D     : 1
                 }, function(resp){
                     console.log(resp);
 
                     if(typeof resp.result != 'undefined') {
-                        console.log(resp.result)
-
                         if(resp.result == 'APPROVED' && resp.transactionId != 'undefined') {
                             jQuery('#sc_transaction_id').val(resp.transactionId);
                             jQuery('#scForm').submit();
