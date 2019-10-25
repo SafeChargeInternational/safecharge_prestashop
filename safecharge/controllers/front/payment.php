@@ -165,11 +165,14 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 						'sc_create_logs'       => $_SESSION['sc_create_logs'],
 					)
 				);
-            
-            if(Configuration::get('SC_HTTP_NOTIFY') == 'yes') {
+			
+            if(
+				Configuration::get('SC_HTTP_NOTIFY') == 'yes'
+				&& false !== strpos($notify_url, 'https://')
+			) {
                 $notify_url = str_repeat('https://', 'http://', $notify_url);
             }
-
+			
             $address_invoice    = new Address((int)($cart->id_address_invoice));
             $phone              = $address_invoice->phone ? $address_invoice->phone : $address_invoice->phone_mobile;
             $country_inv        = new Country((int)($address_invoice->id_country), Configuration::get('PS_LANG_DEFAULT'));
