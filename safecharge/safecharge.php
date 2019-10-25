@@ -520,6 +520,13 @@ class SafeCharge extends PaymentModule
 						'prestaShopAction'  => 'getDMN',
 						'sc_create_logs'       => $_SESSION['sc_create_logs'],
 					));
+				
+				if(
+					Configuration::get('SC_HTTP_NOTIFY') == 'yes'
+					&& false !== strpos($notify_url, 'https://')
+				) {
+					$notify_url = str_repeat('https://', 'http://', $notify_url);
+				}
 
 				# Open Order
 				$oo_endpoint_url = 'yes' == $test_mode
