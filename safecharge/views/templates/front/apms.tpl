@@ -279,9 +279,7 @@
                     currency        : "{$currency}",
                     amount          : "{$amount}",
                     cardHolderName  : document.getElementById('sc_card_holder_name').value,
-                //    paymentOption   : sfcFirstField
-                    paymentOption   : card,
-                    isDynamic3D     : 1
+                    paymentOption   : card
                 }, function(resp){
                     console.log(resp);
 

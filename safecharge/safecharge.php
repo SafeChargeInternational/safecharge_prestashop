@@ -553,6 +553,7 @@ class SafeCharge extends PaymentModule
 						'country' => $country_inv->iso_code,
 					),
 					'webMasterId'       => 'PrestsShop ' . _PS_VERSION_,
+					'paymentOption'		=> ['card' => ['threeD' => ['isDynamic3D' => 1]]]
 				);
 
 				$oo_params['checksum'] = hash(
