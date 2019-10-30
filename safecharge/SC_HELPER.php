@@ -220,7 +220,7 @@ class SC_HELPER
                 $d = $title . "\r\n" . $d;
             }
             
-            $d .= "\r\n\r\n";
+            $d .= "\r\n";
             // same for all plugins
 
             try {
