@@ -60,7 +60,7 @@
                 </div>
             </div>*}
             
-            <div class="form-group">
+            {*<div class="form-group">
                 <label class="control-label col-lg-3"> {l s='Payment action' mod='Modules.safecharge'}</label>
                 <div class="col-lg-9">
                     <select name="SC_PAYMENT_ACTION">
@@ -68,7 +68,7 @@
                         <option value="sale" {if Configuration::get('SC_PAYMENT_ACTION') eq 'sale'}selected{/if}>{l s='Authorize & Capture' mod='Modules.safecharge'}</option>
                     </select>
                 </div>
-            </div>
+            </div>*}
             
             <div class="form-group">
                 <label class="control-label col-lg-3">{l s='Test mode' mod='Modules.safecharge'}</label>

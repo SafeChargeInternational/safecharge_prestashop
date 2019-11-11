@@ -29,11 +29,12 @@
     }
 </style>
 
-{if
+{*if
     $scData.resp_transaction_type eq "Auth"
     and $scData.plugin_tr_type eq "auth"
     and $scData.order_state eq $state_pending
-}
+*}
+{if $scData.resp_transaction_type eq "Auth" and $scData.order_state eq $state_pending}
     <button type="button" id="sc_settle_btn" class="btn btn-default" onclick="scOrderAction('settle', {$orderId})" title="{l s='You will be redirected to Orders list.' d='Module.safecharge'}">
         <i class="icon-thumbs-up"></i>
         <i class="icon-repeat fast-right-spinner hidden"></i>

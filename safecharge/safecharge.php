@@ -20,25 +20,25 @@ class SafeCharge extends PaymentModule
     
     public function __construct()
     {
-        $this->name = 'safecharge';
-        $this->tab = SafeChargeVersionResolver::set_tab();
-        $this->version = '1.1';
-        $this->author = 'SafeCharge';
-        $this->need_instance = 1;
-        $this->ps_versions_compliancy = array('min' => '1.7', 'max' => _PS_VERSION_);
-        $this->bootstrap = true;
-        $this->controllers = array('payment', 'validation');
-        $this->is_eu_compatible = 1;
+        $this->name						= 'safecharge';
+        $this->tab						= SafeChargeVersionResolver::set_tab();
+        $this->version					= '1.1';
+        $this->author					= 'SafeCharge';
+        $this->need_instance			= 1;
+        $this->ps_versions_compliancy	= array('min' => '1.7', 'max' => _PS_VERSION_);
+        $this->bootstrap				= true;
+        $this->controllers				= array('payment', 'validation');
+        $this->is_eu_compatible			= 1;
         
-        $this->currencies = true; // ?
-        $this->currencies_mode = 'checkbox'; // for the Payment > Preferences menu
+        $this->currencies				= true; // ?
+        $this->currencies_mode			= 'checkbox'; // for the Payment > Preferences menu
 
         parent::__construct();
 
-        $this->page = basename(__FILE__, '.php'); // ?
-        $this->displayName = $this->l('SafeCharge');
-        $this->description = $this->l('Accepts payments by Safecharge.');
-        $this->confirmUninstall = $this->l('Are you sure you want to delete your details?');
+        $this->page				= basename(__FILE__, '.php'); // ?
+        $this->displayName		= $this->l('SafeCharge');
+        $this->description		= $this->l('Accepts payments by Safecharge.');
+        $this->confirmUninstall	= $this->l('Are you sure you want to delete your details?');
         
         if (!isset($this->owner) || !isset($this->details) || !isset($this->address)) {
             $this->warning = $this->l('Merchant account details must be configured before using this module.');
@@ -141,7 +141,7 @@ class SafeCharge extends PaymentModule
             Configuration::updateValue('SC_SECRET_KEY',         Tools::getValue('SC_SECRET_KEY'));
             Configuration::updateValue('SC_HASH_TYPE',          Tools::getValue('SC_HASH_TYPE'));
             Configuration::updateValue('SC_PAYMENT_METHOD',     'rest');
-            Configuration::updateValue('SC_PAYMENT_ACTION',     Tools::getValue('SC_PAYMENT_ACTION'));
+//            Configuration::updateValue('SC_PAYMENT_ACTION',     Tools::getValue('SC_PAYMENT_ACTION'));
             Configuration::updateValue('SC_TEST_MODE',          Tools::getValue('SC_TEST_MODE'));
             Configuration::updateValue('SC_HTTP_NOTIFY',        Tools::getValue('SC_HTTP_NOTIFY'));
             Configuration::updateValue('SC_CREATE_LOGS',        Tools::getValue('SC_CREATE_LOGS'));
@@ -212,7 +212,7 @@ class SafeCharge extends PaymentModule
 			$smarty->assign('scDataError', 'Error - The Payment miss specific SafeCharge data!');
         }
         
-        $sc_data['plugin_tr_type']  = Configuration::get('SC_PAYMENT_ACTION');
+//        $sc_data['plugin_tr_type']  = Configuration::get('SC_PAYMENT_ACTION');
         $sc_data['order_state']     = $order_data->current_state;
         
         $smarty->assign('scData', $sc_data);
@@ -299,8 +299,6 @@ class SafeCharge extends PaymentModule
                 
             $sc_order_info = Db::getInstance()->getRow(
                 "SELECT * FROM safecharge_order_data WHERE order_id = {$order_id}");
-                
-            SC_HELPER::create_log($last_slip_id, '$last_slip_id: ');
                 
             $notify_url = $this->context->link
                 ->getModuleLink('safecharge', 'payment', array(
