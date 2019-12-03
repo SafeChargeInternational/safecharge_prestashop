@@ -279,7 +279,8 @@
                     currency        : "{$currency}",
                     amount          : "{$amount}",
                     cardHolderName  : document.getElementById('sc_card_holder_name').value,
-                    paymentOption   : card
+                    paymentOption   : card,
+					webMasterId		: "{$webMasterId}"
                 }, function(resp){
                     console.log(resp);
 

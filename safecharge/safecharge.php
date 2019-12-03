@@ -141,7 +141,6 @@ class SafeCharge extends PaymentModule
             Configuration::updateValue('SC_SECRET_KEY',         Tools::getValue('SC_SECRET_KEY'));
             Configuration::updateValue('SC_HASH_TYPE',          Tools::getValue('SC_HASH_TYPE'));
             Configuration::updateValue('SC_PAYMENT_METHOD',     'rest');
-//            Configuration::updateValue('SC_PAYMENT_ACTION',     Tools::getValue('SC_PAYMENT_ACTION'));
             Configuration::updateValue('SC_TEST_MODE',          Tools::getValue('SC_TEST_MODE'));
             Configuration::updateValue('SC_HTTP_NOTIFY',        Tools::getValue('SC_HTTP_NOTIFY'));
             Configuration::updateValue('SC_CREATE_LOGS',        Tools::getValue('SC_CREATE_LOGS'));
@@ -212,7 +211,6 @@ class SafeCharge extends PaymentModule
 			$smarty->assign('scDataError', 'Error - The Payment miss specific SafeCharge data!');
         }
         
-//        $sc_data['plugin_tr_type']  = Configuration::get('SC_PAYMENT_ACTION');
         $sc_data['order_state']     = $order_data->current_state;
         
         $smarty->assign('scData', $sc_data);
@@ -628,6 +626,7 @@ class SafeCharge extends PaymentModule
 			$this->context->smarty->assign('merchantId',		Configuration::get('SC_MERCHANT_ID'));
 			$this->context->smarty->assign('merchantSideId',	Configuration::get('SC_MERCHANT_SITE_ID'));
 			$this->context->smarty->assign('formAction',		$this->context->link->getModuleLink('safecharge', 'payment'));
+			$this->context->smarty->assign('webMasterId',		'PrestsShop ' . _PS_VERSION_);
 		}
 		catch(Exception $e) {
 			echo $e->getMessage();

@@ -50,26 +50,6 @@
                 </div>
             </div>
                     
-            {*<div class="form-group">
-                <label class="control-label col-lg-3"> {l s='Payment solution' mod='Modules.safecharge'}</label>
-                <div class="col-lg-9">
-                    <select name="SC_PAYMENT_METHOD">
-                        <option value="rest" {if Configuration::get('SC_PAYMENT_METHOD') eq 'rest'}selected{/if}>{l s='SafeCharge API' mod='Modules.safecharge'}</option>
-                        <option value="cashier" {if Configuration::get('SC_PAYMENT_METHOD') eq 'cashier'}selected{/if}>{l s='Hosted payment page' mod='Modules.safecharge'}</option>
-                    </select>
-                </div>
-            </div>*}
-            
-            {*<div class="form-group">
-                <label class="control-label col-lg-3"> {l s='Payment action' mod='Modules.safecharge'}</label>
-                <div class="col-lg-9">
-                    <select name="SC_PAYMENT_ACTION">
-                        <option value="auth" {if Configuration::get('SC_PAYMENT_ACTION') eq 'auth'}selected{/if}>{l s='Authorize' mod='Modules.safecharge'}</option>
-                        <option value="sale" {if Configuration::get('SC_PAYMENT_ACTION') eq 'sale'}selected{/if}>{l s='Authorize & Capture' mod='Modules.safecharge'}</option>
-                    </select>
-                </div>
-            </div>*}
-            
             <div class="form-group">
                 <label class="control-label col-lg-3">{l s='Test mode' mod='Modules.safecharge'}</label>
                 <div class="col-lg-9">
