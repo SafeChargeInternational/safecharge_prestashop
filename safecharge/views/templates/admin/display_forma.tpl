@@ -49,6 +49,16 @@
                     </select>
                 </div>
             </div>
+					
+            <div class="form-group">
+                <label class="control-label col-lg-3"> {l s='Payment Action' mod='Modules.safecharge'}</label>
+                <div class="col-lg-9">
+                    <select name="SC_PAYMENT_ACTION">
+                        <option value="Sale" {if Configuration::get('SC_PAYMENT_ACTION') eq 'Sale'}selected{/if}>Authorize and Capture</option>
+                        <option value="Auth" {if Configuration::get('SC_PAYMENT_ACTION') eq 'Auth'}selected{/if}>Authorize</option>
+                    </select>
+                </div>
+            </div>
                     
             <div class="form-group">
                 <label class="control-label col-lg-3">{l s='Test mode' mod='Modules.safecharge'}</label>
