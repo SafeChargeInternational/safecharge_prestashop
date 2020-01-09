@@ -90,45 +90,45 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					));
 				}
 
-				$path_to_dmn_file = SC_CACHE_DIR . $cart->id . '.txt';
+//				$path_to_dmn_file = SC_CACHE_DIR . $cart->id . '.txt';
 
-				if(file_exists($path_to_dmn_file)) {
-					if(!is_readable($path_to_dmn_file)) {
-						SC_HELPER::create_log('The DMN file for Order with Cart ID : ' 
-							. $cart->id . ' is not readable!');
-
-						Tools::redirect($this->context->link->getModuleLink(
-							'safecharge',
-							'payment',
-							array('prestaShopAction' => 'showError')
-						));
-					}
-
-					$dmn_params = json_decode(file_get_contents($path_to_dmn_file), true);
-					
-					// call the DMN URL to update STATUS
-					$url = $this->context->link
-						->getModuleLink('safecharge', 'payment', $dmn_params);
-
-					SC_HELPER::create_log('Internal DMN call');
-
-					@unlink($path_to_dmn_file);
-
-					$ch = curl_init();
-
-					curl_setopt($ch, CURLOPT_URL, $url);
-					curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-					curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-					curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-					curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-					$resp = curl_exec($ch);
-					curl_close($ch);
-
-				}
-				else {
-					SC_HELPER::create_log('DMN file does not exists.');
-				}
+//				if(file_exists($path_to_dmn_file)) {
+//					if(!is_readable($path_to_dmn_file)) {
+//						SC_HELPER::create_log('The DMN file for Order with Cart ID : ' 
+//							. $cart->id . ' is not readable!');
+//
+//						Tools::redirect($this->context->link->getModuleLink(
+//							'safecharge',
+//							'payment',
+//							array('prestaShopAction' => 'showError')
+//						));
+//					}
+//
+//					$dmn_params = json_decode(file_get_contents($path_to_dmn_file), true);
+//					
+//					// call the DMN URL to update STATUS
+//					$url = $this->context->link
+//						->getModuleLink('safecharge', 'payment', $dmn_params);
+//
+//					SC_HELPER::create_log('Internal DMN call');
+//
+//					@unlink($path_to_dmn_file);
+//
+//					$ch = curl_init();
+//
+//					curl_setopt($ch, CURLOPT_URL, $url);
+//					curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+//					curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+//					curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+//					curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+//
+//					$resp = curl_exec($ch);
+//					curl_close($ch);
+//
+//				}
+//				else {
+//					SC_HELPER::create_log('DMN file does not exists.');
+//				}
 
 				Tools::redirect($this->context->link->getModuleLink(
 					'safecharge',
@@ -369,7 +369,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             echo 'DMN report: You receive DMN from not trusted source. The process ends here.';
             exit;
         }
-        
+		
         $req_status = $this->getRequestStatus();
         
         # Sale and Auth
@@ -387,30 +387,27 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			}
                 
 			try {
-                $order_id = Order::getIdByCartId($_REQUEST['merchant_unique_id']);
+				$tries		= 0;
+				$order_id	= false;
 				
-				// in case when DMN came before the system save the Order
-				// save the DMN as temp file
-				if(false === $order_id) {
-					if(!is_dir(SC_CACHE_DIR)) {
-						SC_HELPER::create_log('Error: Cache directory does not exists!');
-						echo 'Error: Cache directory does not exists!';
-						exit;
-					}
+                do {
+                    $tries++;
+
+                    $order_id = Order::getIdByCartId($_REQUEST['merchant_unique_id']);
+
+                    if(!$order_id) {
+						SC_HELPER::create_log($order_id, '$order_id:');
+                        sleep(3);
+                    }
+                }
+				while($tries <= 10 and !$order_id);
+                
+                if(!$order_id) {
+                    SC_HELPER::create_log('The DMN didn\'t wait for the Order creation. Exit.');
 					
-					if(file_put_contents(
-						SC_CACHE_DIR . $_REQUEST['merchant_unique_id'] . '.txt', 
-						json_encode($_REQUEST))
-					) {
-						SC_HELPER::create_log('The DMN was saved into cache file.');
-						echo 'The DMN was saved into cache file.';
-						exit;
-					}
-					
-					SC_HELPER::create_log('Error when tried to save the DMN into file!');
-					echo 'Error when tried to save the DMN into file!';
-					exit;
-				}
+                    echo 'The DMN didn\'t wait for the Order creation. Exit.';
+                    exit;
+                }
 				
                 $order_info = new Order($order_id);
                 $this->updateCustomPaymentFields($order_id);
@@ -438,11 +435,30 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         if(
             in_array(@$_REQUEST['transactionType'], array('Credit', 'Refund'))
             && !empty($req_status)
+			and is_numeric(@$_REQUEST['TransactionID'])
         ) {
             SC_HELPER::create_log('PrestaShop Refund DMN.');
             
             try {
-                $order_id = intval(@$_REQUEST['prestaShopOrderID']);
+				// PS Refund
+				if(!empty($_REQUEST['prestaShopOrderID']) and is_numeric($_REQUEST['prestaShopOrderID'])) {
+					$order_id = $_REQUEST['prestaShopOrderID'];
+				}
+				// CPanel Refund
+				else {
+					$sc_data = Db::getInstance()->getRow(
+						'SELECT * FROM safecharge_order_data '
+						. 'WHERE related_transaction_id = ' . $_REQUEST['TransactionID']
+					);
+
+					if(!empty($sc_data)) {
+						$order_id = @$sc_data['order_id'];
+					}
+					else {
+						$order_id = null;
+					}
+				}
+				
                 $order_info = new Order($order_id);
                 
                 if(!$order_info) {
@@ -474,22 +490,40 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         
         # Void, Settle
         if(
-            isset($_REQUEST['prestaShopOrderID'], $_REQUEST['transactionType'])
-            && is_numeric($_REQUEST['prestaShopOrderID'])
-            && in_array($_REQUEST['transactionType'], array('Void', 'Settle'))
-        ) {
+			in_array(@$_REQUEST['transactionType'], array('Void', 'Settle'))
+			and is_numeric(@$_REQUEST['TransactionID'])
+		) {
             SC_HELPER::create_log($_REQUEST['transactionType'], 'Void/Settle transactionType: ');
             
+			// PS Void/Settle
+			if(!empty($_REQUEST['prestaShopOrderID']) and is_numeric($_REQUEST['prestaShopOrderID'])) {
+				$order_id = $_REQUEST['prestaShopOrderID'];
+			}
+			// CPanel Void/Settle
+			else {
+				$sc_data = Db::getInstance()->getRow(
+					'SELECT * FROM safecharge_order_data '
+					. 'WHERE related_transaction_id = ' . $_REQUEST['TransactionID']
+				);
+				
+				if(!empty($sc_data)) {
+					$order_id = @$sc_data['order_id'];
+				}
+				else {
+					$order_id = null;
+				}
+			}
+			
             try {
-                $order_info = new Order($_REQUEST['prestaShopOrderID']);
+                $order_info = new Order($order_id);
                 
                 if($_REQUEST['transactionType'] == 'Settle') {
-                    $this->updateCustomPaymentFields($_REQUEST['prestaShopOrderID'], false);
+                    $this->updateCustomPaymentFields($order_id, false);
                 }
                 
                 $this->changeOrderStatus(
                     array(
-                        'id'            => $_REQUEST['prestaShopOrderID'],
+                        'id'            => $order_id,
                         'current_state' => $order_info->current_state,
                     )
                     ,$req_status

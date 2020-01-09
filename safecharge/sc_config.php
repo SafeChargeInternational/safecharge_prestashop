@@ -154,4 +154,3 @@ define('SC_DEVICES_OS', json_encode(array('android', 'windows', 'linux', 'mac os
 
 # change it for different e-commerce systems
 define('SC_LOGS_DIR', dirname(__FILE__) . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR);
-define('SC_CACHE_DIR', dirname(__FILE__) . DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR);

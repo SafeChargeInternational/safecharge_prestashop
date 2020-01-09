@@ -163,11 +163,13 @@ class SC_HELPER
      */
     public static function create_log($data, $title = '')
     {
-        
         // path is different fore each plugin
-        if(!defined('SC_LOGS_DIR') && !is_dir(SC_LOGS_DIR)) {
-            die('SC_LOGS_DIR is not set!');
-        }
+        $logs_path = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'var'
+			.DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR;
+		
+		if(!is_dir($logs_path)) {
+			return;
+		}
         
         if(
             @$_REQUEST['sc_create_logs'] == 'yes' || @$_REQUEST['sc_create_logs'] == 1
@@ -177,19 +179,6 @@ class SC_HELPER
             $d = $data;
 
             if(is_array($data)) {
-                if(isset($data['cardData']) && is_array($data['cardData'])) {
-                    foreach($data['cardData'] as $k => $v) {
-                        if(empty($v)) {
-                            $data['cardData'][$k] = 'empty value!';
-                        }
-                        elseif($k == 'ccTempToken') {
-                            $data['cardData'][$k] = $v;
-                        }
-                        else {
-                            $data['cardData'][$k] = 'a string';
-                        }
-                    }
-                }
                 if(isset($data['userAccountDetails']) && is_array($data['userAccountDetails'])) {
                     foreach($data['userAccountDetails'] as $k => $v) {
                         $data['userAccountDetails'][$k] = 'a string';
@@ -200,11 +189,8 @@ class SC_HELPER
                         $data['userPaymentOption'][$k] = 'a string';
                     }
                 }
-                if(isset($data['paResponse']) && !empty($data['paResponse'])) {
-                    $data['paResponse'] = 'a long string';
-                }
-                if(isset($data['paReq']) && !empty($data['paReq'])) {
-                    $data['paReq'] = 'a long string';
+                if(isset($data['paymentMethods']) && is_array($data['paymentMethods'])) {
+					$data['paymentMethods'] = json_encode($data['paymentMethods']);
                 }
                 
                 $d = print_r($data, true);
@@ -225,13 +211,11 @@ class SC_HELPER
 
             try {
                 file_put_contents(
-                    SC_LOGS_DIR . date('Y-m-d', time()) . '.txt',
+                    $logs_path . 'SafeCharge-' . date('Y-m-d', time()) . '.txt',
                     date('H:i:s', time()) . ': ' . $d, FILE_APPEND
                 );
             }
-            catch (Exception $exc) {
-                echo $exc->getMessage();
-            }
+            catch (Exception $exc) {}
         }
     }
 
