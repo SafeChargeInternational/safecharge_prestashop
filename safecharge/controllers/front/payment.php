@@ -576,6 +576,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 break;
 
             case 'APPROVED':
+				$status_id = (int)(Configuration::get('PS_OS_PAYMENT')); // set the Order status to Complete
+				
                 // Void
                 if(@$_REQUEST['transactionType'] == 'Void') {
                     $msg = $this->l('DMN message: Your Void request was success, Order #')
@@ -596,6 +598,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                         $msg = 'DMN message: Your Refund with Transaction ID #'
                             . @$_REQUEST['clientUniqueId'] .' and Refund Amount ' . $formated_refund
                             . ' was APPROVED.';
+						
+						$status_id = (int)(Configuration::get('PS_OS_REFUND'));
                     }
                     catch(Exception $e) {
                         SC_HELPER::create_log($e->getMessage(), 'Change order status Exception: ');
@@ -604,7 +608,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 }
                 
                 $msg = 'The amount has been authorized and captured by ' . SC_GATEWAY_TITLE . '. ';
-                $status_id = (int)(Configuration::get('PS_OS_PAYMENT')); // set the Order status to Complete
                 
                 if(@$_REQUEST['transactionType'] == 'Auth') {
                     $msg = 'The amount has been authorized and wait to for Settle. ';
@@ -718,11 +721,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 SC_HELPER::create_log($status, 'Unexisting status: ');
         }
         
-//        SC_HELPER::create_log($order_info['id'] . ', ' . @$status_id ? $status_id : 'not changed'
-//            . ', ' . $msg, 'order_info id, status_id, msg: ');
-        
         // save order history
-        if(isset($status_id) && $status_id) {
+        if(!empty($status_id)) {
             $history = new OrderHistory();
             $history->id_order = (int)$order_info['id'];
             $history->changeIdOrderState($status_id, (int)($order_info['id']));
