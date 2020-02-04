@@ -181,7 +181,12 @@
                     <div class="apm_title">
                         <i class="material-icons sc_hide">check</i>
 
-                        <img src="{$pm.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{$pm.paymentMethodDisplayName[0].message}" />
+						{if $pm.paymentMethod == 'cc_card'}
+							<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{$pm.paymentMethodDisplayName[0].message}" style="height: 39px; width: auto" />
+						{else}
+							<img src="{$pm.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{$pm.paymentMethodDisplayName[0].message}" />
+						{/if}
+						
                         <input type="radio" id="sc_payment_method_{$pm.paymentMethod}" class="sc_hide" name="sc_payment_method" value="{$pm.paymentMethod}" />
                     </div>
 
@@ -198,16 +203,6 @@
                             <div class="apm_field">
                                 <div id="card-field-placeholder"></div>
                             </div>
-
-                            {*<div class="apm_field">
-                                <div id="sc_card_expiry"></div>
-                            </div>
-
-                            <div class="apm_field" style="border: 0px;">
-                                <div id="sc_card_cvc"></div>
-                            </div>*}
-
-{*                                <input type="hidden" id="{$pm.paymentMethod}_ccTempToken" name="{$pm.paymentMethod}[ccTempToken]" />*}
                         </div>
                     {else}
                         <div class="apm_fields">

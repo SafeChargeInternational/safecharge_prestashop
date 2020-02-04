@@ -485,8 +485,11 @@ class SafeCharge extends PaymentModule
 			$secret             = Configuration::get('SC_SECRET_KEY');
 			$amount				= (string) number_format($cart->getOrderTotal(), 2, '.', '');
 			
+//			var_dump($_SESSION);
+			
 			if(
-				$_SESSION['sc_order_vars']['amount'] != $amount
+				empty($_SESSION['sc_order_vars'])
+				|| $_SESSION['sc_order_vars']['amount'] != $amount
 				|| $_SESSION['sc_order_vars']['currency'] != $currency->iso_code
 				|| $_SESSION['sc_order_vars']['languageCode'] != substr($this->context->language->locale, 0, 2)
 				|| $_SESSION['sc_order_vars']['isTestEnv'] != $test_mode
@@ -549,7 +552,8 @@ class SafeCharge extends PaymentModule
 					'deviceDetails'     => SC_HELPER::get_device_details(),
 					'userTokenId'       => $customer->email,
 					'billingAddress'    => array(
-						'country' => $country_inv->iso_code,
+						'country'	=> $country_inv->iso_code,
+						'email'		=> $customer->email,
 					),
 					'webMasterId'       => 'PrestsShop ' . _PS_VERSION_,
 					'paymentOption'		=> ['card' => ['threeD' => ['isDynamic3D' => 1]]],
