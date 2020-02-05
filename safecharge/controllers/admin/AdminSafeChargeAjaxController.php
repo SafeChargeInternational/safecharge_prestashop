@@ -90,7 +90,7 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
         );
         
         if(defined('_PS_VERSION_')) {
-            $params['webMasterId'] = 'PrestsShop ' . _PS_VERSION_;
+            $params['webMasterId'] = SC_PRESTA_SHOP . _PS_VERSION_;
         }
         
         $checksum = hash(

@@ -140,7 +140,7 @@ class SafeCharge extends PaymentModule
             Configuration::updateValue('SC_MERCHANT_SITE_ID',   Tools::getValue('SC_MERCHANT_SITE_ID'));
             Configuration::updateValue('SC_SECRET_KEY',         Tools::getValue('SC_SECRET_KEY'));
             Configuration::updateValue('SC_HASH_TYPE',          Tools::getValue('SC_HASH_TYPE'));
-            Configuration::updateValue('SC_PAYMENT_METHOD',     'rest');
+            Configuration::updateValue('SC_PAYMENT_ACTION',     Tools::getValue('SC_PAYMENT_ACTION'));
             Configuration::updateValue('SC_TEST_MODE',          Tools::getValue('SC_TEST_MODE'));
             Configuration::updateValue('SC_HTTP_NOTIFY',        Tools::getValue('SC_HTTP_NOTIFY'));
             Configuration::updateValue('SC_CREATE_LOGS',        Tools::getValue('SC_CREATE_LOGS'));
@@ -470,9 +470,6 @@ class SafeCharge extends PaymentModule
 	{
 		global $smarty;
         
-        // check and prepare the data for the APMs
-        $sc_api = Configuration::get('SC_PAYMENT_METHOD');
-        
 		try {
 			$cart               = $this->context->cart;
 			$currency           = new Currency((int)($cart->id_currency));
@@ -555,9 +552,9 @@ class SafeCharge extends PaymentModule
 						'country'	=> $country_inv->iso_code,
 						'email'		=> $customer->email,
 					),
-					'webMasterId'       => 'PrestsShop ' . _PS_VERSION_,
+					'webMasterId'       => SC_PRESTA_SHOP . _PS_VERSION_,
 					'paymentOption'		=> ['card' => ['threeD' => ['isDynamic3D' => 1]]],
-					'transactionType'	=> ucfirst(Configuration::get('SC_PAYMENT_ACTION')),
+					'transactionType'	=> Configuration::get('SC_PAYMENT_ACTION'),
 				);
 
 				$oo_params['checksum'] = hash(
@@ -631,7 +628,7 @@ class SafeCharge extends PaymentModule
 			$this->context->smarty->assign('merchantId',		Configuration::get('SC_MERCHANT_ID'));
 			$this->context->smarty->assign('merchantSideId',	Configuration::get('SC_MERCHANT_SITE_ID'));
 			$this->context->smarty->assign('formAction',		$this->context->link->getModuleLink('safecharge', 'payment'));
-			$this->context->smarty->assign('webMasterId',		'PrestsShop ' . _PS_VERSION_);
+			$this->context->smarty->assign('webMasterId',		SC_PRESTA_SHOP . _PS_VERSION_);
 		}
 		catch(Exception $e) {
 			echo $e->getMessage();

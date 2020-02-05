@@ -90,46 +90,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					));
 				}
 
-//				$path_to_dmn_file = SC_CACHE_DIR . $cart->id . '.txt';
-
-//				if(file_exists($path_to_dmn_file)) {
-//					if(!is_readable($path_to_dmn_file)) {
-//						SC_HELPER::create_log('The DMN file for Order with Cart ID : ' 
-//							. $cart->id . ' is not readable!');
-//
-//						Tools::redirect($this->context->link->getModuleLink(
-//							'safecharge',
-//							'payment',
-//							array('prestaShopAction' => 'showError')
-//						));
-//					}
-//
-//					$dmn_params = json_decode(file_get_contents($path_to_dmn_file), true);
-//					
-//					// call the DMN URL to update STATUS
-//					$url = $this->context->link
-//						->getModuleLink('safecharge', 'payment', $dmn_params);
-//
-//					SC_HELPER::create_log('Internal DMN call');
-//
-//					@unlink($path_to_dmn_file);
-//
-//					$ch = curl_init();
-//
-//					curl_setopt($ch, CURLOPT_URL, $url);
-//					curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-//					curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-//					curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-//					curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-//
-//					$resp = curl_exec($ch);
-//					curl_close($ch);
-//
-//				}
-//				else {
-//					SC_HELPER::create_log('DMN file does not exists.');
-//				}
-
 				Tools::redirect($this->context->link->getModuleLink(
 					'safecharge',
 					'payment',
@@ -256,7 +216,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			'sessionToken'      => @$_POST['lst'],
 			'deviceDetails'     => SC_HELPER::get_device_details(),
 			'languageCode'      => substr($this->context->language->locale, 0, 2),
-			'webMasterId'       => 'PrestsShop ' . _PS_VERSION_,
+			'webMasterId'       => SC_PRESTA_SHOP . _PS_VERSION_,
 		);
 
 		$sc_params['billingAddress'] = array(
