@@ -87,6 +87,7 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
             'authCode'              => $sc_data['auth_code'],
             'urlDetails'            => array('notificationUrl' => $notify_url),
             'timeStamp'             => $time,
+            'sourceApplication'     => SC_SOURCE_APPLICATION,
         );
         
         if(defined('_PS_VERSION_')) {
@@ -125,41 +126,6 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
         exit;
     }
     
-//    private function delete_logs()
-//    {
-//        $logs = array();
-//        $logs_dir = _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR;
-//
-//        foreach(scandir($logs_dir) as $file) {
-//            if(!in_array($file, array('.', '..', '.htaccess'))) {
-//                $logs[] = $file;
-//            }
-//        }
-//
-//        if(count($logs) > 30) {
-//            sort($logs);
-//
-//            for($cnt = 0; $cnt < 30; $cnt++) {
-//                if(is_file($logs_dir . $logs[$cnt])) {
-//                    if(!unlink($logs_dir . $logs[$cnt])) {
-//                        echo json_encode(array(
-//                            'status' => 0,
-//                            'msg' => 'Error when try to delete file: ' . $logs[$cnt]
-//                        ));
-//                        exit;
-//                    }
-//                }
-//            }
-//
-//            echo json_encode(array('status' => 1, 'msg' => ''));
-//        }
-//        else {
-//            echo json_encode(array('status' => 0, 'msg' => 'The log files are less than 30.'));
-//        }
-//
-//        exit;
-//    }
-	
 	private function save_order()
 	{
 		if(

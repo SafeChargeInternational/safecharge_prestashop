@@ -246,9 +246,10 @@
     var sfcFirstField   = null;
     var card            = null;
     var scData          = {
-        merchantSiteId  : "{$merchantSideId}",
-        merchantId      : "{$merchantId}",
-        sessionToken    : "{$sessionToken}"
+        merchantSiteId		: "{$merchantSideId}",
+        merchantId			: "{$merchantId}",
+        sessionToken		: "{$sessionToken}",
+        sourceApplication	: "{$sourceApplication}"
     };
 
     {if $isTestEnv eq 'yes'}

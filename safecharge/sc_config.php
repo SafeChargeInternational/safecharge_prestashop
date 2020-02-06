@@ -153,4 +153,5 @@ define('SC_DEVICES_TYPES', json_encode(array('tablet', 'mobile', 'tv', 'windows'
 define('SC_DEVICES_OS', json_encode(array('android', 'windows', 'linux', 'mac os')));
 
 define('SC_PRESTA_SHOP', 'PrestaShop ');
+define('SC_SOURCE_APPLICATION', '');
 

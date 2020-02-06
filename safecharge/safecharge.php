@@ -326,6 +326,7 @@ class SafeCharge extends PaymentModule
                 'authCode'              => $sc_order_info['auth_code'],
                 'url'                   => $notify_url,
                 'timeStamp'             => $time,
+				'sourceApplication'     => SC_SOURCE_APPLICATION,
             );
             
             $checksum_str = implode('', $ref_parameters);
@@ -629,6 +630,7 @@ class SafeCharge extends PaymentModule
 			$this->context->smarty->assign('merchantSideId',	Configuration::get('SC_MERCHANT_SITE_ID'));
 			$this->context->smarty->assign('formAction',		$this->context->link->getModuleLink('safecharge', 'payment'));
 			$this->context->smarty->assign('webMasterId',		SC_PRESTA_SHOP . _PS_VERSION_);
+			$this->context->smarty->assign('sourceApplication',	SC_SOURCE_APPLICATION);
 		}
 		catch(Exception $e) {
 			echo $e->getMessage();
