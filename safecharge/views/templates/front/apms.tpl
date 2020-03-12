@@ -49,6 +49,7 @@
         display: none;
         background-color: #fafafa;
         border-bottom: .1rem solid #9B9B9B;
+		font-family: 'arial' !important;
     }
 
     #scForm .apm_fields .apm_field {
@@ -73,6 +74,8 @@
         padding-left: 0px !important;
         padding-right: 0px !important;
         width: 80%;
+		font-size: 15px !important;
+		font-family: 'arial' !important;
     }
 
     #scForm .field_icon {
@@ -141,6 +144,11 @@
         margin: 0 auto;
         margin-top: 10%;
     }
+	
+	#cc_load_spinner {
+		text-align: center;
+		padding-top: 10px;
+	}
 
     @-webkit-keyframes glyphicon-spin-r {
         0% {
@@ -175,6 +183,11 @@
 <form method="post" id="scForm" action="{$formAction}">
     {if $paymentMethods}
         <h3>{l s='Choose a payment method:' mod='Modules.safecharge'}</h3>
+		
+		<div id="cc_load_spinner" class="sc_hide">
+			<i class="material-icons fast-right-spinner">sync</i>
+		</div>
+		
         <ul id="sc_apms_list" class="">
             {foreach $paymentMethods as $pm}
                 <li class="apm_container" style="height: auto;">
@@ -192,10 +205,6 @@
 
                     {if in_array($pm.paymentMethod, array('cc_card', 'dc_card'))}
                         <div class="apm_fields" id="sc_{$pm.paymentMethod}">
-                            {*<div class="apm_field">
-                                <div id="sc_card_number"></div>
-                            </div>*}
-
                             <div class="apm_field">
                                 <input type="text" id="sc_card_holder_name" name="{$pm.paymentMethod}[cardHolderName]" placeholder="Card holder name" style="padding-bottom: 2px !important;" />
                             </div>
@@ -261,7 +270,8 @@
         $('#payment-confirmation button.btn.btn-primary').prop('disabled', true);
         $('#payment-confirmation button.btn.btn-primary .fast-right-spinner').removeClass('sc_hide');
 
-        var formValid = true;
+        var formValid	= true;
+		var reloadForm	= false;
         selectedPM = $('input[name="sc_payment_method"]:checked').val();
 
         if(typeof selectedPM != 'undefined' && selectedPM != '') {
@@ -287,13 +297,14 @@
                             return;
                         }
                         else if(resp.result == 'DECLINED') {
+							reloadForm = true;
                             alert("{l s='Your Payment was DECLINED. Please try another payment method!' mod='Modules.safecharge'}");
                         }
                         else {
-                            if(resp.errorDescription != 'undefined' && resp.errorDescription != '') {
+                            if(resp.hasOwnProperty('errorDescription') && resp.errorDescription != '') {
                                 alert(resp.errorDescription);
                             }
-                            else if('undefined' != resp.reason && '' != resp.reason) {
+                            else if(resp.hasOwnProperty('reason') && '' != resp.reason) {
                                 alert(resp.reason);
                             }
                             else {
@@ -307,8 +318,13 @@
                         return;
                     }
 
-                    $('#payment-confirmation button.btn.btn-primary').prop('disabled', false);
-                    $('#payment-confirmation button.btn.btn-primary .fast-right-spinner').addClass('sc_hide');
+					if(reloadForm) {
+						reCreateSCFields();
+					}
+					else {
+						$('#payment-confirmation button.btn.btn-primary').prop('disabled', false);
+						$('#payment-confirmation button.btn.btn-primary .fast-right-spinner').addClass('sc_hide');
+					}
                 });
             }
             // use APM data
@@ -381,6 +397,8 @@
      * Call SafeCharge method and pass the parameters
      */
     function createSCFields() {
+		console.log('createSCFields')
+		
         sfc = SafeCharge(scData);
 
         // prepare fields
@@ -395,35 +413,6 @@
             invalid: 'invalid',
         };
 
-        {*var elementStyles = {
-            base: {
-                fontSize: 14
-                ,color: 'black'
-                ,'::placeholder': {
-                    color: 'grey'
-                }
-            }
-        }
-
-        // describe fields
-        var cardNumber = sfcFirstField = fields.create('ccNumber', {
-            classes: elementClasses
-            ,style: elementStyles
-        });
-        cardNumber.attach('#sc_card_number');
-
-        var cardExpiry = fields.create('ccExpiration', {
-            classes: elementClasses
-            ,style: elementStyles
-        });
-        cardExpiry.attach('#sc_card_expiry');
-
-        var cardCvc = fields.create('ccCvc', {
-            classes: elementClasses
-            ,style: elementStyles
-        });
-        cardCvc.attach('#sc_card_cvc'); *}
-
         card = fields.create('card', {
             iconStyle: 'solid',
             style: {
@@ -431,7 +420,7 @@
                     iconColor: "#c4f0ff",
                     color: "#000",
                     fontWeight: 500,
-                    fontFamily: "Roboto, Open Sans, Segoe UI, sans-serif",
+                    fontFamily: "arial",
                     fontSize: '15px',
                     fontSmoothing: "antialiased",
                     ":-webkit-autofill": {
@@ -443,7 +432,7 @@
                 },
                 invalid: {
                     iconColor: "#FFC7EE",
-                    color: "#FFC7EE"
+                    color: "red"
                 }
             },
             classes: elementClasses
@@ -451,6 +440,43 @@
 
         card.attach('#card-field-placeholder');
     }
+	
+	/**
+	 * Function reCreateSCFields
+	 * use it after DECLINED payment try
+	*/
+	function reCreateSCFields() {
+		sfc		= null;
+		card	= null;
+	
+		$('#cc_load_spinner, #cc_load_spinner i').removeClass('sc_hide');
+		$('#sc_apms_list').addClass('sc_hide');
+		$('#card-field-placeholder').html(''); // clear card container
+		
+		$.ajax({
+			dataType: "json",
+			url: "{$ooAjaxUrl}",
+			data: {}
+		})
+		.done(function(res) {
+			if(typeof res.session_token != 'undefined' && '' != res.session_token) {
+				scData.sessionToken = res.session_token;
+				createSCFields();
+				
+				$('#cc_load_spinner').addClass('sc_hide');
+				$('#sc_apms_list').removeClass('sc_hide');
+				
+				$('#payment-confirmation button.btn.btn-primary').prop('disabled', false);
+				$('#payment-confirmation button.btn.btn-primary .fast-right-spinner').addClass('sc_hide');
+			}
+			else {
+				window.location.reload();
+			}
+		})
+		.fail(function(e) {
+			window.location.reload();
+		});
+	}
 
     window.onload = function() {
         createSCFields();
@@ -464,7 +490,6 @@
 
                 return false;
             });
-
 
         $('#scForm .apm_title').on('click', function(){
             var apmCont = $(this).parent('.apm_container');

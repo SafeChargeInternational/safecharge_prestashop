@@ -467,7 +467,15 @@ class SafeCharge extends PaymentModule
 		return false;
 	}
 	
-	private function prepareOrderData()
+	/**
+	 * Function prepareOrderData
+	 * We call this function with Ajax call in some cases
+	 * 
+	 * @global type $smarty
+	 * @param boolean $return
+	 * @return boolean
+	 */
+	public function prepareOrderData($return = false)
 	{
 		global $smarty;
         
@@ -482,8 +490,7 @@ class SafeCharge extends PaymentModule
 			$hash               = Configuration::get('SC_HASH_TYPE');
 			$secret             = Configuration::get('SC_SECRET_KEY');
 			$amount				= (string) number_format($cart->getOrderTotal(), 2, '.', '');
-			
-//			var_dump($_SESSION);
+			$oo_ajax_url		= '';
 			
 			if(
 				empty($_SESSION['sc_order_vars'])
@@ -495,13 +502,19 @@ class SafeCharge extends PaymentModule
 				|| (time() - $_SESSION['sc_order_vars']['create_time'] > 10*60)
 			) {
 
-				$error_url          = $this->context->link->getModuleLink(
+				$oo_ajax_url	= $this->context->link->getModuleLink(
+					'safecharge',
+					'payment',
+					array('prestaShopAction' => 'createOpenOrder')
+				);
+				
+				$error_url		= $this->context->link->getModuleLink(
 					'safecharge',
 					'payment',
 					array('prestaShopAction' => 'showError')
 				);
 
-				$success_url		= $this->context->link->getModuleLink(
+				$success_url	= $this->context->link->getModuleLink(
 					'safecharge',
 					'payment',
 					array(
@@ -575,6 +588,17 @@ class SafeCharge extends PaymentModule
 				}
 
 				$session_token = $resp['sessionToken'];
+				
+				if($return) {
+					SC_HELPER::create_log($session_token, 'Session token for Ajax call');
+					
+					echo json_encode(array(
+						'session_token' => $session_token
+					));
+					exit;
+					
+//					return $session_token;
+				}
 				# Open Order END
 
 				 # get APMs
@@ -631,6 +655,7 @@ class SafeCharge extends PaymentModule
 			$this->context->smarty->assign('formAction',		$this->context->link->getModuleLink('safecharge', 'payment'));
 			$this->context->smarty->assign('webMasterId',		SC_PRESTA_SHOP . _PS_VERSION_);
 			$this->context->smarty->assign('sourceApplication',	SC_SOURCE_APPLICATION);
+			$this->context->smarty->assign('ooAjaxUrl',			$oo_ajax_url);
 		}
 		catch(Exception $e) {
 			echo $e->getMessage();

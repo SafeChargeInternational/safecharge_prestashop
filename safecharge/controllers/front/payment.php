@@ -50,6 +50,15 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             $this->scGetDMN();
             return;
         }
+		
+		if(
+			Tools::getValue('prestaShopAction', false) == 'createOpenOrder'
+//			&& (!empty($_SERVER['HTTP_X_REQUESTED_WITH'])
+//				&& 'XMLHttpRequest' === $_SERVER['HTTP_X_REQUESTED_WITH'])
+		) {
+            $this->createOpenOrder();
+            return;
+        }
         
         $this->processOrder();
     }
@@ -296,8 +305,21 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 
 		Tools::redirect($final_url);
     }
-    
-    /**
+	
+	/**
+	 * Function createOpenOrder
+	 * Create new OpenOrder after declined or error try
+	 */
+	private function createOpenOrder()
+	{
+		$plugin_root = dirname(dirname(dirname(__FILE__)));
+		require_once $plugin_root . '/safecharge.php';
+		
+		$sc				= new SafeCharge();
+		$session_token	= $sc->prepareOrderData(true);
+	}
+
+	/**
      * Function scOrderError
      * Shows a message when there is an error with the order
      */
