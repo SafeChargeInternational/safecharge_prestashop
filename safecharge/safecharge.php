@@ -491,7 +491,6 @@ class SafeCharge extends PaymentModule
 			$hash               = Configuration::get('SC_HASH_TYPE');
 			$secret             = Configuration::get('SC_SECRET_KEY');
 			$amount				= (string) number_format($cart->getOrderTotal(), 2, '.', '');
-			$oo_ajax_url		= '';
 			
 			if(
 				empty($_SESSION['sc_order_vars'])
@@ -502,13 +501,6 @@ class SafeCharge extends PaymentModule
 				|| $_SESSION['sc_order_vars']['country'] != $country_inv->iso_code
 				|| (time() - $_SESSION['sc_order_vars']['create_time'] > 10*60)
 			) {
-
-				$oo_ajax_url	= $this->context->link->getModuleLink(
-					'safecharge',
-					'payment',
-					array('prestaShopAction' => 'createOpenOrder')
-				);
-				
 				$error_url		= $this->context->link->getModuleLink(
 					'safecharge',
 					'payment',
@@ -656,7 +648,12 @@ class SafeCharge extends PaymentModule
 			$this->context->smarty->assign('formAction',		$this->context->link->getModuleLink('safecharge', 'payment'));
 			$this->context->smarty->assign('webMasterId',		SC_PRESTA_SHOP . _PS_VERSION_);
 			$this->context->smarty->assign('sourceApplication',	SC_SOURCE_APPLICATION);
-			$this->context->smarty->assign('ooAjaxUrl',			$oo_ajax_url);
+			
+			$this->context->smarty->assign('ooAjaxUrl', $this->context->link->getModuleLink(
+				'safecharge',
+				'payment',
+				array('prestaShopAction' => 'createOpenOrder')
+			));
 		}
 		catch(Exception $e) {
 			echo $e->getMessage();

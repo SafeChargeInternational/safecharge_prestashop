@@ -249,6 +249,7 @@
 <script type="text/javascript">
     var selectedPM  = "";
     var payloadURL  = "";
+    var ooAjaxUrl  = "{$ooAjaxUrl}";
 
     // for the fields
     var sfc             = null;
@@ -301,6 +302,8 @@
                             alert("{l s='Your Payment was DECLINED. Please try another payment method!' mod='safecharge'}");
                         }
                         else {
+							reloadForm = true;
+							
                             if(resp.hasOwnProperty('errorDescription') && resp.errorDescription != '') {
                                 alert(resp.errorDescription);
                             }
@@ -313,6 +316,8 @@
                         }
                     }
                     else {
+						reloadForm = true;
+					
                         alert("{l s='Unexpected error, please try again later!' mod='safecharge'}");
                         console.error('Error with SDK response: ' + resp);
                         return;
@@ -397,7 +402,7 @@
      * Call SafeCharge method and pass the parameters
      */
     function createSCFields() {
-		console.log('createSCFields')
+		console.log('createSCFields sessionToken', scData.sessionToken);
 		
         sfc = SafeCharge(scData);
 
@@ -446,6 +451,9 @@
 	 * use it after DECLINED payment try
 	*/
 	function reCreateSCFields() {
+		console.log('reCreateSCFields');
+		console.log('reCreateSCFields url', ooAjaxUrl);
+	
 		sfc		= null;
 		card	= null;
 	
@@ -455,10 +463,12 @@
 		
 		$.ajax({
 			dataType: "json",
-			url: "{$ooAjaxUrl}",
+			url: ooAjaxUrl,
 			data: {}
 		})
 		.done(function(res) {
+			console.log('reCreate response', res);
+			
 			if(typeof res.session_token != 'undefined' && '' != res.session_token) {
 				scData.sessionToken = res.session_token;
 				createSCFields();
@@ -474,6 +484,7 @@
 			}
 		})
 		.fail(function(e) {
+			console.error('reCreate fail');
 			window.location.reload();
 		});
 	}
