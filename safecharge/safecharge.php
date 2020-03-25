@@ -36,7 +36,7 @@ class SafeCharge extends PaymentModule
         parent::__construct();
 
         $this->page				= basename(__FILE__, '.php'); // ?
-        $this->displayName		= $this->l('SafeCharge');
+        $this->displayName		= 'SafeCharge';
         $this->description		= $this->l('Accepts payments by Safecharge.');
         $this->confirmUninstall	= $this->l('Are you sure you want to delete your details?');
         
@@ -358,7 +358,7 @@ class SafeCharge extends PaymentModule
         // in case we have message but without status
         if(!isset($json_arr['status']) && isset($json_arr['msg'])) {
             // save response message in the History
-            $msg = $this->l('Request Refund #' . $last_slip_id . ' problem: ' . $json_arr['msg']);
+            $msg = $this->l('Request Refund #') . $last_slip_id . $this->l(' problem: ') . $json_arr['msg'];
             $this->context->controller->errors[] = $msg;
             
             $message->message = $msg;
@@ -370,8 +370,9 @@ class SafeCharge extends PaymentModule
         $cpanel_url = $test_mode == 'yes' ? SC_TEST_CPANEL_URL : SC_LIVE_CPANEL_URL;
         
         $msg = '';
-        $error_note = $this->l('Request Refund #' . $last_slip_id . ' fail, if you want login into <i>' . $cpanel_url
-            . '</i> and refund Transaction ID ' . $payment_custom_fields[SC_GW_TRANS_ID_KEY]);
+        $error_note = $this->l('Request Refund #') . $last_slip_id
+			. $this->l(' fail, if you want login into ') . '<i>' . $cpanel_url . '</i>'
+			. $this->l(' and refund Transaction ID ') . $payment_custom_fields[SC_GW_TRANS_ID_KEY];
         
         if($json_arr === false) {
             $msg = $this->l('The REST API retun false. ' . $error_note);
@@ -405,7 +406,7 @@ class SafeCharge extends PaymentModule
         }
         
         // if request is success, we will wait for DMN
-        $msg = $this->l('Request Refund #' . $last_slip_id . ', was sent. Please, wait for DMN!');
+        $msg = $this->l('Request Refund #') . $last_slip_id . $this->l(', was sent. Please, wait for DMN!');
         $this->context->controller->success[] = $msg;
         
         $message->message = $msg;
