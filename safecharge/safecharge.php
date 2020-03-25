@@ -358,7 +358,7 @@ class SafeCharge extends PaymentModule
         // in case we have message but without status
         if(!isset($json_arr['status']) && isset($json_arr['msg'])) {
             // save response message in the History
-            $msg = $this->l('Request Refund #' . $last_slip_id . ' problem: ' . $json_arr['msg']);
+            $msg = $this->l('Request Refund #') . $last_slip_id . $this->l(' problem: ') . $json_arr['msg'];
             $this->context->controller->errors[] = $msg;
             
             $message->message = $msg;
@@ -370,11 +370,12 @@ class SafeCharge extends PaymentModule
         $cpanel_url = $test_mode == 'yes' ? SC_TEST_CPANEL_URL : SC_LIVE_CPANEL_URL;
         
         $msg = '';
-        $error_note = $this->l('Request Refund #' . $last_slip_id . ' fail, if you want login into <i>' . $cpanel_url
-            . '</i> and refund Transaction ID ' . $payment_custom_fields[SC_GW_TRANS_ID_KEY]);
+        $error_note = $this->l('Request Refund #') . $last_slip_id 
+			. $this->l(' fail, if you want login into') . ' <i>' . $cpanel_url . '</i> '
+            . $this->l('and refund Transaction ID ') . $payment_custom_fields[SC_GW_TRANS_ID_KEY];
         
         if($json_arr === false) {
-            $msg = $this->l('The REST API retun false. ' . $error_note);
+            $msg = $this->l('The REST API retun false. ') . $error_note;
             $this->context->controller->errors[] = $msg;
 
             $message->message = $msg;
@@ -384,7 +385,7 @@ class SafeCharge extends PaymentModule
         }
         
         if(!is_array($json_arr)) {
-            $msg = $this->l('Invalid API response. ' . $error_note);
+            $msg = $this->l('Invalid API response. ') . $error_note;
             $this->context->controller->errors[] = $msg;
 
             $message->message = $msg;
@@ -395,7 +396,7 @@ class SafeCharge extends PaymentModule
         
         // the status of the request is ERROR
         if(@$json_arr['status'] == 'ERROR') {
-            $msg = $this->l('Request ERROR - "' . $json_arr['reason'] .'" '. $error_note);
+            $msg = $this->l('Request ERROR - ') . $json_arr['reason'] .'" '. $error_note;
             $this->context->controller->errors[] = $msg;
 
             $message->message = $msg;
@@ -405,7 +406,7 @@ class SafeCharge extends PaymentModule
         }
         
         // if request is success, we will wait for DMN
-        $msg = $this->l('Request Refund #' . $last_slip_id . ', was sent. Please, wait for DMN!');
+        $msg = $this->l('Request Refund #') . $last_slip_id . $this->l(', was sent. Please, wait for DMN!');
         $this->context->controller->success[] = $msg;
         
         $message->message = $msg;
@@ -428,17 +429,17 @@ class SafeCharge extends PaymentModule
         
         if (!Configuration::get('SC_MERCHANT_SITE_ID')) {
             SC_HELPER::create_log('Error: (invalid or undefined site id)');
-            return $this->l($this->displayName.' Error: (invalid or undefined site id)');
+            return $this->displayName . $this->l(' Error: (invalid or undefined site id)');
         }
           
         if (!Configuration::get('SC_MERCHANT_ID')) {
             SC_HELPER::create_log('Error: (invalid or undefined merchant id)');
-            return $this->l($this->displayName.' Error: (invalid or undefined merchant id)');
+            return $this->displayName . $this->l(' Error: (invalid or undefined merchant id)');
         }
         
         if (!Configuration::get('SC_SECRET_KEY')) {
             SC_HELPER::create_log('Error: (invalid or undefined secure key)');
-            return $this->l($this->displayName.' Error: (invalid or undefined secure key)');
+            return $this->displayName . $this->l(' Error: (invalid or undefined secure key)');
         }
           
         return true;
