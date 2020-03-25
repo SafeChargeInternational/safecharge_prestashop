@@ -693,7 +693,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 
                 // add one more message
                 $message->private = true;
-                $message->message = $this->l(SC_GATEWAY_TITLE .' payment status is pending<br/>Unique Id: ')
+                $message->message = SC_GATEWAY_TITLE . $this->l(' payment status is pending<br/>Unique Id: ')
                         .@$request['PPP_TransactionID'];
                 $message->add();
                 

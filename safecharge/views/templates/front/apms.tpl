@@ -176,13 +176,13 @@
 </style>
 
 <div id="sc_pm_error" class="alert alert-warning sc_hide">
-    {l s='Please, select a payment method, and fill all of its fileds!' mod='Modules.safecharge'}
+    {l s='Please, select a payment method, and fill all of its fileds!' mod='safecharge'}
     <span class="close" onclick="$('#sc_pm_error').hide();">&times;</span>
 </div>
 
 <form method="post" id="scForm" action="{$formAction}">
     {if $paymentMethods}
-        <h3>{l s='Choose a payment method:' mod='Modules.safecharge'}</h3>
+        <h3>{l s='Choose a payment method:' mod='safecharge'}</h3>
 		
 		<div id="cc_load_spinner" class="sc_hide">
 			<i class="material-icons fast-right-spinner">sync</i>
@@ -298,7 +298,7 @@
                         }
                         else if(resp.result == 'DECLINED') {
 							reloadForm = true;
-                            alert("{l s='Your Payment was DECLINED. Please try another payment method!' mod='Modules.safecharge'}");
+                            alert("{l s='Your Payment was DECLINED. Please try another payment method!' mod='safecharge'}");
                         }
                         else {
                             if(resp.hasOwnProperty('errorDescription') && resp.errorDescription != '') {
@@ -308,12 +308,12 @@
                                 alert(resp.reason);
                             }
                             else {
-                                alert("{l s='Error with your Payment. Please try again later!' mod='Modules.safecharge'}");
+                                alert("{l s='Error with your Payment. Please try again later!' mod='safecharge'}");
                             }
                         }
                     }
                     else {
-                        alert("{l s='Unexpected error, please try again later!' mod='Modules.safecharge'}");
+                        alert("{l s='Unexpected error, please try again later!' mod='safecharge'}");
                         console.error('Error with SDK response: ' + resp);
                         return;
                     }
