@@ -1,5 +1,4 @@
 *
-!safecharge/
-!safecharge/**
+!safecharge
 !README.md
 !.gitignore
