@@ -1,4 +1,4 @@
-# safecharge_prestashop
+# SafeCharge Prestashop
 SafeCharge PlugIn for PrestaShop v 1.7 and above
 
 How to install:
