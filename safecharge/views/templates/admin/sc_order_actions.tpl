@@ -30,10 +30,10 @@
 </style>
 
 {if $scData.resp_transaction_type eq "Auth" and $scData.order_state eq $state_pending}
-    <button type="button" id="sc_settle_btn" class="btn btn-default" onclick="scOrderAction('settle', {$orderId})" title="{l s='You will be redirected to Orders list.' d='Module.safecharge'}">
+    <button type="button" id="sc_settle_btn" class="btn btn-default" onclick="scOrderAction('settle', {$orderId})" title="{l s='You will be redirected to Orders list.' mod='safecharge'}">
         <i class="icon-thumbs-up"></i>
         <i class="icon-repeat fast-right-spinner hidden"></i>
-        {l s='Settle' d='Module.safecharge'}
+        {l s='Settle' mod='safecharge'}
     </button>
 {/if}
 
@@ -45,7 +45,7 @@
     <button type="button" id="sc_void_btn" class="btn btn-default" onclick="scOrderAction('void', {$orderId})">
         <i class="icon-retweet"></i>
         <i class="icon-repeat fast-right-spinner hidden"></i>
-        {l s='Void' d='Module.safecharge'}
+        {l s='Void' mod='safecharge'}
     </button>
 {/if}
     
@@ -61,11 +61,11 @@
         
         switch(action) {
             case 'settle':
-                question = '{l s='Are you sure you want to Settle this order?' d='Module.safecharge'}';
+                question = '{l s='Are you sure you want to Settle this order?' mod='safecharge'}';
                 break;
                 
             case 'void':
-                question = '{l s='Are you sure you want to Cancel this order?' d='Module.safecharge'}';
+                question = '{l s='Are you sure you want to Cancel this order?' mod='safecharge'}';
                 break;
             
             default:
