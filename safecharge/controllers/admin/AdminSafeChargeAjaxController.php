@@ -80,7 +80,7 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
             'merchantId'            => Configuration::get('SC_MERCHANT_ID'),
             'merchantSiteId'        => Configuration::get('SC_MERCHANT_SITE_ID'),
             'clientRequestId'       => $time . '_' . $sc_data['related_transaction_id'],
-            'clientUniqueId'        => uniqid(),
+            'clientUniqueId'        => $order_id,
             'amount'                => number_format($order_info->total_paid, 2, '.', ''),
             'currency'              => $currency->iso_code,
             'relatedTransactionId'  => $sc_data['related_transaction_id'],
