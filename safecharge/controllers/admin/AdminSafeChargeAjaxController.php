@@ -37,7 +37,7 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
             
         exit;
     }
-	
+    
     /**
      * Function order_void_settle
      * We use one function for both because the only
