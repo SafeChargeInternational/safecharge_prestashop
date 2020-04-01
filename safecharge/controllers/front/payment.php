@@ -430,7 +430,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				else {
 					$sc_data = Db::getInstance()->getRow(
 						'SELECT * FROM safecharge_order_data '
-						. 'WHERE related_transaction_id = ' . $_REQUEST['TransactionID']
+						. 'WHERE related_transaction_id = "' . $_REQUEST['TransactionID'] .'"'
 					);
 
 					if(!empty($sc_data)) {
@@ -485,7 +485,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			else {
 				$sc_data = Db::getInstance()->getRow(
 					'SELECT * FROM safecharge_order_data '
-					. 'WHERE related_transaction_id = ' . $_REQUEST['TransactionID']
+					. 'WHERE related_transaction_id = "' . @$_REQUEST['relatedTransactionId'] . '"'
 				);
 				
 				if(!empty($sc_data)) {
