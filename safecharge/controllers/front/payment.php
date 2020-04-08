@@ -348,15 +348,25 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         
         if(!$this->checkAdvancedCheckSum()) {
             SC_HELPER::create_log('DMN report: You receive DMN from not trusted source. The process ends here.');
-            echo 'DMN report: You receive DMN from not trusted source. The process ends here.';
+            echo 'DMN Error: You receive DMN from not trusted source. The process ends here.';
             exit;
         }
+		
+		if(empty($_REQUEST['transactionType'])) {
+			echo 'DMN Error: transactionType is empty.';
+            exit;
+		}
+		
+		if(empty($_REQUEST['TransactionID']) or ! is_numeric($_REQUEST['TransactionID'])) {
+			echo 'DMN Error: TransactionID is empty or not numeric.';
+            exit;
+		}
 		
         $req_status = $this->getRequestStatus();
         
         # Sale and Auth
         if(
-            isset($_REQUEST['transactionType'], $_REQUEST['invoice_id'])
+            isset($_REQUEST['invoice_id'])
             && in_array($_REQUEST['transactionType'], array('Sale', 'Auth'))
         ) {
 			// REST and WebSDK
@@ -394,7 +404,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 $order_info = new Order($order_id);
                 $this->updateCustomPaymentFields($order_id);
 
-                if(intval($order_info->current_state) != (int)(Configuration::get('PS_OS_PAYMENT'))) {
+                if(intval($order_info->current_state) != intval(Configuration::get('PS_OS_PAYMENT'))) {
                     $this->changeOrderStatus(array(
                             'id'            => $order_id,
                             'current_state' => $order_info->current_state,
@@ -417,7 +427,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         if(
             in_array(@$_REQUEST['transactionType'], array('Credit', 'Refund'))
             && !empty($req_status)
-			and is_numeric(@$_REQUEST['TransactionID'])
+            && !empty($_REQUEST['relatedTransactionId'])
         ) {
             SC_HELPER::create_log('PrestaShop Refund DMN.');
             
@@ -430,15 +440,15 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				else {
 					$sc_data = Db::getInstance()->getRow(
 						'SELECT * FROM safecharge_order_data '
-						. 'WHERE related_transaction_id = "' . $_REQUEST['TransactionID'] .'"'
+						. 'WHERE related_transaction_id = "' . $_REQUEST['relatedTransactionId'] .'"'
 					);
-
-					if(!empty($sc_data)) {
-						$order_id = @$sc_data['order_id'];
+					
+					if(empty($sc_data)) {
+						echo 'DMN Error: we can not find Order connected with incoming relatedTransactionId.';
+						exit;
 					}
-					else {
-						$order_id = null;
-					}
+					
+					$order_id = @$sc_data['order_id'];
 				}
 				
                 $order_info = new Order($order_id);
@@ -471,10 +481,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         }
         
         # Void, Settle
-        if(
-			in_array(@$_REQUEST['transactionType'], array('Void', 'Settle'))
-			and is_numeric(@$_REQUEST['TransactionID'])
-		) {
+        if(in_array($_REQUEST['transactionType'], array('Void', 'Settle'))) {
             SC_HELPER::create_log($_REQUEST['transactionType'], 'Void/Settle transactionType: ');
             
 			// PS Void/Settle
@@ -551,7 +558,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             case 'CANCELED':
                 $msg = $this->l('Your request was Canceld') . '. '
                     . 'PPP_TransactionID = ' . @$request['PPP_TransactionID']
-                    . ", Status = " . $status . ', GW_TransactionID = '
+                    . ", Status = " . $status . "\n\r" . 'TransactionID = '
                     . @$request['TransactionID'];
 
                 $status_id = (int)(Configuration::get('PS_OS_CANCELED'));
@@ -561,7 +568,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				$status_id = (int)(Configuration::get('PS_OS_PAYMENT')); // set the Order status to Complete
 				
                 // Void
-                if(@$_REQUEST['transactionType'] == 'Void') {
+                if($_REQUEST['transactionType'] == 'Void') {
                     $msg = $this->l('DMN message: Your Void request was success, Order #')
                         . $order_info['id'] . ' ' . $this->l('was canceld') . '.';
 
@@ -570,43 +577,35 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 }
                 
                 // Refund
-                if(in_array(@$_REQUEST['transactionType'], array('Credit', 'Refund'))) {
-                    try {
-                        $curr_refund_amount = floatval(@$_REQUEST['totalAmount']);
-                        $curr_refund_amount = number_format($curr_refund_amount, 2, '.', '');
+                if(in_array($_REQUEST['transactionType'], array('Credit', 'Refund'))) {
+					$curr_refund_amount = number_format(floatval(@$_REQUEST['totalAmount']), 2, '.', '');
+					$formated_refund = $curr_refund_amount . ' ' .$order_info['currency'];
+					
+					$msg = 'DMN message: Your Refund was APPROVED. Transaction ID #'
+						. $_REQUEST['TransactionID'] .' Refund Amount ' . $formated_refund;
 
-                        $formated_refund = $curr_refund_amount . ' ' .$order_info['currency'];
-
-                        $msg = 'DMN message: Your Refund with Transaction ID #'
-                            . @$_REQUEST['clientUniqueId'] .' and Refund Amount ' . $formated_refund
-                            . ' was APPROVED.';
-						
-						$status_id = (int)(Configuration::get('PS_OS_REFUND'));
-                    }
-                    catch(Exception $e) {
-                        SC_HELPER::create_log($e->getMessage(), 'Change order status Exception: ');
-                    }
+					$status_id = (int)(Configuration::get('PS_OS_REFUND'));
                     break;
                 }
                 
                 $msg = 'The amount has been authorized and captured by ' . SC_GATEWAY_TITLE . '. ';
                 
-                if(@$_REQUEST['transactionType'] == 'Auth') {
-                    $msg = 'The amount has been authorized and wait to for Settle. ';
+                if($_REQUEST['transactionType'] == 'Auth') {
+                    $msg = 'The amount has been authorized and wait to for Settle.';
                     $status_id = (int)(Configuration::get('PS_OS_PREPARATION'));
                 }
-                elseif(@$_REQUEST['transactionType'] == 'Settle') {
+                elseif($_REQUEST['transactionType'] == 'Settle') {
                     $msg = 'The amount has been captured by ' . SC_GATEWAY_TITLE . '. ';
                 }
                 
                 $msg .= 'PPP_TransactionID = ' . @$request['PPP_TransactionID']
                     . ", Status = ". $status;
                 
-                if(@$_REQUEST['transactionType']) {
+                if($_REQUEST['transactionType']) {
                     $msg .= ", TransactionType = ". @$_REQUEST['transactionType'];
                 }
                 
-                $msg .= ', GW_TransactionID = '. @$request['TransactionID'];
+                $msg .= ', TransactionID = '. @$request['TransactionID'];
                 break;
 
             case 'ERROR':
@@ -624,14 +623,14 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                     . ", Status = " . $status . ", Error code = " . @$request['ErrCode']
                     . ", Message = " . @$request['message'] . $reason;
                 
-                if(@$_REQUEST['transactionType']) {
-                    $msg .= ", TransactionType = " . @$_REQUEST['transactionType'];
+                if($_REQUEST['transactionType']) {
+                    $msg .= ", TransactionType = " . $_REQUEST['transactionType'];
                 }
 
-                $msg .= ', GW_TransactionID = ' . @$request['TransactionID'];
+                $msg .= ', TransactionID = ' . @$request['TransactionID'];
                 
                 // Void, do not change status
-                if(@$_REQUEST['transactionType'] == 'Void') {
+                if($_REQUEST['transactionType'] == 'Void') {
                     $msg = $this->l('DMN message: Your Void request fail');
                     
                     if(@$_REQUEST['Reason']) {
@@ -645,7 +644,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 }
                 
                 // Refund, do not change status
-                if(in_array(@$_REQUEST['transactionType'], array('Credit', 'Refund'))) {
+                if(in_array($_REQUEST['transactionType'], array('Credit', 'Refund'))) {
                     if(!isset($_REQUEST['totalAmount']) || !$_REQUEST['totalAmount']) {
                         break;
                     }
@@ -689,11 +688,11 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                     $msg .= ", TransactionType = " . @$_REQUEST['transactionType'];
                 }
 
-                $msg .= ', GW_TransactionID = ' . @$request['TransactionID'];
+                $msg .= ', TransactionID = ' . @$request['TransactionID'];
                 
                 // add one more message
                 $message->private = true;
-                $message->message = SC_GATEWAY_TITLE . $this->l(' payment status is pending<br/>Unique Id: ')
+                $message->message = SC_GATEWAY_TITLE . $this->l(' payment status is pending Unique Id: ')
                         .@$request['PPP_TransactionID'];
                 $message->add();
                 
@@ -705,6 +704,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         
         // save order history
         if(!empty($status_id)) {
+			SC_HELPER::create_log($status_id, 'change order status');
+			
             $history = new OrderHistory();
             $history->id_order = (int)$order_info['id'];
             $history->changeIdOrderState($status_id, (int)($order_info['id']));
@@ -714,6 +715,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         $message->private = true;
         $message->message = $msg;
         $message->add();
+		
+		SC_HELPER::create_log('Change_order_status() end.');
     }
     
     /**

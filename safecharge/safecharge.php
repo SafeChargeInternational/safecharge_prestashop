@@ -318,8 +318,8 @@ class SafeCharge extends PaymentModule
             $ref_parameters = array(
                 'merchantId'            => Configuration::get('SC_MERCHANT_ID'),
                 'merchantSiteId'        => Configuration::get('SC_MERCHANT_SITE_ID'),
-                'clientRequestId'       => $time . '_' . $sc_order_info['related_transaction_id'],
-                'clientUniqueId'        => $last_slip_id,
+                'clientRequestId'       => $last_slip_id,
+                'clientUniqueId'        => $order_id,
                 'amount'                => number_format($request_amoutn, 2, '.', ''),
                 'currency'              => $currency->iso_code,
                 'relatedTransactionId'  => $sc_order_info['related_transaction_id'], // GW Transaction ID
