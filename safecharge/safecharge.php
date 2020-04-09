@@ -372,7 +372,7 @@ class SafeCharge extends PaymentModule
         $msg = '';
         $error_note = $this->l('Request for Refund #') . $last_slip_id 
 			. $this->l(' fail, if you want login into') . ' <i>' . $cpanel_url . '</i> '
-            . $this->l('and refund Transaction ID ') . $payment_custom_fields[SC_GW_TRANS_ID_KEY];
+            . $this->l('and refund Transaction ID ') . $sc_order_info['related_transaction_id'];
         
         if($json_arr === false) {
             $msg = $this->l('The REST API retun false. ') . $error_note;
