@@ -64,7 +64,27 @@
     #scForm .apm_fields .apm_field:last-child {
         border-bottom: 0px !important;
     }
-
+	
+	#sc_card_holder {
+		width: 50% !important;
+		display: inline-block !important;
+	}
+	
+	#sc_date_cvv_holder {
+		width: 46% !important;
+		float: right;
+	}
+	
+	#sc_date_cvv_holder #sc_date_holder {
+		width: 40%;
+		display: inline-block;
+	}
+	
+	#sc_date_cvv_holder #sc_cvv_holder {
+		width: 40%;
+		float: right;
+	}
+	
     #scForm input  {
         border-radius: unset;
         border: 0 !important;
@@ -149,6 +169,32 @@
 		text-align: center;
 		padding-top: 10px;
 	}
+	
+	@media screen and (max-width: 460px) {
+		#sc_fields_holder {
+			padding: 0 !important;
+			margin: 0 !important;
+		}
+		
+		#sc_card_holder { display: block !important; }
+		#sc_visa_mc_maestro_logo { height: 24px !important; }
+		
+		#sc_date_cvv_holder {
+			float: none !important;
+			border-bottom: 0px !important;
+		}
+		
+		#sc_card_holder, #sc_date_cvv_holder {
+			width: auto !important;
+			/* .apm_field */
+			padding-left: 0.7em;
+			padding-right: 0.7em;
+			padding-top: 1em;
+			position: relative;
+			border-bottom: .1rem solid #9B9B9B;
+			margin: 0px 10px 0px 10px;
+		}
+	}
 
     @-webkit-keyframes glyphicon-spin-r {
         0% {
@@ -176,7 +222,7 @@
 </style>
 
 <div id="sc_pm_error" class="alert alert-warning sc_hide">
-    {l s='Please, select a payment method, and fill all of its fileds!' mod='safecharge'}
+    <span id="sc_error_msg"></span>
     <span class="close" onclick="$('#sc_pm_error').hide();">&times;</span>
 </div>
 
@@ -195,7 +241,7 @@
                         <i class="material-icons sc_hide">check</i>
 
 						{if $pm.paymentMethod == 'cc_card'}
-							<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{$pm.paymentMethodDisplayName[0].message}" style="height: 39px; width: auto" />
+							<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{$pm.paymentMethodDisplayName[0].message}" style="height: 39px; width: auto" id="sc_visa_mc_maestro_logo" />
 						{else}
 							<img src="{$pm.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{$pm.paymentMethodDisplayName[0].message}" />
 						{/if}
@@ -209,9 +255,25 @@
                                 <input type="text" id="sc_card_holder_name" name="{$pm.paymentMethod}[cardHolderName]" placeholder="Card holder name" style="padding-bottom: 2px !important;" />
                             </div>
 
-                            <div class="apm_field">
+							<div id="sc_fields_holder" class="apm_field">
+								<div id="sc_card_holder">
+									<div id="sc_card_number"></div>
+								</div>
+
+								<div id="sc_date_cvv_holder">
+									<div id="sc_date_holder">
+										<div id="sc_card_expiry"></div>
+									</div>
+
+									<div id="sc_cvv_holder">
+										<div id="sc_card_cvc"></div>
+									</div>
+								</div>
+							</div>
+							
+                            {*<div class="apm_field">
                                 <div id="card-field-placeholder"></div>
-                            </div>
+                            </div>*}
                         </div>
                     {else}
                         <div class="apm_fields">
@@ -254,7 +316,40 @@
     // for the fields
     var sfc             = null;
     var sfcFirstField   = null;
-    var card            = null;
+    var cardNumber		= null;
+    var cardExpiry		= null;
+    var cardCvc			= null;
+    var scFields		= null;
+//    var card            = null;
+	
+	// set some classes
+	var scElementClasses = {
+		focus: 'focus',
+		empty: 'empty',
+		invalid: 'invalid',
+	};
+	
+	var scFieldsStyle = {
+		base: {
+			iconColor: "#c4f0ff",
+			color: "#000",
+			fontWeight: 500,
+			fontFamily: "arial",
+			fontSize: '15px',
+			fontSmoothing: "antialiased",
+			":-webkit-autofill": {
+				color: "#fce883"
+			},
+			"::placeholder": {
+				color: "grey" 
+			}
+		},
+		invalid: {
+			iconColor: "#FFC7EE",
+			color: "red"
+		}
+	};
+	
     var scData          = {
         merchantSiteId		: "{$merchantSideId}",
         merchantId			: "{$merchantId}",
@@ -266,6 +361,8 @@
         scData.env = 'test';
     {/if}
     // for the fields END
+	
+	var scDefaultErrorMsg = "{l s='Please, select a payment method, and fill all of its fileds!' mod='safecharge'}";
 
     function scValidateAPMFields() {
         $('#payment-confirmation button.btn.btn-primary').prop('disabled', true);
@@ -278,6 +375,38 @@
         if(typeof selectedPM != 'undefined' && selectedPM != '') {
             // use cards
             if(selectedPM == 'cc_card' || selectedPM == 'dc_card') {
+				if(jQuery('#sc_card_holder_name').val() === '') {
+					scFormFalse("{l s='Please fill Card holder name field!' mod='safecharge'}");
+					return;
+				}
+				
+				if(jQuery('#sc_card_number').hasClass('empty')) {
+					scFormFalse("{l s='Please fill Card number field!' mod='safecharge'}");
+					return;
+				}
+				if(!jQuery('#sc_card_number').hasClass('empty') && !jQuery('#sc_card_number').hasClass('sfc-complete')) {
+					scFormFalse("{l s='Your card number is not correct, please check it!' mod='safecharge'}");
+					return;
+				}
+				
+				if(jQuery('#sc_card_expiry').hasClass('empty')) {
+					scFormFalse("{l s='Please fill Card expary date field!' mod='safecharge'}");
+					return;
+				}
+				if(!jQuery('#sc_card_expiry').hasClass('empty') && !jQuery('#sc_card_expiry').hasClass('sfc-complete')) {
+					scFormFalse("{l s='Your card expary date is not correct, please check it!' mod='safecharge'}");
+					return;
+				}
+				
+				if(jQuery('#sc_card_cvc').hasClass('empty')) {
+					scFormFalse("{l s='Please fill CVC field!' mod='safecharge'}");
+					return;
+				}
+				if(!jQuery('#sc_card_cvc').hasClass('empty') && !jQuery('#sc_card_cvc').hasClass('sfc-complete')) {
+					scFormFalse("{l s='Your CVC is not correct, please check it!' mod='safecharge'}");
+					return;
+				}
+				
                 // create payment with WebSDK
                 sfc.createPayment({
                     sessionToken    : "{$sessionToken}",
@@ -286,7 +415,8 @@
                     currency        : "{$currency}",
                     amount          : "{$amount}",
                     cardHolderName  : document.getElementById('sc_card_holder_name').value,
-                    paymentOption   : card,
+                //    paymentOption   : card,
+                    paymentOption   : sfcFirstField,
 					webMasterId		: "{$webMasterId}"
                 }, function(resp){
                     console.log(resp);
@@ -364,7 +494,7 @@
                 });
 
                 if(!formValid) {
-                    scFormFalse();
+                    scFormFalse(scDefaultErrorMsg);
                     return;
                 }
 
@@ -372,15 +502,16 @@
             }
         }
         else {
-            scFormFalse();
+            scFormFalse(scDefaultErrorMsg);
             return;
         }
     } // end of scValidateAPMFields()
 
-    function scFormFalse() {
+    function scFormFalse(_text) {
         $('#payment-confirmation button.btn.btn-primary').prop('disabled', false);
         $('#payment-confirmation button.btn.btn-primary .fast-right-spinner').addClass('sc_hide');
 
+        $('#sc_error_msg').html(_text);
         $('#sc_pm_error').show();
         window.location.hash = 'sc_pm_error';
         window.location.hash;
@@ -407,17 +538,30 @@
         sfc = SafeCharge(scData);
 
         // prepare fields
-        var fields = sfc.fields({
+//        var fields = sfc.fields({
+        scFields = sfc.fields({
             locale: "{$languageCode}"
         });
+		
+		cardNumber = sfcFirstField = scFields.create('ccNumber', {
+			classes: scElementClasses
+			,style: scFieldsStyle
+		});
+		cardNumber.attach('#sc_card_number');
 
-        // set some classes
-        var elementClasses = {
-            focus: 'focus',
-            empty: 'empty',
-            invalid: 'invalid',
-        };
+		cardExpiry = scFields.create('ccExpiration', {
+			classes: scElementClasses
+			,style: scFieldsStyle
+		});
+		cardExpiry.attach('#sc_card_expiry');
 
+		cardCvc = scFields.create('ccCvc', {
+			classes: scElementClasses
+			,style: scFieldsStyle
+		});
+		cardCvc.attach('#sc_card_cvc');
+
+		/*
         card = fields.create('card', {
             iconStyle: 'solid',
             style: {
@@ -444,6 +588,7 @@
         });
 
         card.attach('#card-field-placeholder');
+		*/
     }
 	
 	/**
@@ -454,12 +599,14 @@
 		console.log('reCreateSCFields');
 		console.log('reCreateSCFields url', ooAjaxUrl);
 	
-		sfc		= null;
-		card	= null;
+		sfc				= null;
+	//	card	= null;
+		sfcFirstField	= null;
 	
 		$('#cc_load_spinner, #cc_load_spinner i').removeClass('sc_hide');
 		$('#sc_apms_list').addClass('sc_hide');
-		$('#card-field-placeholder').html(''); // clear card container
+		//$('#card-field-placeholder').html(''); // clear card container
+		$('#sc_card_number, #sc_card_expiry, #sc_card_cvc').html(''); // clear card container
 		
 		$.ajax({
 			dataType: "json",
@@ -492,7 +639,23 @@
     window.onload = function() {
         createSCFields();
 
-        $('#payment-confirmation button')
+		$('#payment-confirmation button')
+			.on('click', function(e) {
+				if($('input[name=payment-option]:checked').attr('data-module-name') == 'safecharge') {
+					e.stopPropagation();
+			
+					$(this).prepend('<i class="material-icons fast-right-spinner sc_hide">sync</i>');
+					scValidateAPMFields();
+					return false;
+				}
+		
+                {*scValidateAPMFields();
+
+                return false;*}
+            });
+
+
+        {*$('#payment-confirmation button')
             .prop('type', 'button')
             .prepend('<i class="material-icons fast-right-spinner sc_hide">sync</i>')
             .on('click', function(e) {
@@ -500,7 +663,7 @@
                 scValidateAPMFields();
 
                 return false;
-            });
+            });*}
 
         $('#scForm .apm_title').on('click', function(){
             var apmCont = $(this).parent('.apm_container');
