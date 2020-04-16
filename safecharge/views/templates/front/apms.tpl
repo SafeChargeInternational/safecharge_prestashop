@@ -159,9 +159,6 @@
     
     /* for the 3DS popup */
     .sfcModal-dialog {
-        width: 50%;
-        margin-top: 10%;
-        margin: 0 auto;
         margin-top: 10%;
     }
 	
