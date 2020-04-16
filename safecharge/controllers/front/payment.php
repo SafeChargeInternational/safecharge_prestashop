@@ -41,11 +41,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             return;
         }
         
-		if(Tools::getValue('prestaShopAction', false) == 'showCompleted') {
-            $this->scOrderCompleted();
-            return;
-        }
-        
 		if(Tools::getValue('prestaShopAction', false) == 'getDMN') {
             $this->scGetDMN();
             return;
@@ -99,11 +94,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					));
 				}
 
-				Tools::redirect($this->context->link->getModuleLink(
-					'safecharge',
-					'payment',
-					array('prestaShopAction' => 'showCompleted')
-				));
+				Tools::redirect('index.php?controller=order-confirmation&id_cart='
+					. $cart->id . '&id_module=' . $this->module->id . '&id_order='
+					. $this->module->currentOrder . '&key=' . $customer->secure_key);
 			}
 
             # get order data
@@ -328,15 +321,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         $this->setTemplate('module:safecharge/views/templates/front/order_error.tpl');
     }
 	
-    /**
-     * Function scOrderError
-     * Shows a message when there is an error with the order
-     */
-    private function scOrderCompleted()
-    {
-        $this->setTemplate('module:safecharge/views/templates/front/order_completed.tpl');
-    }
-    
     /**
      * Function scGetDMN
      * 

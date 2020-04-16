@@ -501,26 +501,6 @@ class SafeCharge extends PaymentModule
 				|| $_SESSION['sc_order_vars']['country'] != $country_inv->iso_code
 				|| (time() - $_SESSION['sc_order_vars']['create_time'] > 10*60)
 			) {
-				$error_url		= $this->context->link->getModuleLink(
-					'safecharge',
-					'payment',
-					array('prestaShopAction' => 'showError')
-				);
-
-				$success_url	= $this->context->link->getModuleLink(
-					'safecharge',
-					'payment',
-					array(
-						'prestaShopAction'	=> 'showCompleted',
-						'id_cart'			=> (int)$cart->id,
-						'id_module'			=> $this->id,
-						'status'			=> Configuration::get('PS_OS_PREPARATION'),
-						'amount'			=> $amount,
-						'module'			=> $this->displayName,
-						'key'				=> $customer->secure_key,
-					)
-				);
-
 				$notify_url     = $this->context->link
 					->getModuleLink('safecharge', 'payment', array(
 						'prestaShopAction'  => 'getDMN',
@@ -547,10 +527,6 @@ class SafeCharge extends PaymentModule
 					'currency'          => $currency->iso_code,
 					'timeStamp'         => $time,
 					'urlDetails'        => array(
-						'successUrl'        => $success_url,
-						'failureUrl'        => $error_url,
-						'pendingUrl'        => $success_url,
-						'backUrl'			=> $this->context->link->getPageLink('order'),
 						'notificationUrl'   => $notify_url,
 					),
 					'deviceDetails'     => SC_HELPER::get_device_details(),

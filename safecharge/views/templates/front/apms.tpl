@@ -177,7 +177,6 @@
 		}
 		
 		#sc_card_holder { display: block !important; }
-		#sc_visa_mc_maestro_logo { height: 24px !important; }
 		
 		#sc_date_cvv_holder {
 			float: none !important;
@@ -194,6 +193,10 @@
 			border-bottom: .1rem solid #9B9B9B;
 			margin: 0px 10px 0px 10px;
 		}
+	}
+	
+	@media screen and (max-width: 380px) {
+		#sc_visa_mc_maestro_logo { height: 24px !important; }
 	}
 
     @-webkit-keyframes glyphicon-spin-r {
@@ -390,11 +393,11 @@
 				}
 				
 				if(jQuery('#sc_card_expiry').hasClass('empty')) {
-					scFormFalse("{l s='Please fill Card expary date field!' mod='safecharge'}");
+					scFormFalse("{l s='Please fill Card expiry date field!' mod='safecharge'}");
 					return;
 				}
 				if(!jQuery('#sc_card_expiry').hasClass('empty') && !jQuery('#sc_card_expiry').hasClass('sfc-complete')) {
-					scFormFalse("{l s='Your card expary date is not correct, please check it!' mod='safecharge'}");
+					scFormFalse("{l s='Your card expiry date is not correct, please check it!' mod='safecharge'}");
 					return;
 				}
 				
@@ -429,26 +432,26 @@
                         }
                         else if(resp.result == 'DECLINED') {
 							reloadForm = true;
-                            alert("{l s='Your Payment was DECLINED. Please try another payment method!' mod='safecharge'}");
+							scFormFalse("{l s='Your Payment was DECLINED. Please try another payment method!' mod='safecharge'}");
                         }
                         else {
 							reloadForm = true;
 							
                             if(resp.hasOwnProperty('errorDescription') && resp.errorDescription != '') {
-                                alert(resp.errorDescription);
+								scFormFalse(resp.errorDescription);
                             }
                             else if(resp.hasOwnProperty('reason') && '' != resp.reason) {
-                                alert(resp.reason);
+								scFormFalse(resp.reason);
                             }
                             else {
-                                alert("{l s='Error with your Payment. Please try again later!' mod='safecharge'}");
+								scFormFalse("{l s='Error with your Payment. Please try again later!' mod='safecharge'}");
                             }
                         }
                     }
                     else {
 						reloadForm = true;
 					
-                        alert("{l s='Unexpected error, please try again later!' mod='safecharge'}");
+						scFormFalse("{l s='Unexpected error, please try again later!' mod='safecharge'}");
                         console.error('Error with SDK response: ' + resp);
                         return;
                     }
