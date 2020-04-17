@@ -90,7 +90,7 @@ class SC_HELPER
         
         $user_agent = strtolower($_SERVER['HTTP_USER_AGENT']);
         
-        $device_details['deviceName'] = $_SERVER['HTTP_USER_AGENT'];
+        $device_details['deviceName'] = substr_compare($_SERVER['HTTP_USER_AGENT'], 0, 250);
 
         if(defined('SC_DEVICES_TYPES')) {
             $devs_tps = json_decode(SC_DEVICES_TYPES, true);
