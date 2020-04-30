@@ -10,7 +10,7 @@ if (!session_id()) {
 }
 
 require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'sc_config.php';
-require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'SC_HELPER.php';
+require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'SC_CLASS.php';
 
 class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
 {
@@ -45,7 +45,7 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
      */
     private function order_void_settle()
     {
-        SC_HELPER::create_log('Void/Settle');
+        SC_CLASS::create_log('Void/Settle');
         
         if(!$_POST['scAction'] or empty($_POST['scAction'])) {
             echo json_encode(array('status' => 0, 'msg' => 'There is no action.'));
@@ -111,7 +111,7 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
             $url = $test_mode == 'no' ? SC_LIVE_VOID_URL : SC_TEST_VOID_URL;
         }
         
-        $resp = SC_HELPER::call_rest_api($url, $params);
+        $resp = SC_CLASS::call_rest_api($url, $params);
         
         if(
             !$resp || !is_array($resp)
@@ -141,7 +141,8 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
 		
 		$this->module->validateOrder(
 			(int)$cart->id
-			,Configuration::get('PS_OS_PREPARATION') // the status
+//			,Configuration::get('PS_OS_PREPARATION') // the status
+			,Configuration::get('SC_OS_PENDING') // the status
 			,$sc_params['amount']
 			,$this->module->displayName
 		//    ,null

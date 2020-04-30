@@ -152,3 +152,6 @@ define('SC_DEVICES_TYPES', json_encode(array('macintosh', 'tablet', 'mobile', 't
 define('SC_PRESTA_SHOP', 'PrestaShop ');
 define('SC_SOURCE_APPLICATION', '');
 
+//define('SC_PENDING_STATUS_NAME', 'SC Pending');
+//define('SC_OS_PENDING', 'SC_PENDING'); // the name for the Configuration table
+

@@ -11,7 +11,7 @@ if(!isset($_SESSION)) {
 }
 
 require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'sc_config.php';
-require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'SC_HELPER.php';
+require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'SC_CLASS.php';
 require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'sc_versions_resolver.php';
 
 class SafeCharge extends PaymentModule
@@ -63,6 +63,7 @@ class SafeCharge extends PaymentModule
             || !$this->registerHook('displayAdminOrderLeft')
             || !$this->registerHook('actionOrderSlipAdd')
             || !$this->installTab('AdminCatalog', 'AdminSafeChargeAjax', 'SafeChargeAjax')
+            || !$this->addOrderState()
         ) {
             return false;
         }
@@ -110,9 +111,10 @@ class SafeCharge extends PaymentModule
             $tab->name[$lang['id_lang']] = $name;
         }
         
-        $tab->class_name = $class_name;
-        $tab->module = $this->name;
-        $tab->active = 1;
+        $tab->class_name	= $class_name;
+        $tab->module		= $this->name;
+        $tab->active		= 1;
+		
         return $tab->add();
     }
     
@@ -164,7 +166,7 @@ class SafeCharge extends PaymentModule
     public function hookPaymentOptions($params)
     {
 		if($this->isPayment() !== true){
-            SC_HELPER::create_log('hookPaymentOptions isPayment not true.');
+            SC_CLASS::create_log('hookPaymentOptions isPayment not true.');
             return false;
         }
 		
@@ -193,7 +195,7 @@ class SafeCharge extends PaymentModule
     public function hookDisplayBackOfficeOrderActions($params)
     {
         if($this->isPayment() !== true){
-            SC_HELPER::create_log('hookDisplayBackOfficeOrderActions isPayment not true.');
+            SC_CLASS::create_log('hookDisplayBackOfficeOrderActions isPayment not true.');
             return false;
         }
         
@@ -207,14 +209,15 @@ class SafeCharge extends PaymentModule
         $sc_data = Db::getInstance()->getRow('SELECT * FROM safecharge_order_data WHERE order_id = ' . $order_id);
         
         if(empty($sc_data)) {
-            SC_HELPER::create_log('Missing safecharge_order_data for order ' . $order_id);
+            SC_CLASS::create_log('Missing safecharge_order_data for order ' . $order_id);
 			$smarty->assign('scDataError', 'Error - The Payment miss specific SafeCharge data!');
         }
         
         $sc_data['order_state']     = $order_data->current_state;
         
         $smarty->assign('scData', $sc_data);
-        $smarty->assign('state_pending', Configuration::get('PS_OS_PREPARATION'));
+//        $smarty->assign('state_pending', Configuration::get('PS_OS_PREPARATION'));
+        $smarty->assign('state_pending', Configuration::get('SC_OS_PENDING'));
         $smarty->assign('state_completed', Configuration::get('PS_OS_PAYMENT'));
         
         // check for refunds
@@ -235,7 +238,7 @@ class SafeCharge extends PaymentModule
     public function hookDisplayAdminOrderLeft()
     {
         if($this->isPayment() !== true){
-            SC_HELPER::create_log('hookDisplayAdminOrderLeft isPayment not true.');
+            SC_CLASS::create_log('hookDisplayAdminOrderLeft isPayment not true.');
             return false;
         }
         
@@ -261,7 +264,7 @@ class SafeCharge extends PaymentModule
             || !isset($_REQUEST['partialRefund'], $_REQUEST['partialRefundProduct'])
             || !is_array($_REQUEST['partialRefundProduct'])
         ) {
-            SC_HELPER::create_log('hookActionOrderSlipAdd isPayment not true or missing request parameters.');
+            SC_CLASS::create_log('hookActionOrderSlipAdd isPayment not true or missing request parameters.');
             return false;
         }
         
@@ -342,10 +345,10 @@ class SafeCharge extends PaymentModule
             
             $refund_url = $test_mode == 'yes' ? SC_TEST_REFUND_URL : SC_LIVE_REFUND_URL;
             
-            $json_arr = SC_HELPER::call_rest_api($refund_url, $ref_parameters);
+            $json_arr = SC_CLASS::call_rest_api($refund_url, $ref_parameters);
         }
         catch(Exception $e) {
-            SC_HELPER::create_log($e->getMessage(), 'hookActionOrderSlipAdd Exception: ');
+            SC_CLASS::create_log($e->getMessage(), 'hookActionOrderSlipAdd Exception: ');
             $this->context->controller->errors[] = $this->l('Error while trying to colect refund data.');
             return false;
         }
@@ -428,17 +431,17 @@ class SafeCharge extends PaymentModule
         }
         
         if (!Configuration::get('SC_MERCHANT_SITE_ID')) {
-            SC_HELPER::create_log('Error: (invalid or undefined site id)');
+            SC_CLASS::create_log('Error: (invalid or undefined site id)');
             return $this->displayName . $this->l(' Error: (invalid or undefined site id)');
         }
           
         if (!Configuration::get('SC_MERCHANT_ID')) {
-            SC_HELPER::create_log('Error: (invalid or undefined merchant id)');
+            SC_CLASS::create_log('Error: (invalid or undefined merchant id)');
             return $this->displayName . $this->l(' Error: (invalid or undefined merchant id)');
         }
         
         if (!Configuration::get('SC_SECRET_KEY')) {
-            SC_HELPER::create_log('Error: (invalid or undefined secure key)');
+            SC_CLASS::create_log('Error: (invalid or undefined secure key)');
             return $this->displayName . $this->l(' Error: (invalid or undefined secure key)');
         }
           
@@ -529,7 +532,7 @@ class SafeCharge extends PaymentModule
 					'urlDetails'        => array(
 						'notificationUrl'   => $notify_url,
 					),
-					'deviceDetails'     => SC_HELPER::get_device_details(),
+					'deviceDetails'     => SC_CLASS::get_device_details(),
 					'userTokenId'       => $customer->email,
 					'billingAddress'    => array(
 						'country'	=> $country_inv->iso_code,
@@ -546,7 +549,7 @@ class SafeCharge extends PaymentModule
 						. $oo_params['amount'] . $oo_params['currency'] . $time . $secret
 				);
 
-				$resp = SC_HELPER::call_rest_api($oo_endpoint_url, $oo_params);
+				$resp = SC_CLASS::call_rest_api($oo_endpoint_url, $oo_params);
 
 				if(
 					empty($resp['sessionToken'])
@@ -559,7 +562,7 @@ class SafeCharge extends PaymentModule
 				$session_token = $resp['sessionToken'];
 				
 				if($return) {
-					SC_HELPER::create_log($session_token, 'Session token for Ajax call');
+					SC_CLASS::create_log($session_token, 'Session token for Ajax call');
 					
 					echo json_encode(array(
 						'session_token' => $session_token
@@ -586,10 +589,10 @@ class SafeCharge extends PaymentModule
 
 				$endpoint_url = $test_mode == 'yes' ? SC_TEST_REST_PAYMENT_METHODS_URL : SC_LIVE_REST_PAYMENT_METHODS_URL;
 
-				$res = SC_HELPER::call_rest_api($endpoint_url, $apms_params);
+				$res = SC_CLASS::call_rest_api($endpoint_url, $apms_params);
 
 				if(!is_array($res) || !isset($res['paymentMethods']) || empty($res['paymentMethods'])) {
-					SC_HELPER::create_log($res, 'No APMs, response is:');
+					SC_CLASS::create_log($res, 'No APMs, response is:');
 					return false;
 				}
 
@@ -633,10 +636,53 @@ class SafeCharge extends PaymentModule
 		}
 		catch(Exception $e) {
 			echo $e->getMessage();
-			SC_HELPER::create_log($e->getMessage(), 'hookPaymentOptions Exception: ');
+			SC_CLASS::create_log($e->getMessage(), 'hookPaymentOptions Exception: ');
 		}
 	}
     
+	private function addOrderState()
+	{
+		if (
+			!Configuration::get('SC_OS_PENDING')
+            || !Validate::isLoadedObject(new OrderState(Configuration::get('SC_OS_PENDING')))
+		) {
+			// create new order state
+			$order_state = new OrderState();
+
+			$order_state->invoice		= false;
+			$order_state->send_email	= false;
+			$order_state->module_name	= 'SafeCharge';
+			$order_state->color			= '#FF8C00';
+			$order_state->hidden		= false;
+			$order_state->logable		= false;
+			$order_state->delivery		= false;
+
+			$order_state->name	= array();
+			$languages			= Language::getLanguages(false);
+
+			// set the name for all lanugaes
+			foreach ($languages as $language) {
+				$order_state->name[ $language['id_lang'] ] = 'SC Pending';
+			}
+
+			if(!$order_state->add()) {
+				return false;
+			}
+			
+			// on success add icon
+			$source = _PS_MODULE_DIR_ . 'safecharge/views/img/safecharge_os.png';
+			$destination = _PS_ROOT_DIR_ . '/img/os/' . (int)$order_state->id . '.gif';
+			copy($source, $destination);
+
+			// set status in the config
+			Configuration::updateValue('SC_OS_PENDING', (int) $order_state->id);
+
+			return true;
+		}
+		
+		return true;
+	}
+	
     /**
      * Function getRequestStatus
      * We need this stupid function because as response request variable
@@ -669,7 +715,7 @@ class SafeCharge extends PaymentModule
             );
         }
         catch(Exception $e) {
-            SC_HELPER::create_log($e->getMessage(), 'checkAdvancedCheckSum Exception: ');
+            SC_CLASS::create_log($e->getMessage(), 'checkAdvancedCheckSum Exception: ');
             return false;
         }
 
