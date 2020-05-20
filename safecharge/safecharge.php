@@ -558,7 +558,7 @@ class SafeCharge extends PaymentModule
 					Configuration::get('SC_HTTP_NOTIFY') == 'yes'
 					&& false !== strpos($notify_url, 'https://')
 				) {
-					$notify_url = str_repeat('https://', 'http://', $notify_url);
+					$notify_url = str_replace('https://', 'http://', $notify_url);
 				}
 
 				# Open Order
