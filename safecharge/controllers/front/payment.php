@@ -553,7 +553,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         
         switch($status) {
             case 'CANCELED':
-                $msg = $this->l('Your request was Canceld') . '. '
+                $msg = $this->l('Your request was Canceled') . '. '
                     . 'PPP_TransactionID = ' . @$request['PPP_TransactionID']
                     . ", Status = " . $status . "\n\r" . 'TransactionID = '
                     . @$request['TransactionID'];
@@ -567,7 +567,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 // Void
                 if($_REQUEST['transactionType'] == 'Void') {
                     $msg = $this->l('DMN message: Your Void request was success, Order #')
-                        . $order_info['id'] . ' ' . $this->l('was canceld') . '.';
+                        . $order_info['id'] . ' ' . $this->l('was canceled') . '.';
 
                     $status_id = (int)(Configuration::get('PS_OS_CANCELED'));
                     break;
