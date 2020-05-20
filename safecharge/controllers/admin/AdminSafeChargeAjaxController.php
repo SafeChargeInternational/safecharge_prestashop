@@ -125,9 +125,15 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
         echo json_encode(array('status' => $status, 'data' => $resp));
         exit;
     }
-    
+	
+	/**
+	 * TODO Do we use this function ?
+	 * @deprecated
+	 */
 	private function save_order()
 	{
+		SC_CLASS::create_log('save_order()');
+		
 		if(
 			empty($_POST['cart_id'])
 			|| empty($_POST['orderStatus'])
@@ -142,7 +148,7 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
 		$this->module->validateOrder(
 			(int)$cart->id
 //			,Configuration::get('PS_OS_PREPARATION') // the status
-			,Configuration::get('SC_OS_PENDING') // the status
+//			,Configuration::get('SC_OS_PENDING') // the status
 			,$sc_params['amount']
 			,$this->module->displayName
 		//    ,null

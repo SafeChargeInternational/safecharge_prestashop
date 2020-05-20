@@ -98,13 +98,13 @@
 		font-family: 'arial' !important;
     }
 
-    #scForm .field_icon {
-        float: right;
-    }
-
-    .sc_hide {
-        display: none;
-    }
+    #scForm .field_icon { float: right; }
+    .sc_hide { display: none; }
+	
+	#sc_error_msg {
+		display: inline-block;
+		width: 90%;
+	}
 
     /* Chrome, Firefox, Opera, Safari 10.1+ */
     #sc_apms_list .apm_field input::placeholder, #sc_upos_list .apm_field input::placeholder,
@@ -194,6 +194,7 @@
 	
 	@media screen and (max-width: 380px) {
 		#sc_visa_mc_maestro_logo { height: 24px !important; }
+		#sc_error_msg { width: 80%; }
 	}
 
     @-webkit-keyframes glyphicon-spin-r {
@@ -309,6 +310,8 @@
 </form>
 
 <script type="text/javascript">
+	var scAPMsErrorMsg = "{$scAPMsErrorMsg}";
+	
     var selectedPM  = "";
     var payloadURL  = "";
     var ooAjaxUrl  = "{$ooAjaxUrl}";
@@ -320,7 +323,6 @@
     var cardExpiry		= null;
     var cardCvc			= null;
     var scFields		= null;
-//    var card            = null;
 	
 	// set some classes
 	var scElementClasses = {
@@ -365,8 +367,15 @@
 	var scDefaultErrorMsg = "{l s='Please, select a payment method, and fill all of its fileds!' mod='safecharge'}";
 
     function scValidateAPMFields() {
+		console.log('scValidateAPMFields', scAPMsErrorMsg);
+		
         $('#payment-confirmation button.btn.btn-primary').prop('disabled', true);
         $('#payment-confirmation button.btn.btn-primary .fast-right-spinner').removeClass('sc_hide');
+
+		if('' != scAPMsErrorMsg) {
+			scFormFalse("{l s=$scAPMsErrorMsg mod='safecharge'}");
+			return;
+		}
 
         var formValid	= true;
 		var reloadForm	= false;
@@ -534,6 +543,16 @@
      */
     function createSCFields() {
 		console.log('createSCFields sessionToken', scData.sessionToken);
+		
+		if(!scData.hasOwnProperty('sessionToken') || '' == scData.sessionToken) {
+			console.error('createSCFields sessionToken is missing.');
+			
+			if('' != scAPMsErrorMsg) {
+				scFormFalse("{l s=$scAPMsErrorMsg mod='safecharge'}");
+			}
+			
+			return;
+		}
 		
         sfc = SafeCharge(scData);
 

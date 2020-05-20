@@ -29,7 +29,8 @@
     }
 </style>
 
-{if $scData.resp_transaction_type eq "Auth" and $scData.order_state eq $state_pending}
+{* if $scData.resp_transaction_type eq "Auth" and $scData.order_state eq $state_pending *}
+{if $scData.resp_transaction_type eq "Auth"}
     <button type="button" id="sc_settle_btn" class="btn btn-default" onclick="scOrderAction('settle', {$orderId})" title="{l s='You will be redirected to Orders list.' mod='safecharge'}">
         <i class="icon-thumbs-up"></i>
         <i class="icon-repeat fast-right-spinner hidden"></i>
@@ -37,8 +38,9 @@
     </button>
 {/if}
 
+{* if in_array($scData.order_state, array($state_pending, $state_completed)) and in_array($scData.payment_method, array('cc_card', 'dc_card')) and $isRefunded eq 0 *}
 {if
-    in_array($scData.order_state, array($state_pending, $state_completed))
+    $scData.order_state eq $state_completed
     and in_array($scData.payment_method, array('cc_card', 'dc_card'))
     and $isRefunded eq 0
 }
@@ -134,10 +136,15 @@
     // remove PS refund buttons
     $('#desc-order-standard_refund').hide();
     
-    {if
+    {* if
         $scData.order_state neq $state_completed
         or !in_array($scData.payment_method, array('cc_card', 'dc_card', 'apmgw_expresscheckout'))
+    *}
+	{if
+		!in_array($scData.order_state, array($state_completed, $state_refunded))
+        or !in_array($scData.payment_method, array('cc_card', 'dc_card', 'apmgw_expresscheckout'))
     }
+    
         $('#desc-order-partial_refund').hide();
     {/if}
 </script>

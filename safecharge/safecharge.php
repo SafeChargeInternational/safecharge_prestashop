@@ -198,12 +198,20 @@ class SafeCharge extends PaymentModule
             SC_CLASS::create_log('hookDisplayBackOfficeOrderActions isPayment not true.');
             return false;
         }
-        
-        global $smarty;
+		
+		if(empty($_GET['id_order'])) {
+			return false;
+		}
         
         $order_id = intval($_GET['id_order']);
         $order_data = new Order($order_id);
 		
+		// not SC order
+		if(strpos(strtolower($order_data->payment), 'safecharge') === false) {
+			return false;
+		}
+		
+		global $smarty;
         $smarty->assign('orderId', $_GET['id_order']);
         
         $sc_data = Db::getInstance()->getRow('SELECT * FROM safecharge_order_data WHERE order_id = ' . $order_id);
@@ -217,8 +225,9 @@ class SafeCharge extends PaymentModule
         
         $smarty->assign('scData', $sc_data);
 //        $smarty->assign('state_pending', Configuration::get('PS_OS_PREPARATION'));
-        $smarty->assign('state_pending', Configuration::get('SC_OS_PENDING'));
+//        $smarty->assign('state_pending', Configuration::get('SC_OS_AWAITING_PAIMENT'));
         $smarty->assign('state_completed', Configuration::get('PS_OS_PAYMENT'));
+        $smarty->assign('state_refunded', Configuration::get('PS_OS_REFUND'));
         
         // check for refunds
         $rows = Db::getInstance()->getRow('SELECT id_order_slip FROM '. _DB_PREFIX_
@@ -241,6 +250,20 @@ class SafeCharge extends PaymentModule
             SC_CLASS::create_log('hookDisplayAdminOrderLeft isPayment not true.');
             return false;
         }
+		
+		if(empty($_GET['id_order'])) {
+			return false;
+		}
+		
+		$order_data = new Order(intval($_GET['id_order']));
+
+		// not SC order
+		if(
+			!empty($order_data->payment)
+			&& strpos(strtolower($order_data->payment), 'safecharge') === false
+		) {
+			return false;
+		}
         
         global $smarty;
         
@@ -259,6 +282,15 @@ class SafeCharge extends PaymentModule
      */
     public function hookActionOrderSlipAdd($params)
     {
+		if(
+			empty($params['order']->payment)
+			|| empty($_REQUEST['id_order'])
+			|| strpos(strtolower($params['order']->payment), 'safecharge') === false // not SC order
+		) {
+			SC_CLASS::create_log('hookActionOrderSlipAdd first check fail.');
+			return false;
+		}
+		
         if(
             $this->isPayment() !== true
             || !isset($_REQUEST['partialRefund'], $_REQUEST['partialRefundProduct'])
@@ -495,6 +527,18 @@ class SafeCharge extends PaymentModule
 			$secret             = Configuration::get('SC_SECRET_KEY');
 			$amount				= (string) number_format($cart->getOrderTotal(), 2, '.', '');
 			
+			// set some parameters
+			$this->context->smarty->assign('merchantId',		Configuration::get('SC_MERCHANT_ID'));
+			$this->context->smarty->assign('merchantSideId',	Configuration::get('SC_MERCHANT_SITE_ID'));
+			$this->context->smarty->assign('formAction',		$this->context->link->getModuleLink('safecharge', 'payment'));
+			$this->context->smarty->assign('webMasterId',		SC_PRESTA_SHOP . _PS_VERSION_);
+			$this->context->smarty->assign('sourceApplication',	SC_SOURCE_APPLICATION);
+			$this->context->smarty->assign('ooAjaxUrl',			$this->context->link->getModuleLink(
+				'safecharge',
+				'payment',
+				array('prestaShopAction' => 'createOpenOrder')
+			));
+			
 			if(
 				empty($_SESSION['sc_order_vars'])
 				|| $_SESSION['sc_order_vars']['amount'] != $amount
@@ -529,19 +573,32 @@ class SafeCharge extends PaymentModule
 					'amount'            => $amount,
 					'currency'          => $currency->iso_code,
 					'timeStamp'         => $time,
+					
 					'urlDetails'        => array(
 						'notificationUrl'   => $notify_url,
 					),
+					
 					'deviceDetails'     => SC_CLASS::get_device_details(),
 					'userTokenId'       => $customer->email,
+					
 					'billingAddress'    => array(
+						"firstName"	=> $address_invoice->firstname,
+						"lastName"	=> $address_invoice->lastname,
+						"address"   => $address_invoice->address1,
+						"phone"     => $address_invoice->phone,
+						"zip"       => $address_invoice->postcode,
+						"city"      => $address_invoice->city,
 						'country'	=> $country_inv->iso_code,
 						'email'		=> $customer->email,
 					),
+					
 					'webMasterId'       => SC_PRESTA_SHOP . _PS_VERSION_,
 					'paymentOption'		=> ['card' => ['threeD' => ['isDynamic3D' => 1]]],
 					'transactionType'	=> Configuration::get('SC_PAYMENT_ACTION'),
 				);
+				
+				// here they are same
+				$oo_params['shippingAddress'] = $oo_params['billingAddress'];
 
 				$oo_params['checksum'] = hash(
 					$hash,
@@ -550,12 +607,23 @@ class SafeCharge extends PaymentModule
 				);
 
 				$resp = SC_CLASS::call_rest_api($oo_endpoint_url, $oo_params);
-
+				
 				if(
 					empty($resp['sessionToken'])
 					|| empty($resp['status'])
 					|| 'SUCCESS' != $resp['status']
 				) {
+					if(!empty($resp['message'])) {
+						$this->context->smarty->assign('scAPMsErrorMsg',	$resp['message']);
+						$this->context->smarty->assign('sessionToken',		'');
+						$this->context->smarty->assign('amount',			'');
+						$this->context->smarty->assign('currency',			'');
+						$this->context->smarty->assign('languageCode',		'');
+						$this->context->smarty->assign('paymentMethods',	'');
+						$this->context->smarty->assign('icons',				'');
+						$this->context->smarty->assign('isTestEnv',			'');
+					}
+					
 					return false;
 				}
 
@@ -615,6 +683,7 @@ class SafeCharge extends PaymentModule
 				);
 			}
 			
+			$this->context->smarty->assign('scAPMsErrorMsg',	'');
 			$this->context->smarty->assign('sessionToken',		$_SESSION['sc_order_vars']['sessionToken']);
 			$this->context->smarty->assign('amount',			$_SESSION['sc_order_vars']['amount']);
 			$this->context->smarty->assign('currency',			$_SESSION['sc_order_vars']['currency']);
@@ -622,29 +691,26 @@ class SafeCharge extends PaymentModule
 			$this->context->smarty->assign('paymentMethods',	$_SESSION['sc_order_vars']['paymentMethods']);
 			$this->context->smarty->assign('icons',				$_SESSION['sc_order_vars']['icons']);
 			$this->context->smarty->assign('isTestEnv',			$_SESSION['sc_order_vars']['isTestEnv']);
-			$this->context->smarty->assign('merchantId',		Configuration::get('SC_MERCHANT_ID'));
-			$this->context->smarty->assign('merchantSideId',	Configuration::get('SC_MERCHANT_SITE_ID'));
-			$this->context->smarty->assign('formAction',		$this->context->link->getModuleLink('safecharge', 'payment'));
-			$this->context->smarty->assign('webMasterId',		SC_PRESTA_SHOP . _PS_VERSION_);
-			$this->context->smarty->assign('sourceApplication',	SC_SOURCE_APPLICATION);
-			
-			$this->context->smarty->assign('ooAjaxUrl', $this->context->link->getModuleLink(
-				'safecharge',
-				'payment',
-				array('prestaShopAction' => 'createOpenOrder')
-			));
 		}
 		catch(Exception $e) {
-			echo $e->getMessage();
 			SC_CLASS::create_log($e->getMessage(), 'hookPaymentOptions Exception: ');
+			
+			$this->context->smarty->assign('scAPMsErrorMsg',	'Exception ' . $e->getMessage());
+			$this->context->smarty->assign('sessionToken',		'');
+			$this->context->smarty->assign('amount',			'');
+			$this->context->smarty->assign('currency',			'');
+			$this->context->smarty->assign('languageCode',		'');
+			$this->context->smarty->assign('paymentMethods',	'');
+			$this->context->smarty->assign('icons',				'');
+			$this->context->smarty->assign('isTestEnv',			'');
 		}
 	}
     
 	private function addOrderState()
 	{
 		if (
-			!Configuration::get('SC_OS_PENDING')
-            || !Validate::isLoadedObject(new OrderState(Configuration::get('SC_OS_PENDING')))
+			!Configuration::get('SC_OS_AWAITING_PAIMENT')
+            || !Validate::isLoadedObject(new OrderState(Configuration::get('SC_OS_AWAITING_PAIMENT')))
 		) {
 			// create new order state
 			$order_state = new OrderState();
@@ -652,7 +718,7 @@ class SafeCharge extends PaymentModule
 			$order_state->invoice		= false;
 			$order_state->send_email	= false;
 			$order_state->module_name	= 'SafeCharge';
-			$order_state->color			= '#FF8C00';
+			$order_state->color			= '#4169E1';
 			$order_state->hidden		= false;
 			$order_state->logable		= false;
 			$order_state->delivery		= false;
@@ -662,7 +728,7 @@ class SafeCharge extends PaymentModule
 
 			// set the name for all lanugaes
 			foreach ($languages as $language) {
-				$order_state->name[ $language['id_lang'] ] = 'SC Pending';
+				$order_state->name[ $language['id_lang'] ] = 'Awaiting SafeCharge payment';
 			}
 
 			if(!$order_state->add()) {
@@ -675,7 +741,7 @@ class SafeCharge extends PaymentModule
 			copy($source, $destination);
 
 			// set status in the config
-			Configuration::updateValue('SC_OS_PENDING', (int) $order_state->id);
+			Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $order_state->id);
 
 			return true;
 		}

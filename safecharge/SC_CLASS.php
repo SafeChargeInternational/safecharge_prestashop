@@ -70,10 +70,6 @@ class SC_CLASS
             'length' => 2,
             'flag'    => FILTER_SANITIZE_STRING
         ),
-        'email' => array(
-            'length' => 100,
-            'flag'    => FILTER_VALIDATE_EMAIL
-        ),
         'county' => array(
             'length' => 255,
             'flag'    => FILTER_DEFAULT
@@ -115,6 +111,11 @@ class SC_CLASS
         // urlDetails END
     );
 	
+	private static $params_validation_email = array(
+		'length'	=> 100,
+		'flag'		=> FILTER_VALIDATE_EMAIL
+	);
+	
     /**
      * Function call_rest_api
 	 * 
@@ -129,7 +130,6 @@ class SC_CLASS
     public static function call_rest_api($url, $params)
     {
 		self::create_log($url, 'REST API URL:');
-		self::create_log($params, 'SC_REST_API, parameters for the REST API call:');
 		
 		if (empty($url)) {
 			self::create_log('SC_REST_API, the URL is empty!');
@@ -143,7 +143,43 @@ class SC_CLASS
 			$params['deviceDetails'] = self::get_device_details();
 		}
 		
-		// validate parameters
+		# validate parameters
+		// directly check the mails
+		if(isset($params['billingAddress']['email'])) {
+			if(!filter_var($params['billingAddress']['email'], self::$params_validation_email['flag'])) {
+				return array(
+					'status' => 'ERROR',
+					'message' => 'The parameter Billing Address Email is not valid.'
+				);
+			}
+			
+			if(strlen($params['billingAddress']['email']) > self::$params_validation_email['length']) {
+				return array(
+					'status' => 'ERROR',
+					'message' => 'The parameter Billing Address Email must be maximum '
+						. self::$params_validation_email['length'] . ' symbols.'
+				);
+			}
+		}
+		
+		if(isset($params['shippingAddress']['email'])) {
+			if(!filter_var($params['shippingAddress']['email'], self::$params_validation_email['flag'])) {
+				return array(
+					'status' => 'ERROR',
+					'message' => 'The parameter Shipping Address Email is not valid.'
+				);
+			}
+			
+			if(strlen($params['shippingAddress']['email']) > self::$params_validation_email['length']) {
+				return array(
+					'status' => 'ERROR',
+					'message' => 'The parameter Shipping Address Email must be maximum '
+						. self::$params_validation_email['length'] . ' symbols.'
+				);
+			}
+		}
+		// directly check the mails END
+		
 		foreach ($params as $key1 => $val1) {
             if (!is_array($val1) && !empty($val1) && array_key_exists($key1, self::$params_validation)) {
                 $new_val = $val1;
@@ -172,7 +208,9 @@ class SC_CLASS
                 }
             }
         }
-		// validate parameters END
+		# validate parameters END
+		
+		self::create_log($params, 'SC_REST_API, parameters for the REST API call:');
         
         $json_post = json_encode($params);
         
@@ -302,7 +340,7 @@ class SC_CLASS
 		if (empty($ip_address) && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
 			$ip_address = filter_var($_SERVER['HTTP_X_FORWARDED_FOR'], FILTER_VALIDATE_IP);
 		}
-		if (empty($ip_address && !empty($_SERVER['HTTP_CLIENT_IP']))) {
+		if (empty($ip_address) && !empty($_SERVER['HTTP_CLIENT_IP'])) {
 			$ip_address = filter_var($_SERVER['HTTP_CLIENT_IP'], FILTER_VALIDATE_IP);
 		}
 		if (!empty($ip_address)) {

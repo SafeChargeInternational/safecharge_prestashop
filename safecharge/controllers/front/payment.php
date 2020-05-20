@@ -79,10 +79,14 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				// save order
 				$res = $this->module->validateOrder(
 					(int)$cart->id
-//					,Configuration::get('PS_OS_PREPARATION') // the status
-					,Configuration::get('SC_OS_PENDING') // the status
+					,Configuration::get('SC_OS_AWAITING_PAIMENT') // the status
 					,$total_amount
-					,$this->module->displayName . ' - ' . $this->l('Card')
+					,$this->module->displayName . ' - ' . $this->l('Card') // payment_method
+					,'' // message
+					,array() // extra_vars
+					,null // currency_special
+					,false // dont_touch_amount
+					,$this->context->cart->secure_key // secure_key
 				);
 
 				if(!$res) {
@@ -279,10 +283,14 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 		// save order
 		$res = $this->module->validateOrder(
 			(int)$cart->id
-//			,Configuration::get('PS_OS_PREPARATION') // the status
-			,Configuration::get('SC_OS_PENDING') // the status
+			,Configuration::get('SC_OS_AWAITING_PAIMENT') // the status
 			,$sc_params['amount']
-			,$this->module->displayName . ' - ' . str_replace('apmgw_', '', $sc_params['paymentMethod'])
+			,$this->module->displayName . ' - ' . str_replace('apmgw_', '', $sc_params['paymentMethod']) // payment_method
+			,'' // message
+			,array() // extra_vars
+			,null // currency_special
+			,false // dont_touch_amount
+			,$this->context->cart->secure_key // secure_key
 		);
 
 		if(!$res) {
@@ -394,6 +402,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                     $this->changeOrderStatus(array(
                             'id'            => $order_id,
                             'current_state' => $order_info->current_state,
+                            'has_invoice'	=> $order_info->hasInvoice(),
                         )
                         ,$req_status
                     );
@@ -451,6 +460,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 $this->changeOrderStatus(array(
                         'id'            => $order_id,
                         'current_state' => $order_info->current_state,
+						'has_invoice'	=> $order_info->hasInvoice(),
                         'currency'      => $currency->iso_code,
                     )
                     ,$req_status
@@ -500,6 +510,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                     array(
                         'id'            => $order_id,
                         'current_state' => $order_info->current_state,
+						'has_invoice'	=> $order_info->hasInvoice(),
                     )
                     ,$req_status
                 );
@@ -579,7 +590,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 if($_REQUEST['transactionType'] == 'Auth') {
                     $msg = 'The amount has been authorized and wait to for Settle.';
 //                    $status_id = (int)(Configuration::get('PS_OS_PREPARATION'));
-                    $status_id = (int)(Configuration::get('SC_OS_PENDING'));
+//                    $status_id = (int)(Configuration::get('SC_OS_AWAITING_PAIMENT'));
+					$status_id = ''; // if we set the id we will have twice this status in the history
                 }
                 elseif($_REQUEST['transactionType'] == 'Settle') {
                     $msg = 'The amount has been captured by ' . SC_GATEWAY_TITLE . '. ';
@@ -662,7 +674,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 
             case 'PENDING':
 //                $status_id = (int)(Configuration::get('PS_OS_PREPARATION'));
-                $status_id = (int)(Configuration::get('SC_OS_PENDING'));
+                $status_id = (int)(Configuration::get('SC_OS_AWAITING_PAIMENT'));
                 
                 if ($order_info['current_state'] == 2 || $order_info['current_state'] == 3) {
                     $status_id = $order_info['current_state'];
@@ -696,7 +708,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			
             $history = new OrderHistory();
             $history->id_order = (int)$order_info['id'];
-            $history->changeIdOrderState($status_id, (int)($order_info['id']));
+            $history->changeIdOrderState($status_id, (int)($order_info['id']), !$order_info['has_invoice']);
+            $history->add(true);
         }
         
         // save order message
