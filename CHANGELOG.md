@@ -1,10 +1,10 @@
-# SafeCharge Prestashop
-SafeCharge PlugIn for PrestaShop
+# SafeCharge Prestashop Changelog
 
 ## (2020-05-20)
 ```
 	Added custom SC order status, we use it when order wait for payment;
 	Fixed the the problem with the Order Note about the missing security key;
+
 
 ## (2020-03-26)
 ```
