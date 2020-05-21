@@ -147,6 +147,8 @@ class SC_CLASS
 		// directly check the mails
 		if(isset($params['billingAddress']['email'])) {
 			if(!filter_var($params['billingAddress']['email'], self::$params_validation_email['flag'])) {
+				self::create_log($params, 'ERROR - The parameter Billing Address Email is not valid.');
+				
 				return array(
 					'status' => 'ERROR',
 					'message' => 'The parameter Billing Address Email is not valid.'
@@ -154,6 +156,9 @@ class SC_CLASS
 			}
 			
 			if(strlen($params['billingAddress']['email']) > self::$params_validation_email['length']) {
+				self::create_log($params, 'ERROR - The parameter Billing Address Email must be maximum '
+					. self::$params_validation_email['length'] . ' symbols.');
+				
 				return array(
 					'status' => 'ERROR',
 					'message' => 'The parameter Billing Address Email must be maximum '
@@ -164,6 +169,8 @@ class SC_CLASS
 		
 		if(isset($params['shippingAddress']['email'])) {
 			if(!filter_var($params['shippingAddress']['email'], self::$params_validation_email['flag'])) {
+				self::create_log($params, 'ERROR - The parameter Shipping Address Email is not valid.');
+				
 				return array(
 					'status' => 'ERROR',
 					'message' => 'The parameter Shipping Address Email is not valid.'
@@ -171,6 +178,9 @@ class SC_CLASS
 			}
 			
 			if(strlen($params['shippingAddress']['email']) > self::$params_validation_email['length']) {
+				self::create_log($params, 'ERROR - The parameter Shipping Address Email must be maximum '
+					. self::$params_validation_email['length'] . ' symbols.');
+				
 				return array(
 					'status' => 'ERROR',
 					'message' => 'The parameter Shipping Address Email must be maximum '
@@ -180,34 +190,39 @@ class SC_CLASS
 		}
 		// directly check the mails END
 		
-		foreach ($params as $key1 => $val1) {
-            if (!is_array($val1) && !empty($val1) && array_key_exists($key1, self::$params_validation)) {
-                $new_val = $val1;
-                
-                if (mb_strlen($val1) > self::$params_validation[$key1]['length']) {
-                    $new_val = mb_substr($val1, 0, self::$params_validation[$key1]['length']);
-                    
-                    self::create_log($key1, 'Limit');
-                }
-                
-                $params[$key1] = filter_var($new_val, self::$params_validation[$key1]['flag']);
-            }
-			elseif (is_array($val1) && !empty($val1)) {
-                foreach ($val1 as $key2 => $val2) {
-                    if (!is_array($val2) && !empty($val2) && array_key_exists($key2, self::$params_validation)) {
-                        $new_val = $val2;
+		try {
+			foreach ($params as $key1 => $val1) {
+				if (!is_array($val1) && !empty($val1) && array_key_exists($key1, self::$params_validation)) {
+					$new_val = $val1;
 
-                        if (mb_strlen($val2) > self::$params_validation[$key2]['length']) {
-                            $new_val = mb_substr($val2, 0, self::$params_validation[$key2]['length']);
-                            
-                            self::create_log($key2, 'Limit');
-                        }
+					if (mb_strlen($val1) > self::$params_validation[$key1]['length']) {
+						$new_val = mb_substr($val1, 0, self::$params_validation[$key1]['length']);
 
-                        $params[$key1][$key2] = filter_var($new_val, self::$params_validation[$key2]['flag']);
-                    }
-                }
-            }
-        }
+						self::create_log($key1, 'Limit');
+					}
+
+					$params[$key1] = filter_var($new_val, self::$params_validation[$key1]['flag']);
+				}
+				elseif (is_array($val1) && !empty($val1)) {
+					foreach ($val1 as $key2 => $val2) {
+						if (!is_array($val2) && !empty($val2) && array_key_exists($key2, self::$params_validation)) {
+							$new_val = $val2;
+
+							if (mb_strlen($val2) > self::$params_validation[$key2]['length']) {
+								$new_val = mb_substr($val2, 0, self::$params_validation[$key2]['length']);
+
+								self::create_log($key2, 'Limit');
+							}
+
+							$params[$key1][$key2] = filter_var($new_val, self::$params_validation[$key2]['flag']);
+						}
+					}
+				}
+			}
+		}
+		catch(Exception $e) {
+			self::create_log($e->getMessage(), 'Request validation exception ');
+		}
 		# validate parameters END
 		
 		self::create_log($params, 'SC_REST_API, parameters for the REST API call:');

@@ -527,6 +527,14 @@ class SafeCharge extends PaymentModule
 			$secret             = Configuration::get('SC_SECRET_KEY');
 			$amount				= (string) number_format($cart->getOrderTotal(), 2, '.', '');
 			
+			$address_delivery	= $address_invoice;
+			$country_delivery	= $country_inv;
+            
+			if(!empty($cart->id_address_delivery) && $cart->id_address_delivery != $cart->id_address_invoice) {
+                $address_delivery	= new Address((int)($cart->id_address_delivery));
+				$country_delivery   = new Country((int)($address_delivery->id_country), Configuration::get('PS_LANG_DEFAULT'));
+            }
+			
 			// set some parameters
 			$this->context->smarty->assign('merchantId',		Configuration::get('SC_MERCHANT_ID'));
 			$this->context->smarty->assign('merchantSideId',	Configuration::get('SC_MERCHANT_SITE_ID'));
@@ -592,13 +600,24 @@ class SafeCharge extends PaymentModule
 						'email'		=> $customer->email,
 					),
 					
+					'shippingAddress'    => array(
+						"firstName"	=> $address_delivery->firstname,
+						"lastName"	=> $address_delivery->lastname,
+						"address"   => $address_delivery->address1,
+						"phone"     => $address_delivery->phone,
+						"zip"       => $address_delivery->postcode,
+						"city"      => $address_delivery->city,
+						'country'	=> $country_delivery->iso_code,
+						'email'		=> $customer->email,
+					),
+					
 					'webMasterId'       => SC_PRESTA_SHOP . _PS_VERSION_,
 					'paymentOption'		=> ['card' => ['threeD' => ['isDynamic3D' => 1]]],
 					'transactionType'	=> Configuration::get('SC_PAYMENT_ACTION'),
 				);
 				
 				// here they are same
-				$oo_params['shippingAddress'] = $oo_params['billingAddress'];
+//				$oo_params['shippingAddress'] = $oo_params['billingAddress'];
 
 				$oo_params['checksum'] = hash(
 					$hash,

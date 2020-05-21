@@ -145,10 +145,12 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             $country_inv        = new Country((int)($address_invoice->id_country), Configuration::get('PS_LANG_DEFAULT'));
             $customer           = new Customer((int)($cart->id_customer));
             $currency           = new Currency((int)($cart->id_currency));
-
-            $address_delivery = $address_invoice;
-            if($cart->id_address_delivery != $cart->id_address_invoice) {
-                $address_delivery = new Address((int)($cart->id_address_delivery));
+            $address_delivery	= $address_invoice;
+			$country_delivery	= $country_inv;
+            
+			if(!empty($cart->id_address_delivery) && $cart->id_address_delivery != $cart->id_address_invoice) {
+                $address_delivery	= new Address((int)($cart->id_address_delivery));
+				$country_delivery   = new Country((int)($address_delivery->id_country), Configuration::get('PS_LANG_DEFAULT'));
             }
 
             $country_del = new Country((int)($address_delivery->id_country), Configuration::get('PS_LANG_DEFAULT'));
@@ -172,104 +174,127 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			SC_CLASS::create_log('REST API Order, but post array is empty.');
 			Tools::redirect($error_url);
 		}
+		
+		try {
+			$sc_params = array(
+				'merchantId'        => Configuration::get('SC_MERCHANT_ID'),
+				'merchantSiteId'    => Configuration::get('SC_MERCHANT_SITE_ID'),
+				'userTokenId'       => $is_user_logged ? $customer->email : '',
+				'clientUniqueId'    => $cart->id,
+				'clientRequestId'   => date('YmdHis', time()) .'_'. uniqid(),
+				'currency'          => $currency->iso_code,
+				'amount'            => (string) $total_amount,
+				'amountDetails'     => array(
+					'totalShipping'     => '0.00',
+					'totalHandling'     => '0.00',
+					'totalDiscount'     => '0.00',
+					'totalTax'          => '0.00',
+				),
+				
+				'billingAddress'    => array(
+					"firstName"	=> $address_invoice->firstname,
+					"lastName"	=> $address_invoice->lastname,
+					"address"   => $address_invoice->address1,
+					"phone"     => $address_invoice->phone,
+					"zip"       => $address_invoice->postcode,
+					"city"      => $address_invoice->city,
+					'country'	=> $country_inv->iso_code,
+					'state'     => strlen($address_invoice->id_state) == 2
+									? $address_invoice->id_state : substr($address_invoice->id_state, 0, 2),
+					'email'		=> $customer->email,
+					'county'    => '',
+				),
+				
+				'shippingAddress'    => array(
+					"firstName"	=> $address_delivery->firstname,
+					"lastName"	=> $address_delivery->lastname,
+					"address"   => $address_delivery->address1,
+					"phone"     => $address_delivery->phone,
+					"zip"       => $address_delivery->postcode,
+					"city"      => $address_delivery->city,
+					'country'	=> $country_delivery->iso_code,
+					'email'		=> $customer->email,
+				),
+				
+//				'userDetails'       => array(
+//					'firstName'         => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->firstname)),
+//					'lastName'          => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->lastname)),
+//					'address'           => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->address1)),
+//					'phone'             => urlencode(preg_replace("/[[:punct:]]/", '', $phone)),
+//					'zip'               => $address_invoice->postcode,
+//					'city'              => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->city)),
+//					'country'           => $country_inv->iso_code,
+//					'state'             => strlen($address_invoice->id_state) == 2
+//											? $address_invoice->id_state : substr($address_invoice->id_state, 0, 2),
+//					'email'             => $customer->email,
+//					'county'            => '',
+//				),
+				
+				'urlDetails'        => array(
+					'successUrl'        => $success_url,
+					'failureUrl'        => $error_url,
+					'pendingUrl'        => $pending_url,
+					'notificationUrl'   => $notify_url,
+				),
+				'timeStamp'         => $order_time,
+				'sessionToken'      => @$_POST['lst'],
+				'deviceDetails'     => SC_CLASS::get_device_details(),
+				'languageCode'      => substr($this->context->language->locale, 0, 2),
+				'webMasterId'       => SC_PRESTA_SHOP . _PS_VERSION_,
+			);
+			
+			$sc_params['userDetails'] = $sc_params['billingAddress'];
 
-		$sc_params = array(
-			'merchantId'        => Configuration::get('SC_MERCHANT_ID'),
-			'merchantSiteId'    => Configuration::get('SC_MERCHANT_SITE_ID'),
-			'userTokenId'       => $is_user_logged ? $customer->email : '',
-			'clientUniqueId'    => $cart->id,
-			'clientRequestId'   => date('YmdHis', time()) .'_'. uniqid(),
-			'currency'          => $currency->iso_code,
-			'amount'            => (string) $total_amount,
-			'amountDetails'     => array(
-				'totalShipping'     => '0.00',
-				'totalHandling'     => '0.00',
-				'totalDiscount'     => '0.00',
-				'totalTax'          => '0.00',
-			),
-			'userDetails'       => array(
-				'firstName'         => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->firstname)),
-				'lastName'          => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->lastname)),
-				'address'           => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->address1)),
-				'phone'             => urlencode(preg_replace("/[[:punct:]]/", '', $phone)),
-				'zip'               => $address_invoice->postcode,
-				'city'              => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->city)),
-				'country'           => $country_inv->iso_code,
-				'state'             => strlen($address_invoice->id_state) == 2
-										? $address_invoice->id_state : substr($address_invoice->id_state, 0, 2),
-				'email'             => $customer->email,
-				'county'            => '',
-			),
-			'shippingAddress'   => array(
-				'firstName'         => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->firstname)),
-				'lastName'          => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->lastname)),
-				'address'           => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->address1)),
-				'cell'              => '',
-				'phone'             => '',
-				'zip'               => $address_delivery->postcode,
-				'city'              => urlencode(preg_replace("/[[:punct:]]/", '', $address_delivery->city)),
-				'country'           => $country_del->iso_code,
-				'state'             => '',
-				'email'             => '',
-				'shippingCounty'    => '',
-			),
-			'urlDetails'        => array(
-				'successUrl'        => $success_url,
-				'failureUrl'        => $error_url,
-				'pendingUrl'        => $pending_url,
-				'notificationUrl'   => $notify_url,
-			),
-			'timeStamp'         => $order_time,
-			'sessionToken'      => @$_POST['lst'],
-			'deviceDetails'     => SC_CLASS::get_device_details(),
-			'languageCode'      => substr($this->context->language->locale, 0, 2),
-			'webMasterId'       => SC_PRESTA_SHOP . _PS_VERSION_,
-		);
+//			$sc_params['billingAddress'] = array(
+//				'firstName'         => $sc_params['userDetails']['firstName'],
+//				'lastName'          => $sc_params['userDetails']['lastName'],
+//				'address'           => $sc_params['userDetails']['address'],
+//				'cell'              => '',
+//				'phone'             => $sc_params['userDetails']['phone'],
+//				'zip'               => $sc_params['userDetails']['zip'],
+//				'city'              => $sc_params['userDetails']['city'],
+//				'country'           => $sc_params['userDetails']['country'],
+//				'state'             => $sc_params['userDetails']['state'],
+//				'email'             => $sc_params['userDetails']['email'],
+//				'county'            => '',
+//			);
 
-		$sc_params['billingAddress'] = array(
-			'firstName'         => $sc_params['userDetails']['firstName'],
-			'lastName'          => $sc_params['userDetails']['lastName'],
-			'address'           => $sc_params['userDetails']['address'],
-			'cell'              => '',
-			'phone'             => $sc_params['userDetails']['phone'],
-			'zip'               => $sc_params['userDetails']['zip'],
-			'city'              => $sc_params['userDetails']['city'],
-			'country'           => $sc_params['userDetails']['country'],
-			'state'             => $sc_params['userDetails']['state'],
-			'email'             => $sc_params['userDetails']['email'],
-			'county'            => '',
-		);
+			$sc_params['items'][0] = array(
+				'name'      => $cart->id,
+				'price'     => $sc_params['amount'],
+				'quantity'  => 1
+			);
 
-		$sc_params['items'][0] = array(
-			'name'      => $cart->id,
-			'price'     => $sc_params['amount'],
-			'quantity'  => 1
-		);
+			$sc_params['checksum'] = hash(
+				Configuration::get('SC_HASH_TYPE'),
+				stripslashes(
+					$sc_params['merchantId']
+					. $sc_params['merchantSiteId']
+					. $sc_params['clientRequestId']
+					. $sc_params['amount']
+					. $sc_params['currency']
+					. $sc_params['timeStamp']
+					. Configuration::get('SC_SECRET_KEY')
+			));
 
-		$sc_params['checksum'] = hash(
-			Configuration::get('SC_HASH_TYPE'),
-			stripslashes(
-				$sc_params['merchantId']
-				. $sc_params['merchantSiteId']
-				. $sc_params['clientRequestId']
-				. $sc_params['amount']
-				. $sc_params['currency']
-				. $sc_params['timeStamp']
-				. Configuration::get('SC_SECRET_KEY')
-		));
+			if(@$_POST['sc_payment_method']) {
+				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_URL : SC_TEST_PAYMENT_URL;
+				$sc_params['paymentMethod'] = $_POST['sc_payment_method'];
 
-		if(@$_POST['sc_payment_method']) {
-			$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_URL : SC_TEST_PAYMENT_URL;
-			$sc_params['paymentMethod'] = $_POST['sc_payment_method'];
-
-			if(isset($_POST[@$_POST['sc_payment_method']]) && is_array($_POST[$_POST['sc_payment_method']])) {
-				$sc_params['userAccountDetails'] = $_POST[$_POST['sc_payment_method']];
+				if(isset($_POST[@$_POST['sc_payment_method']]) && is_array($_POST[$_POST['sc_payment_method']])) {
+					$sc_params['userAccountDetails'] = $_POST[$_POST['sc_payment_method']];
+				}
 			}
+
+			$resp = SC_CLASS::call_rest_api($endpoint_url, $sc_params);
+
+			$req_status = $this->getRequestStatus($resp);
 		}
-
-		$resp = SC_CLASS::call_rest_api($endpoint_url, $sc_params);
-
-		$req_status = $this->getRequestStatus($resp);
+		catch(Exception $e) {
+			SC_CLASS::create_log($e->getMessage(), 'Process APM payment Exception: ');
+            
+			Tools::redirect($error_url);
+		}
 
 		if(
 			!$resp

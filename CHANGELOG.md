@@ -1,5 +1,11 @@
 # SafeCharge Prestashop Changelog
 
+## 2020-05-21
+```
+	* Fixed the missing shipping email when use APM;
+	* Added logs when validation fail in SC_CLASS;
+```
+
 ## 2020-05-20
 ```
 	* Added custom SC order status, we use it when order wait for payment;
