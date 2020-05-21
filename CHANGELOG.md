@@ -4,6 +4,7 @@
 ```
 	* Fixed the missing shipping email when use APM;
 	* Added logs when validation fail in SC_CLASS;
+	* Shipping and Billing email are restricted to 70 symbols;
 ```
 
 ## 2020-05-20

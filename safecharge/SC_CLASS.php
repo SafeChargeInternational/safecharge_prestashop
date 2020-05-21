@@ -112,7 +112,7 @@ class SC_CLASS
     );
 	
 	private static $params_validation_email = array(
-		'length'	=> 100,
+		'length'	=> 79,
 		'flag'		=> FILTER_VALIDATE_EMAIL
 	);
 	
