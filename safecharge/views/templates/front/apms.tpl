@@ -253,7 +253,7 @@
                     {if in_array($pm.paymentMethod, array('cc_card', 'dc_card'))}
                         <div class="apm_fields" id="sc_{$pm.paymentMethod}">
                             <div class="apm_field">
-                                <input type="text" id="sc_card_holder_name" name="{$pm.paymentMethod}[cardHolderName]" placeholder="Card holder name" style="padding-bottom: 2px !important;" />
+                                <input type="text" id="sc_card_holder_name" name="{$pm.paymentMethod}[cardHolderName]" placeholder="{l s='Card holder name' mod='safecharge'}" style="padding-bottom: 2px !important;" />
                             </div>
 
 							<div id="sc_fields_holder" class="apm_field">
@@ -271,10 +271,6 @@
 									</div>
 								</div>
 							</div>
-							
-                            {*<div class="apm_field">
-                                <div id="card-field-placeholder"></div>
-                            </div>*}
                         </div>
                     {else}
                         <div class="apm_fields">
