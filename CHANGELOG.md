@@ -1,5 +1,10 @@
 # SafeCharge Prestashop Changelog
 
+## 2020-05-26
+```
+	* Pass better redirect URL in admin, after Order actions.
+```
+
 ## 2020-05-21
 ```
 	* Fixed the missing shipping email when use APM;

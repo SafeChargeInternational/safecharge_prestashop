@@ -29,7 +29,6 @@
     }
 </style>
 
-{* if $scData.resp_transaction_type eq "Auth" and $scData.order_state eq $state_pending *}
 {if $scData.resp_transaction_type eq "Auth"}
     <button type="button" id="sc_settle_btn" class="btn btn-default" onclick="scOrderAction('settle', {$orderId})" title="{l s='You will be redirected to Orders list.' mod='safecharge'}">
         <i class="icon-thumbs-up"></i>
@@ -38,7 +37,6 @@
     </button>
 {/if}
 
-{* if in_array($scData.order_state, array($state_pending, $state_completed)) and in_array($scData.payment_method, array('cc_card', 'dc_card')) and $isRefunded eq 0 *}
 {if
     $scData.order_state eq $state_completed
     and in_array($scData.payment_method, array('cc_card', 'dc_card'))
@@ -71,7 +69,7 @@
                 break;
             
             default:
-                break;
+                return;
         }
         
         if(confirm(question)) {
@@ -87,8 +85,7 @@
                     var resp = JSON.parse(this.responseText);
                     
                     if(resp.status == 1) {
-                    //    alert('You will be redirected to the Orders list.');
-                        window.location.href = $('#subtab-AdminOrders a.link').attr('href');
+                        window.location.href = "{$ordersListURL}";
                     }
                     else {
                         try {
@@ -115,7 +112,7 @@
             
             //If an error occur during the ajax call.
             if (ajax.readyState == 4 && ajax.status == 404) {
-                alert("Error during AJAX call");
+                alert('{l s='Error during AJAX call.' mod='safecharge'}');
                 enableScBtns(action);
             }
             

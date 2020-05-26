@@ -224,10 +224,9 @@ class SafeCharge extends PaymentModule
         $sc_data['order_state']     = $order_data->current_state;
         
         $smarty->assign('scData', $sc_data);
-//        $smarty->assign('state_pending', Configuration::get('PS_OS_PREPARATION'));
-//        $smarty->assign('state_pending', Configuration::get('SC_OS_AWAITING_PAIMENT'));
         $smarty->assign('state_completed', Configuration::get('PS_OS_PAYMENT'));
         $smarty->assign('state_refunded', Configuration::get('PS_OS_REFUND'));
+		$smarty->assign('ordersListURL', Context::getContext()->link->getAdminLink('AdminOrders', true));
         
         // check for refunds
         $rows = Db::getInstance()->getRow('SELECT id_order_slip FROM '. _DB_PREFIX_
