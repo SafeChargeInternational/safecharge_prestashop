@@ -575,35 +575,6 @@
 			,style: scFieldsStyle
 		});
 		cardCvc.attach('#sc_card_cvc');
-
-		/*
-        card = fields.create('card', {
-            iconStyle: 'solid',
-            style: {
-                base: {
-                    iconColor: "#c4f0ff",
-                    color: "#000",
-                    fontWeight: 500,
-                    fontFamily: "arial",
-                    fontSize: '15px',
-                    fontSmoothing: "antialiased",
-                    ":-webkit-autofill": {
-                        color: "#fce883"
-                    },
-                    "::placeholder": {
-                        color: "grey" 
-                    }
-                },
-                invalid: {
-                    iconColor: "#FFC7EE",
-                    color: "red"
-                }
-            },
-            classes: elementClasses
-        });
-
-        card.attach('#card-field-placeholder');
-		*/
     }
 	
 	/**
@@ -615,12 +586,10 @@
 		console.log('reCreateSCFields url', ooAjaxUrl);
 	
 		sfc				= null;
-	//	card	= null;
 		sfcFirstField	= null;
 	
 		$('#cc_load_spinner, #cc_load_spinner i').removeClass('sc_hide');
 		$('#sc_apms_list').addClass('sc_hide');
-		//$('#card-field-placeholder').html(''); // clear card container
 		$('#sc_card_number, #sc_card_expiry, #sc_card_cvc').html(''); // clear card container
 		
 		$.ajax({

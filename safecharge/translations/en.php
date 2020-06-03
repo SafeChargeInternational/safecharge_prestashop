@@ -23,9 +23,9 @@ $_MODULE['<{safecharge}prestashop>safecharge_d946b67b10d6bf077d724a0de9c7d94a'] 
 $_MODULE['<{safecharge}prestashop>safecharge_1ae88d75d261c19ed9ec58ccc50082e3'] = 'SafeCharge \"Merchant ID\" is required.';
 $_MODULE['<{safecharge}prestashop>safecharge_08e7891a7ad20918e1a23fae0de3b768'] = 'SafeCharge \"Secret key\" is required.';
 $_MODULE['<{safecharge}prestashop>payment_1d565b9e5303987bb1b1938d5d458bca'] = 'Card';
-$_MODULE['<{safecharge}prestashop>payment_18ddaf124696321ea34e8028a44bd960'] = 'Your request was Canceld';
+$_MODULE['<{safecharge}prestashop>payment_18ddaf124696321ea34e8028a44bd960'] = 'Your request was Canceled';
 $_MODULE['<{safecharge}prestashop>payment_e5414959c9f408bff72099ef7e574954'] = 'DMN message: Your Void request was success, Order #';
-$_MODULE['<{safecharge}prestashop>payment_da1ff53fc2c870b948def22b13460b36'] = 'was canceld';
+$_MODULE['<{safecharge}prestashop>payment_da1ff53fc2c870b948def22b13460b36'] = 'was canceled';
 $_MODULE['<{safecharge}prestashop>payment_f90a32d86e0f0468c83b119d2eaa223d'] = 'DMN message: Your Void request fail';
 $_MODULE['<{safecharge}prestashop>payment_ac226135612933f01896585a39e6a6eb'] = 'with message';
 $_MODULE['<{safecharge}prestashop>payment_79d6185118ea198dcd3464f556e801dc'] = 'payment status is pendingUnique Id: ';
