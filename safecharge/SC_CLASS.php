@@ -389,17 +389,23 @@ class SC_CLASS
             $d = $data;
 
             if(is_array($data)) {
-                if(isset($data['userAccountDetails']) && is_array($data['userAccountDetails'])) {
-                    foreach($data['userAccountDetails'] as $k => $v) {
-                        $data['userAccountDetails'][$k] = 'a string';
-                    }
+                if(!empty($data['userAccountDetails']) && is_array($data['userAccountDetails'])) {
+					$data['userAccountDetails'] = 'userAccountDetails array';
                 }
-                if(isset($data['userPaymentOption']) && is_array($data['userPaymentOption'])) {
-                    foreach($data['userPaymentOption'] as $k => $v) {
-                        $data['userPaymentOption'][$k] = 'a string';
-                    }
+                if(!empty($data['userPaymentOption']) && is_array($data['userPaymentOption'])) {
+                    $data['userPaymentOption'] = 'userPaymentOption array';
                 }
-                if(isset($data['paymentMethods']) && is_array($data['paymentMethods'])) {
+                if(!empty($data['paymentOption']) && is_array($data['paymentOption'])) {
+					$data['paymentOption'] = 'paymentOption array';
+                }
+				
+				array_walk_recursive($data, function (&$value, $key) {
+					if($key == 'ccCardNumber' && !empty($value)) {
+						$value = '****';
+					}
+				});
+				
+				if(!empty($data['paymentMethods']) && is_array($data['paymentMethods'])) {
 					$data['paymentMethods'] = json_encode($data['paymentMethods']);
                 }
                 

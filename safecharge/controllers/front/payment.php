@@ -20,9 +20,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
     {
         parent::initContent();
         
-		if(isset($_SESSION['sc_order_vars'])) {
-			unset($_SESSION['sc_order_vars']);
-		}
+//		if(isset($_SESSION['sc_order_vars'])) {
+//			unset($_SESSION['sc_order_vars']);
+//		}
 		
         if(
             !Configuration::get('SC_MERCHANT_ID')
@@ -46,11 +46,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             return;
         }
 		
-		if(
-			Tools::getValue('prestaShopAction', false) == 'createOpenOrder'
-//			&& (!empty($_SERVER['HTTP_X_REQUESTED_WITH'])
-//				&& 'XMLHttpRequest' === $_SERVER['HTTP_X_REQUESTED_WITH'])
-		) {
+		if(Tools::getValue('prestaShopAction', false) == 'createOpenOrder') {
             $this->createOpenOrder();
             return;
         }
@@ -60,9 +56,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
     
     private function processOrder()
     {
+		SC_CLASS::create_log(@$_REQUEST, 'processOrder params');
+		
         try {
-            SC_CLASS::create_log('processOrder');
-            
             # prepare Order data
             $cart           = $this->context->cart;
             $customer       = $this->validate($cart);
@@ -169,9 +165,13 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				array('prestaShopAction' => 'showError')
 			));
         }
+		
+		#########
+		
+		$sc_payment_method = Tools::getValue('sc_payment_method', false);
         
-		if(empty($_POST)) {
-			SC_CLASS::create_log('REST API Order, but post array is empty.');
+		if(!$sc_payment_method) {
+			SC_CLASS::create_log('REST API Order, but parameter sc_payment_method is empty.');
 			Tools::redirect($error_url);
 		}
 		
@@ -216,20 +216,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					'email'		=> $customer->email,
 				),
 				
-//				'userDetails'       => array(
-//					'firstName'         => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->firstname)),
-//					'lastName'          => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->lastname)),
-//					'address'           => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->address1)),
-//					'phone'             => urlencode(preg_replace("/[[:punct:]]/", '', $phone)),
-//					'zip'               => $address_invoice->postcode,
-//					'city'              => urlencode(preg_replace("/[[:punct:]]/", '', $address_invoice->city)),
-//					'country'           => $country_inv->iso_code,
-//					'state'             => strlen($address_invoice->id_state) == 2
-//											? $address_invoice->id_state : substr($address_invoice->id_state, 0, 2),
-//					'email'             => $customer->email,
-//					'county'            => '',
-//				),
-				
 				'urlDetails'        => array(
 					'successUrl'        => $success_url,
 					'failureUrl'        => $error_url,
@@ -237,28 +223,14 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					'notificationUrl'   => $notify_url,
 				),
 				'timeStamp'         => $order_time,
-				'sessionToken'      => @$_POST['lst'],
+				'sessionToken'      => Tools::getValue('lst', ''),
 				'deviceDetails'     => SC_CLASS::get_device_details(),
 				'languageCode'      => substr($this->context->language->locale, 0, 2),
 				'webMasterId'       => SC_PRESTA_SHOP . _PS_VERSION_,
 			);
 			
 			$sc_params['userDetails'] = $sc_params['billingAddress'];
-
-//			$sc_params['billingAddress'] = array(
-//				'firstName'         => $sc_params['userDetails']['firstName'],
-//				'lastName'          => $sc_params['userDetails']['lastName'],
-//				'address'           => $sc_params['userDetails']['address'],
-//				'cell'              => '',
-//				'phone'             => $sc_params['userDetails']['phone'],
-//				'zip'               => $sc_params['userDetails']['zip'],
-//				'city'              => $sc_params['userDetails']['city'],
-//				'country'           => $sc_params['userDetails']['country'],
-//				'state'             => $sc_params['userDetails']['state'],
-//				'email'             => $sc_params['userDetails']['email'],
-//				'county'            => '',
-//			);
-
+			
 			$sc_params['items'][0] = array(
 				'name'      => $cart->id,
 				'price'     => $sc_params['amount'],
@@ -267,25 +239,39 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 
 			$sc_params['checksum'] = hash(
 				Configuration::get('SC_HASH_TYPE'),
-				stripslashes(
-					$sc_params['merchantId']
+				$sc_params['merchantId']
 					. $sc_params['merchantSiteId']
 					. $sc_params['clientRequestId']
 					. $sc_params['amount']
 					. $sc_params['currency']
 					. $sc_params['timeStamp']
 					. Configuration::get('SC_SECRET_KEY')
-			));
-
-			if(@$_POST['sc_payment_method']) {
-				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_URL : SC_TEST_PAYMENT_URL;
-				$sc_params['paymentMethod'] = $_POST['sc_payment_method'];
-
-				if(isset($_POST[@$_POST['sc_payment_method']]) && is_array($_POST[$_POST['sc_payment_method']])) {
-					$sc_params['userAccountDetails'] = $_POST[$_POST['sc_payment_method']];
+			);
+			
+			// UPO
+			if(is_numeric($sc_payment_method)) {
+				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_NEW_URL : SC_TEST_PAYMENT_NEW_URL;
+				$sc_params['paymentOption']['userPaymentOptionId'] = $sc_payment_method;
+				
+				// the UPO is card and this is the CVV
+//				if(!empty($_POST['cvv_for_' . $sc_payment_method])) {
+				if(Tools::getValue('cvv_for_' . $sc_payment_method, false)) {
+//					$sc_params['paymentOption']['card']['CVV'] = $_POST['cvv_for_' . $sc_payment_method];
+					$sc_params['paymentOption']['card']['CVV'] = Tools::getValue('cvv_for_' . $sc_payment_method, '');
 				}
 			}
-
+			// APM
+			else {
+				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_URL : SC_TEST_PAYMENT_URL;
+				$sc_params['paymentMethod'] = $sc_payment_method;
+				
+//				if(isset($_POST[$sc_payment_method]) && is_array($_POST[$sc_payment_method])) {
+				if(Tools::getValue($sc_payment_method, false) && is_array(Tools::getValue($sc_payment_method, false))) {
+//					$sc_params['userAccountDetails'] = $_POST[$sc_payment_method];
+					$sc_params['userAccountDetails'] = Tools::getValue($sc_payment_method, false);
+				}
+			}
+			
 			$resp = SC_CLASS::call_rest_api($endpoint_url, $sc_params);
 
 			$req_status = $this->getRequestStatus($resp);
@@ -299,10 +285,17 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 		if(
 			!$resp
 			|| $req_status == 'ERROR'
-			|| @$resp['transactionStatus'] == 'ERROR'
+			|| @$resp['w kre'] == 'ERROR'
 			|| @$resp['transactionStatus'] == 'DECLINED'
 		) {
 			Tools::redirect($error_url);
+		}
+		
+		if(!empty($sc_params['paymentMethod'])) {
+			$order_payment_name = str_replace('apmgw_', '', $sc_params['paymentMethod']);
+		}
+		elseif(!empty(Tools::getValue('sc_upo_name', ''))) {
+			$order_payment_name = str_replace('apmgw_', '', Tools::getValue('sc_upo_name', 'empty'));
 		}
 
 		// save order
@@ -310,7 +303,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			(int)$cart->id
 			,Configuration::get('SC_OS_AWAITING_PAIMENT') // the status
 			,$sc_params['amount']
-			,$this->module->displayName . ' - ' . str_replace('apmgw_', '', $sc_params['paymentMethod']) // payment_method
+			,$this->module->displayName . ' - ' . $order_payment_name // payment_method
 			,'' // message
 			,array() // extra_vars
 			,null // currency_special
@@ -325,9 +318,15 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 		$final_url = $success_url;
 
 		if($req_status == 'SUCCESS') {
-			if(isset($resp['redirectURL']) && !empty($resp['redirectURL'])) {
+			// APM
+			if(!empty($resp['redirectURL'])) {
 				SC_CLASS::create_log($resp['redirectURL'], 'redirectURL:');
 				$final_url = $resp['redirectURL'];
+			}
+			// UPO
+			elseif(!empty($resp['paymentOption']['redirectUrl'])) {
+				SC_CLASS::create_log($resp['paymentOption']['redirectUrl'], 'redirectURL:');
+				$final_url = $resp['paymentOption']['redirectUrl'];
 			}
 		}
 
@@ -344,6 +343,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 		require_once $plugin_root . '/safecharge.php';
 		
 		$sc				= new SafeCharge();
+		SC_CLASS::create_log($_SERVER, 'createOpenOrder() call prepareOrderData');
+		SC_CLASS::create_log($_REQUEST, 'createOpenOrder() call prepareOrderData');
 		$session_token	= $sc->prepareOrderData(true);
 	}
 

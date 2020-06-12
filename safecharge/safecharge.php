@@ -170,6 +170,14 @@ class SafeCharge extends PaymentModule
             return false;
         }
 		
+//		SC_CLASS::create_log($this->context->cart, 'hookPaymentOptions');
+//		SC_CLASS::create_log($this->context->cart->delivery_option, 'hookPaymentOptions');
+//		SC_CLASS::create_log($_SERVER, 'hookPaymentOptions server');
+		
+		if(empty($this->context->cart->delivery_option)) {
+			return array();
+		}
+		
 		$this->prepareOrderData();
 		
 		global $smarty;
@@ -546,15 +554,15 @@ class SafeCharge extends PaymentModule
 				array('prestaShopAction' => 'createOpenOrder')
 			));
 			
-			if(
-				empty($_SESSION['sc_order_vars'])
-				|| $_SESSION['sc_order_vars']['amount'] != $amount
-				|| $_SESSION['sc_order_vars']['currency'] != $currency->iso_code
-				|| $_SESSION['sc_order_vars']['languageCode'] != substr($this->context->language->locale, 0, 2)
-				|| $_SESSION['sc_order_vars']['isTestEnv'] != $test_mode
-				|| $_SESSION['sc_order_vars']['country'] != $country_inv->iso_code
-				|| (time() - $_SESSION['sc_order_vars']['create_time'] > 10*60)
-			) {
+//			if(
+//				empty($_SESSION['sc_order_vars'])
+//				|| $_SESSION['sc_order_vars']['amount'] != $amount
+//				|| $_SESSION['sc_order_vars']['currency'] != $currency->iso_code
+//				|| $_SESSION['sc_order_vars']['languageCode'] != substr($this->context->language->locale, 0, 2)
+//				|| $_SESSION['sc_order_vars']['isTestEnv'] != $test_mode
+//				|| $_SESSION['sc_order_vars']['country'] != $country_inv->iso_code
+//				|| (time() - $_SESSION['sc_order_vars']['create_time'] > 10*60)
+//			) {
 				$notify_url     = $this->context->link
 					->getModuleLink('safecharge', 'payment', array(
 						'prestaShopAction'  => 'getDMN',
@@ -615,9 +623,6 @@ class SafeCharge extends PaymentModule
 					'transactionType'	=> Configuration::get('SC_PAYMENT_ACTION'),
 				);
 				
-				// here they are same
-//				$oo_params['shippingAddress'] = $oo_params['billingAddress'];
-
 				$oo_params['checksum'] = hash(
 					$hash,
 					$oo_params['merchantId'] . $oo_params['merchantSiteId'] . $oo_params['clientRequestId']
@@ -654,8 +659,6 @@ class SafeCharge extends PaymentModule
 						'session_token' => $session_token
 					));
 					exit;
-					
-//					return $session_token;
 				}
 				# Open Order END
 
@@ -684,11 +687,60 @@ class SafeCharge extends PaymentModule
 
 				$payment_methods = $res['paymentMethods'];
 				# get APMs END
-
+				
 				# get UPOs
-				$icons = array();
-
-				$_SESSION['sc_order_vars'] = array(
+				$icons			= array();
+				$upos			= array();
+				$user_token_id	= $oo_params['userTokenId'];
+				
+				// get them only for registred users when there are APMs
+				if($this->context->customer->isLogged() && !empty($payment_methods)) {
+					$upo_params = array(
+						'merchantId'		=> $apms_params['merchantId'],
+						'merchantSiteId'	=> $apms_params['merchantSiteId'],
+						'userTokenId'		=> $oo_params['userTokenId'],
+						'clientRequestId'	=> $apms_params['clientRequestId'],
+						'timeStamp'			=> $time,
+					);
+					
+					$upo_params['checksum'] = hash($hash, implode('', $upo_params) . $secret);
+					
+					$upo_res = SC_CLASS::call_rest_api(
+						$test_mode == 'yes' ? SC_TEST_USER_UPOS_URL : SC_LIVE_USER_UPOS_URL,
+						$upo_params
+					);
+					
+					if(!empty($upo_res['paymentMethods']) && is_array($upo_res['paymentMethods'])) {
+						foreach($upo_res['paymentMethods'] as $data) {
+							// chech if it is not expired
+							if(!empty($data['expiryDate']) && date('Ymd') > $data['expiryDate']) {
+								continue;
+							}
+							
+							if(empty($data['upoStatus']) || $data['upoStatus'] !== 'enabled') {
+								continue;
+							}
+							
+							// search for same method in APMs, use this UPO only if it is available there
+							foreach($payment_methods as $pm_data) {
+								// found it
+								if($pm_data['paymentMethod'] === $data['paymentMethodName']) {
+									$data['logoURL']	= @$pm_data['logoURL'];
+									$data['name']		= @$pm_data['paymentMethodDisplayName'][0]['message'];
+									
+									$upos[] = $data;
+									break;
+								}
+							}
+						}
+					}
+					
+//					echo 'UPOs<pre>'.print_r($upos, true) . '</pre>';
+				}
+				# get UPOs END
+				
+//				$_SESSION['sc_order_vars'] = array(
+				$sc_order_vars = array(
 					'create_time'		=> time(),
 					'sessionToken'		=> $session_token,
 					'amount'			=> $oo_params['amount'],
@@ -696,19 +748,23 @@ class SafeCharge extends PaymentModule
 					'languageCode'		=> $apms_params['languageCode'],
 					'country'			=> $country_inv->iso_code,
 					'paymentMethods'	=> $payment_methods,
+					'userTokenId'		=> $user_token_id,
+					'upos'				=> $upos,
 					'icons'				=> $icons,
 					'isTestEnv'			=> $test_mode,
 				);
-			}
+//			}
 			
 			$this->context->smarty->assign('scAPMsErrorMsg',	'');
-			$this->context->smarty->assign('sessionToken',		$_SESSION['sc_order_vars']['sessionToken']);
-			$this->context->smarty->assign('amount',			$_SESSION['sc_order_vars']['amount']);
-			$this->context->smarty->assign('currency',			$_SESSION['sc_order_vars']['currency']);
-			$this->context->smarty->assign('languageCode',		$_SESSION['sc_order_vars']['languageCode']);
-			$this->context->smarty->assign('paymentMethods',	$_SESSION['sc_order_vars']['paymentMethods']);
-			$this->context->smarty->assign('icons',				$_SESSION['sc_order_vars']['icons']);
-			$this->context->smarty->assign('isTestEnv',			$_SESSION['sc_order_vars']['isTestEnv']);
+			$this->context->smarty->assign('sessionToken',		$sc_order_vars['sessionToken']);
+			$this->context->smarty->assign('amount',			$sc_order_vars['amount']);
+			$this->context->smarty->assign('currency',			$sc_order_vars['currency']);
+			$this->context->smarty->assign('languageCode',		$sc_order_vars['languageCode']);
+			$this->context->smarty->assign('paymentMethods',	$sc_order_vars['paymentMethods']);
+			$this->context->smarty->assign('userTokenId',		$sc_order_vars['userTokenId']);
+			$this->context->smarty->assign('upos',				$sc_order_vars['upos']);
+			$this->context->smarty->assign('icons',				$sc_order_vars['icons']);
+			$this->context->smarty->assign('isTestEnv',			$sc_order_vars['isTestEnv']);
 		}
 		catch(Exception $e) {
 			SC_CLASS::create_log($e->getMessage(), 'hookPaymentOptions Exception: ');
@@ -719,6 +775,8 @@ class SafeCharge extends PaymentModule
 			$this->context->smarty->assign('currency',			'');
 			$this->context->smarty->assign('languageCode',		'');
 			$this->context->smarty->assign('paymentMethods',	'');
+			$this->context->smarty->assign('userTokenId',		'');
+			$this->context->smarty->assign('upos',				'');
 			$this->context->smarty->assign('icons',				'');
 			$this->context->smarty->assign('isTestEnv',			'');
 		}

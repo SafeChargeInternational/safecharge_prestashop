@@ -1,5 +1,10 @@
 # SafeCharge Prestashop Changelog
 
+## 2020-06-12
+```
+	* Added UPOs in the payment methods step.
+```
+
 ## 2020-05-26
 ```
 	* Pass better redirect URL in admin, after Order actions.

@@ -1,104 +1,30 @@
 <script type="text/javascript" src="https://cdn.safecharge.com/safecharge_resources/v1/websdk/safecharge.js"></script>
 
 <style type="text/css">
-    #safechargesubmit #sc_pm_error {
+    #safechargesubmit .sc_pm_error {
         color: red;
         font-size: 12px;
     }
 
-    #sc_apms_list, #sc_upos_list {
-        margin-top: 15px;
-        box-shadow: 0 2px 4px 0 rgba(0,0,0,0.19);
-    }
+    #sc_apms_list, #sc_upos_list { margin-top: 15px; }
 
-    .apm_title img {
-        width: 60px;
-        margin: 0px 10px 6px;
-    }
-
-    #sc_apms_list .apm_container, #sc_upos_list .apm_container {
-        width: 100%;
-        height: 100%;
-        cursor: pointer;
-        padding: 0.5rem 0 0 0;
-        background-color: #FFFFFF;
-    }
-
-    #sc_apms_list .apm_title, #sc_upos_list .apm_title {
-        cursor: pointer;
-        border-bottom: .1rem solid #939393;
-    }
-
-    #sc_apms_list .apm_title .material-icons,  #sc_upos_list .apm_title .material-icons {
-        cursor: pointer;
-        color: #55a985;
-        font-size: 26px;
-        margin-right: 20px;
-        float: right;
-    }
-
-    #sc_apms_list .fa-question-circle-o, #sc_upos_list .fa-question-circle-o {
-        top: 16px;
-        position: absolute;
-        right: 10px;
-        font-size: 16px;
-        color: #14B5F1;
-    }
-
-    #sc_apms_list .apm_fields, #sc_upos_list .apm_fields {
-        display: none;
-        background-color: #fafafa;
-        border-bottom: .1rem solid #9B9B9B;
-		font-family: 'arial' !important;
-    }
-
-    #scForm .apm_fields .apm_field {
-        padding-left: 0.7em;
-        padding-right: 0.7em;
-        padding-top: 1em;
-        position: relative;
-        border-bottom: .1rem solid #9B9B9B;
-        margin: 0px 10px 0px 10px;
-    }
-
-    #scForm .apm_fields .apm_field:last-child {
-        border-bottom: 0px !important;
-    }
-	
-	#sc_card_holder {
-		width: 50% !important;
-		display: inline-block !important;
+	#sc_apms_list .payment-options .custom-radio, #sc_upos_list .payment-options .custom-radio {
+		margin-right: 0.5rem !important;
 	}
 	
-	#sc_date_cvv_holder {
-		width: 46% !important;
-		float: right;
+	.sc_visa_mc_maestro_logo {
+		height: 39px;
+		width: auto;
+		margin-left: -2px;
 	}
 	
-	#sc_date_cvv_holder #sc_date_holder {
-		width: 40%;
-		display: inline-block;
+	.sc_fields_holder {
+		display: none;
+		margin-top: 1rem;
+		margin-left: 1.8rem;
 	}
 	
-	#sc_date_cvv_holder #sc_cvv_holder {
-		width: 40%;
-		float: right;
-	}
-	
-    #scForm input  {
-        border-radius: unset;
-        border: 0 !important;
-        background-color: inherit !important;
-        border-radius: 0px !important;
-        padding-bottom: 8px !important;
-        padding-left: 0px !important;
-        padding-right: 0px !important;
-        width: 80%;
-		font-size: 15px !important;
-		font-family: 'arial' !important;
-    }
-
-    #scForm .field_icon { float: right; }
+	.sc_upos_cvvs { max-width: 100px; }
     .sc_hide { display: none; }
 	
 	#sc_error_msg {
@@ -124,32 +50,8 @@
         padding-top: 5px;
     }
 
-    #sc_apms_list .apm_error label, #sc_upos_list .apm_error label {
-        color: #E7463B;
-        font-size: 12px;
-        text-align: left;
-        font-weight: normal;
-    }
-
-    #sc_apms_list .apm_error.error_info label, #sc_upos_list .apm_error.error_info label {
-        color: #9B9B9B;
-        font-style: italic;
-    }
-
     .SfcField iframe {
         min-height: 20px !important;
-    }
-
-    .apm_field input {
-        border: 0 !important;
-        outline: 0 !important;
-        background-color: inherit !important;
-        border-radius: 0px !important;
-        padding-bottom: 8px !important;
-        padding-left: 0px !important;
-        padding-right: 0px !important;
-        width: 100%;
-        box-shadow: none !important;
     }
 
     .fast-right-spinner {
@@ -162,38 +64,17 @@
         margin-top: 10%;
     }
 	
-	#cc_load_spinner {
+	.cc_load_spinner {
 		text-align: center;
 		padding-top: 10px;
 	}
 	
-	@media screen and (max-width: 460px) {
-		#sc_fields_holder {
-			padding: 0 !important;
-			margin: 0 !important;
-		}
-		
-		#sc_card_holder { display: block !important; }
-		
-		#sc_date_cvv_holder {
-			float: none !important;
-			border-bottom: 0px !important;
-		}
-		
-		#sc_card_holder, #sc_date_cvv_holder {
-			width: auto !important;
-			/* .apm_field */
-			padding-left: 0.7em;
-			padding-right: 0.7em;
-			padding-top: 1em;
-			position: relative;
-			border-bottom: .1rem solid #9B9B9B;
-			margin: 0px 10px 0px 10px;
-		}
+	@media (max-width: 767px) { /*xs*/
+		.margin-top-5rem { margin-top: .5rem; }
 	}
 	
 	@media screen and (max-width: 380px) {
-		#sc_visa_mc_maestro_logo { height: 24px !important; }
+		.sc_visa_mc_maestro_logo { height: 24px !important; }
 		#sc_error_msg { width: 80%; }
 	}
 
@@ -223,81 +104,144 @@
 </style>
 
 <div id="sc_pm_error" class="alert alert-warning sc_hide">
-    <span id="sc_error_msg"></span>
+    <span class="sc_error_msg">{l s='Please, select a payment method, and if there are fields, fill all of them!' mod='safecharge'}</span>
     <span class="close" onclick="$('#sc_pm_error').hide();">&times;</span>
 </div>
 
 <form method="post" id="scForm" action="{$formAction}">
-    {if $paymentMethods}
-        <h3>{l s='Choose a payment method:' mod='safecharge'}</h3>
+	{if $upos}
+		<h4 id="sc_upos_title">{l s='Choose from preferred payment methods:' mod='safecharge'}</h4>
 		
-		<div id="cc_load_spinner" class="sc_hide">
+		<div class="sc_hide cc_load_spinner">
 			<i class="material-icons fast-right-spinner">sync</i>
 		</div>
 		
-        <ul id="sc_apms_list" class="">
-            {foreach $paymentMethods as $pm}
-                <li class="apm_container" style="height: auto;">
-                    <div class="apm_title">
-                        <i class="material-icons sc_hide">check</i>
+		<div id="sc_upos_list">
+			<input type="hidden" id="sc_upo_name" name="sc_upo_name" value="" />
+			
+			{foreach $upos as $upo}
+				<div class="payment-option clearfix">
+					<label>
+						<span class="custom-radio">
+							<input id="upo_{$upo.userPaymentOptionId}" class="ps-shown-by-js" name="sc_payment_method" type="radio" value="{$upo.userPaymentOptionId}" data-upo-name="{$upo.paymentMethodName}">
+							<span></span>
+						</span>
 
-						{if $pm.paymentMethod == 'cc_card'}
-							<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{$pm.paymentMethodDisplayName[0].message}" style="height: 39px; width: auto" id="sc_visa_mc_maestro_logo" />
-						{else}
-							<img src="{$pm.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{$pm.paymentMethodDisplayName[0].message}" />
-						{/if}
+						<span>
+							{if $upo.paymentMethodName == 'cc_card'}
+								<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{$pm.paymentMethodDisplayName[0].message}"  class="sc_visa_mc_maestro_logo" />&nbsp;
+								{$upo.upoData.ccCardNumber}
+							{else}
+								<img src="{$upo.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{$upo.paymentMethodDisplayName[0].message}" />&nbsp;
+								{$upo.upoName}
+							{/if}
+						</span>
+					</label>
 						
-                        <input type="radio" id="sc_payment_method_{$pm.paymentMethod}" class="sc_hide" name="sc_payment_method" value="{$pm.paymentMethod}" />
-                    </div>
-
-                    {if in_array($pm.paymentMethod, array('cc_card', 'dc_card'))}
-                        <div class="apm_fields" id="sc_{$pm.paymentMethod}">
-                            <div class="apm_field">
-                                <input type="text" id="sc_card_holder_name" name="{$pm.paymentMethod}[cardHolderName]" placeholder="{l s='Card holder name' mod='safecharge'}" style="padding-bottom: 2px !important;" />
-                            </div>
-
-							<div id="sc_fields_holder" class="apm_field">
-								<div id="sc_card_holder">
-									<div id="sc_card_number"></div>
+					{if $upo.paymentMethodName == 'cc_card'}
+						<div class="container-fluid sc_fields_holder">
+							<section class="form-fields">
+								<div class="form-group">
+									<div id="cvv_for_{$upo.userPaymentOptionId}" class="form-control sc_upos_cvvs" data-upo-id="{$upo.userPaymentOptionId}"></div>
 								</div>
-
-								<div id="sc_date_cvv_holder">
-									<div id="sc_date_holder">
-										<div id="sc_card_expiry"></div>
-									</div>
-
-									<div id="sc_cvv_holder">
-										<div id="sc_card_cvc"></div>
-									</div>
-								</div>
+							</section>
+								
+							<div class="alert alert-warning sc_hide">
+								<span class="sc_error_msg">{l s='Please, fill the card CVC!' mod='safecharge'}</span>
+								<span class="close" onclick="$(this).closest('.alert-warning').hide();">×</span>
 							</div>
-                        </div>
-                    {else}
-                        <div class="apm_fields">
-                            {foreach $pm.fields as $field}
-                                <div class="apm_field">
-                                    <input id="{$pm.paymentMethod}_{$field.name}" 
-                                           name="{$pm.paymentMethod}[{$field.name}]" 
-                                           type="{$field.type}" 
-                                           {if isset($field.regex) and $field.regex}pattern="{$field.regex}"{/if} 
-                                           {if !empty($field.caption[0].message)}placeholder="{$field.caption[0].message}"
-                                           {elseif !empty($field.name)}placeholder="{$field.name}"
-                                           {/if}
-                                    />
+						</div>
+					{/if}
+				</div>
+			{/foreach}
+		</div>
+		<br/>
+	{/if}
+	
+    {if $paymentMethods}
+        <h4 id="sc_apms_title">{l s='Choose from available payment methods:' mod='safecharge'}</h4>
+		
+		<div class="sc_hide cc_load_spinner">
+			<i class="material-icons fast-right-spinner">sync</i>
+		</div>
+		
+        <div id="sc_apms_list">
+            {foreach $paymentMethods as $pm}
+				<div class="payment-option clearfix">
+					<label>
+						<span class="custom-radio">
+							<input id="sc_apm_{$pm.paymentMethod}" class="ps-shown-by-js" name="sc_payment_method" type="radio" value="{$pm.paymentMethod}">
+							<span></span>
+						</span>
+							
+						<span>
+							{if $pm.paymentMethod == 'cc_card'}
+								<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{$pm.paymentMethodDisplayName[0].message}"  class="sc_visa_mc_maestro_logo" />
+							{else}
+								<img src="{$pm.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{$pm.paymentMethodDisplayName[0].message}" />&nbsp;
+								{$pm.paymentMethodDisplayName[0].message}
+							{/if}
+						</span>
+					</label>
+						
+					{if in_array($pm.paymentMethod, array('cc_card', 'dc_card'))}
+						<div class="container-fluid sc_fields_holder">
+							<section class="form-fields" id="sc_{$pm.paymentMethod}">
+								<div class="form-group ">
+									<input class="form-control" type="text" id="sc_card_holder_name" name="{$pm.paymentMethod}[cardHolderName]" placeholder="{l s='Card holder name' mod='safecharge'}" />
+								</div>
+								
+								<div class="form-group row " style="margin-bottom: 0;">
+									<div class="col-md-6 col-xs-12">
+										<div id="sc_card_number" class="form-control"></div>
+									</div>
 
-                                    {if isset($field.regex) and $field.regex and !empty($field.validationmessage[0].message)}
-                                        <i class="material-icons field_icon" onclick="showErrorLikeInfo('sc_{$field.name}')">error_outline</i>
-                                        <div class="apm_error sc_hide" id="error_sc_{$field.name}">
-                                            <label>{$field.validationmessage[0].message}</label>
-                                        </div>
-                                    {/if}
-                                </div>
-                            {/foreach}
-                        </div>
-                    {/if}
-                </li>
+									<div class="col-md-6 col-xs-12 margin-top-5rem">
+										<div class="form-group row ">
+											<div class="col-xs-6">
+												<div id="sc_card_expiry" class="form-control"></div>
+											</div>
+
+											<div class="col-xs-6">
+												<div id="sc_card_cvc" class="form-control"></div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</section>
+								
+							<div class="alert alert-warning sc_hide">
+								<span class="sc_error_msg"></span>
+								<span class="close" onclick="$(this).closest('.alert-warning').hide();">×</span>
+							</div>
+						</div>
+					{elseif $pm.fields}
+						<div class="container-fluid sc_fields_holder">
+							<section class="form-fields">
+								{foreach $pm.fields as $field}
+									<div class="form-group ">
+										<input id="{$pm.paymentMethod}_{$field.name}" 
+											   class="form-control"
+											   name="{$pm.paymentMethod}[{$field.name}]" 
+											   type="{$field.type}" 
+											   {if isset($field.regex) and $field.regex}pattern="{$field.regex}"{/if} 
+											   {if !empty($field.caption[0].message)}placeholder="{$field.caption[0].message}"
+											   {elseif !empty($field.name)}placeholder="{$field.name}"
+											   {/if}
+											/>
+									</div>
+								{/foreach}
+							</section>
+							
+							<div class="alert alert-warning sc_hide">
+								<span class="sc_error_msg"></span>
+								<span class="close" onclick="$(this).closest('.alert-warning').hide();">×</span>
+							</div>
+						</div>
+					{/if}
+				</div>
             {/foreach}
-        </ul>
+        </div>
         <br/>
     {/if}
 
@@ -318,6 +262,7 @@
     var cardNumber		= null;
     var cardExpiry		= null;
     var cardCvc			= null;
+	var lastCvcHolder	= '';
     var scFields		= null;
 	
 	// set some classes
@@ -363,7 +308,7 @@
 	var scDefaultErrorMsg = "{l s='Please, select a payment method, and fill all of its fileds!' mod='safecharge'}";
 
     function scValidateAPMFields() {
-		console.log('scValidateAPMFields', scAPMsErrorMsg);
+//		console.log('scValidateAPMFields', scAPMsErrorMsg);
 		
         $('#payment-confirmation button.btn.btn-primary').prop('disabled', true);
         $('#payment-confirmation button.btn.btn-primary .fast-right-spinner').removeClass('sc_hide');
@@ -373,164 +318,210 @@
 			return;
 		}
 
-        var formValid	= true;
-		var reloadForm	= false;
         selectedPM = $('input[name="sc_payment_method"]:checked').val();
 
-        if(typeof selectedPM != 'undefined' && selectedPM != '') {
-            // use cards
-            if(selectedPM == 'cc_card' || selectedPM == 'dc_card') {
-				if(jQuery('#sc_card_holder_name').val() === '') {
-					scFormFalse("{l s='Please fill Card holder name field!' mod='safecharge'}");
-					return;
-				}
-				
-				if(jQuery('#sc_card_number').hasClass('empty')) {
-					scFormFalse("{l s='Please fill Card number field!' mod='safecharge'}");
-					return;
-				}
-				if(!jQuery('#sc_card_number').hasClass('empty') && !jQuery('#sc_card_number').hasClass('sfc-complete')) {
-					scFormFalse("{l s='Your card number is not correct, please check it!' mod='safecharge'}");
-					return;
-				}
-				
-				if(jQuery('#sc_card_expiry').hasClass('empty')) {
-					scFormFalse("{l s='Please fill Card expiry date field!' mod='safecharge'}");
-					return;
-				}
-				if(!jQuery('#sc_card_expiry').hasClass('empty') && !jQuery('#sc_card_expiry').hasClass('sfc-complete')) {
-					scFormFalse("{l s='Your card expiry date is not correct, please check it!' mod='safecharge'}");
-					return;
-				}
-				
-				if(jQuery('#sc_card_cvc').hasClass('empty')) {
-					scFormFalse("{l s='Please fill CVC field!' mod='safecharge'}");
-					return;
-				}
-				if(!jQuery('#sc_card_cvc').hasClass('empty') && !jQuery('#sc_card_cvc').hasClass('sfc-complete')) {
-					scFormFalse("{l s='Your CVC is not correct, please check it!' mod='safecharge'}");
-					return;
-				}
-				
-                // create payment with WebSDK
-                sfc.createPayment({
-                    sessionToken    : "{$sessionToken}",
-                    merchantId      : "{$merchantId}",
-                    merchantSiteId  : "{$merchantSiteId}",
-                    currency        : "{$currency}",
-                    amount          : "{$amount}",
-                    cardHolderName  : document.getElementById('sc_card_holder_name').value,
-                //    paymentOption   : card,
-                    paymentOption   : sfcFirstField,
-					webMasterId		: "{$webMasterId}"
-                }, function(resp){
-                    console.log(resp);
-
-                    if(typeof resp.result != 'undefined') {
-                        if(resp.result == 'APPROVED' && resp.transactionId != 'undefined') {
-                            jQuery('#sc_transaction_id').val(resp.transactionId);
-                            jQuery('#scForm').submit();
-                            return;
-                        }
-                        else if(resp.result == 'DECLINED') {
-							reloadForm = true;
-							scFormFalse("{l s='Your Payment was DECLINED. Please try another payment method!' mod='safecharge'}");
-                        }
-                        else {
-							reloadForm = true;
-							
-                            if(resp.hasOwnProperty('errorDescription') && resp.errorDescription != '') {
-								scFormFalse(resp.errorDescription);
-                            }
-                            else if(resp.hasOwnProperty('reason') && '' != resp.reason) {
-								scFormFalse(resp.reason);
-                            }
-                            else {
-								scFormFalse("{l s='Error with your Payment. Please try again later!' mod='safecharge'}");
-                            }
-                        }
-                    }
-                    else {
-						reloadForm = true;
-					
-						scFormFalse("{l s='Unexpected error, please try again later!' mod='safecharge'}");
-                        console.error('Error with SDK response: ' + resp);
-                        return;
-                    }
-
-					if(reloadForm) {
-						reCreateSCFields();
-					}
-					else {
-						$('#payment-confirmation button.btn.btn-primary').prop('disabled', false);
-						$('#payment-confirmation button.btn.btn-primary .fast-right-spinner').addClass('sc_hide');
-					}
-                });
-            }
-            // use APM data
-            else if(isNaN(parseInt(selectedPM))) {
-                var checkId = 'sc_payment_method_' + selectedPM;
-
-                // iterate over payment fields
-                $('#' + checkId).closest('li.apm_container').find('.apm_fields input').each(function(){
-                    var apmField = $(this);
-
-                    if (
-                        typeof apmField.attr('pattern') != 'undefined'
-                        && apmField.attr('pattern') !== false
-                        && apmField.attr('pattern') != ''
-                    ) {
-                        var regex = new RegExp(apmField.attr('pattern'), "i");
-
-                        // SHOW error
-                        if(apmField.val() == '' || regex.test(apmField.val()) == false) {
-                            apmField.parent('.apm_field').find('.apm_error')
-                                .removeClass('error_info sc_hide');
-
-                            formValid = false;
-                        }
-                        else {
-                            apmField.parent('.apm_field').find('.apm_error').addClass('sc_hide');
-                        }
-                    }
-                    else if(apmField.val() == '') {
-                        formValid = false;
-                    }
-                });
-
-                if(!formValid) {
-                    scFormFalse(scDefaultErrorMsg);
-                    return;
-                }
-
-                $('form#scForm').submit();
-            }
-        }
-        else {
-            scFormFalse(scDefaultErrorMsg);
+		if(typeof selectedPM == 'undefined' || selectedPM == '') {
+            scFormFalse();
             return;
         }
+		
+		var formValid		= true;
+		var reloadForm		= false;
+		var pmFieldsHolder	= $('input[name="sc_payment_method"]:checked')
+				.closest('.payment-option')
+				.find('.sc_fields_holder');
+
+		// use cards
+		if(selectedPM == 'cc_card' || selectedPM == 'dc_card') {
+			console.log('card');
+			
+			if(jQuery('#sc_card_holder_name').val() === '') {
+				scFormFalse("{l s='Please, fill Card holder name!' mod='safecharge'}");
+				return;
+			}
+
+			if(jQuery('#sc_card_number').hasClass('empty')) {
+				scFormFalse("{l s='Please fill Card number field!' mod='safecharge'}");
+				return;
+			}
+			if(!jQuery('#sc_card_number').hasClass('empty') && !jQuery('#sc_card_number').hasClass('sfc-complete')) {
+				scFormFalse("{l s='Your card number is not correct, please check it!' mod='safecharge'}");
+				return;
+			}
+
+			if(jQuery('#sc_card_expiry').hasClass('empty')) {
+				scFormFalse("{l s='Please fill Card expiry date field!' mod='safecharge'}");
+				return;
+			}
+			if(!jQuery('#sc_card_expiry').hasClass('empty') && !jQuery('#sc_card_expiry').hasClass('sfc-complete')) {
+				scFormFalse("{l s='Your card expiry date is not correct, please check it!' mod='safecharge'}");
+				return;
+			}
+
+			if(jQuery('#sc_card_cvc').hasClass('empty')) {
+				scFormFalse("{l s='Please fill CVC field!' mod='safecharge'}");
+				return;
+			}
+			if(!jQuery('#sc_card_cvc').hasClass('empty') && !jQuery('#sc_card_cvc').hasClass('sfc-complete')) {
+				scFormFalse("{l s='Your CVC is not correct, please check it!' mod='safecharge'}");
+				return;
+			}
+
+			// create payment with WebSDK
+			sfc.createPayment({
+				sessionToken    : "{$sessionToken}",
+				merchantId      : "{$merchantId}",
+				merchantSiteId  : "{$merchantSiteId}",
+				currency        : "{$currency}",
+				amount          : "{$amount}",
+				cardHolderName  : document.getElementById('sc_card_holder_name').value,
+				paymentOption   : sfcFirstField,
+				webMasterId		: "{$webMasterId}"
+			}, function(resp){
+				afterSdkResponse(resp);
+			});
+		}
+		// use CC UPO
+		else if('cc_card' == $('input[name="sc_payment_method"]:checked').attr('data-upo-name')) {
+			console.log('upo cc');
+		
+			if( ! $('#cvv_for_' + selectedPM).hasClass('sfc-complete')) {
+				scFormFalse();
+				return;
+			}
+			
+			// create payment with WebSDK
+			sfc.createPayment({
+				sessionToken    : "{$sessionToken}",
+				merchantId      : "{$merchantId}",
+				merchantSiteId  : "{$merchantSiteId}",
+				currency        : "{$currency}",
+				amount          : "{$amount}",
+				userTokenId		: '{$userTokenId}',
+				paymentOption   : {
+					userPaymentOptionId: selectedPM,
+					card: {
+						CVV: window['scCVV' + selectedPM]
+					}
+				},
+				webMasterId		: "{$webMasterId}"
+			}, function(resp){
+				afterSdkResponse(resp);
+			});
+		}
+		// use APM or non-CC UPO
+		else {
+			console.log('apm');
+		
+			// iterate over payment fields
+			pmFieldsHolder.find('input').each(function(){
+				var apmField = $(this);
+
+				if (
+					typeof apmField.attr('pattern') != 'undefined'
+					&& apmField.attr('pattern') !== false
+					&& apmField.attr('pattern') != ''
+				) {
+					var regex = new RegExp(apmField.attr('pattern'), "i");
+
+					// SHOW error
+					if(apmField.val() == '' || regex.test(apmField.val()) == false) {
+						formValid = false;
+					}
+				}
+				else if(apmField.val() == '') {
+					formValid = false;
+				}
+			});
+
+			if(!formValid) {
+				if(isNaN(selectedPM)) {
+					var hashId = 'sc_apms_title';
+				}
+				else {
+					var hashId = 'sc_upos_title';
+				}
+				
+				scFormFalse("{l s='Please, fill all fileds, of the selected payment method!' mod='safecharge'}");
+				return;
+			}
+
+			$('form#scForm').submit();
+		}
     } // end of scValidateAPMFields()
 
+	// process after we get the response from the webSDK
+	function afterSdkResponse(resp) {
+		console.log(resp);
+
+		if(typeof resp.result != 'undefined') {
+			if(resp.result == 'APPROVED' && resp.transactionId != 'undefined') {
+				jQuery('#sc_transaction_id').val(resp.transactionId);
+				jQuery('#scForm').submit();
+				return;
+			}
+			else if(resp.result == 'DECLINED') {
+				reloadForm = true;
+				scFormFalse("{l s='Your Payment was DECLINED. Please try another payment method!' mod='safecharge'}");
+			}
+			else {
+				reloadForm = true;
+
+				if(resp.hasOwnProperty('errorDescription') && resp.errorDescription != '') {
+					scFormFalse(resp.errorDescription);
+				}
+				else if(resp.hasOwnProperty('reason') && '' != resp.reason) {
+					scFormFalse(resp.reason);
+				}
+				else {
+					scFormFalse("{l s='Error with your Payment. Please try again later!' mod='safecharge'}");
+				}
+			}
+		}
+		else {
+			reloadForm = true;
+
+			scFormFalse("{l s='Unexpected error, please try again later!' mod='safecharge'}");
+			console.error('Error with SDK response: ' + resp);
+			return;
+		}
+
+		if(reloadForm) {
+			console.log('upo/card payment recreate');
+			reCreateSCFields();
+		}
+		else {
+			$('#payment-confirmation button.btn.btn-primary').prop('disabled', false);
+			$('#payment-confirmation button.btn.btn-primary .fast-right-spinner').addClass('sc_hide');
+		}
+	}
+	
+	// show error message
     function scFormFalse(_text) {
         $('#payment-confirmation button.btn.btn-primary').prop('disabled', false);
         $('#payment-confirmation button.btn.btn-primary .fast-right-spinner').addClass('sc_hide');
+		
+		var selectedCheckbox = $('input[name="sc_payment_method"]:checked');
+			
+		if(selectedCheckbox.length == 0) {
+			$('#sc_pm_error').show();
+			
+			$("body,html").animate({
+				scrollTop: $('html').offset().top - 50
+			}, 1000);
+			
+			return;
+		}
+		
+		if(typeof _text != 'undefined' && _text != '') {
+			selectedCheckbox.closest('.payment-option').find('.alert .sc_error_msg').html(_text);
+		}
+		
+		selectedCheckbox.closest('.payment-option').find('.alert').show();
 
-        $('#sc_error_msg').html(_text);
-        $('#sc_pm_error').show();
-        window.location.hash = 'sc_pm_error';
-        window.location.hash;
-    }
-
-    function showErrorLikeInfo(elemId) {
-        $('#error_'+elemId).addClass('error_info');
-
-        if($('#error_'+elemId).hasClass('sc_hide')) {
-            $('#error_'+elemId).removeClass('sc_hide');
-        }
-        else {
-            $('#error_'+elemId).addClass('sc_hide');
-        }
+		$("body, html").animate({
+			scrollTop: $('input[name="sc_payment_method"]:checked').offset().top - 50
+		}, 1000);
     }
 
     /**
@@ -553,28 +544,13 @@
         sfc = SafeCharge(scData);
 
         // prepare fields
-//        var fields = sfc.fields({
         scFields = sfc.fields({
             locale: "{$languageCode}"
         });
 		
-		cardNumber = sfcFirstField = scFields.create('ccNumber', {
-			classes: scElementClasses
-			,style: scFieldsStyle
-		});
-		cardNumber.attach('#sc_card_number');
-
-		cardExpiry = scFields.create('ccExpiration', {
-			classes: scElementClasses
-			,style: scFieldsStyle
-		});
-		cardExpiry.attach('#sc_card_expiry');
-
-		cardCvc = scFields.create('ccCvc', {
-			classes: scElementClasses
-			,style: scFieldsStyle
-		});
-		cardCvc.attach('#sc_card_cvc');
+		if($('#payment-confirmation button .fast-right-spinner').length == 0) {
+			$('#payment-confirmation button').prepend('<i class="material-icons fast-right-spinner sc_hide">sync</i>');
+		}
     }
 	
 	/**
@@ -583,14 +559,13 @@
 	*/
 	function reCreateSCFields() {
 		console.log('reCreateSCFields');
-		console.log('reCreateSCFields url', ooAjaxUrl);
 	
 		sfc				= null;
 		sfcFirstField	= null;
 	
-		$('#cc_load_spinner, #cc_load_spinner i').removeClass('sc_hide');
+		$('.cc_load_spinner, .cc_load_spinner i').removeClass('sc_hide');
 		$('#sc_apms_list').addClass('sc_hide');
-		$('#sc_card_number, #sc_card_expiry, #sc_card_cvc').html(''); // clear card container
+		$('#sc_card_number, #sc_card_expiry, #sc_card_cvc, .sc_upos_cvvs').html(''); // clear SDK containers
 		
 		$.ajax({
 			dataType: "json",
@@ -604,7 +579,7 @@
 				scData.sessionToken = res.session_token;
 				createSCFields();
 				
-				$('#cc_load_spinner').addClass('sc_hide');
+				$('.cc_load_spinner').addClass('sc_hide');
 				$('#sc_apms_list').removeClass('sc_hide');
 				
 				$('#payment-confirmation button.btn.btn-primary').prop('disabled', false);
@@ -628,47 +603,77 @@
 				if($('input[name=payment-option]:checked').attr('data-module-name') == 'safecharge') {
 					e.stopPropagation();
 			
-					$(this).prepend('<i class="material-icons fast-right-spinner sc_hide">sync</i>');
 					scValidateAPMFields();
 					return false;
 				}
-		
-                {*scValidateAPMFields();
-
-                return false;*}
             });
 
+		$('body').on('change', 'input[name="sc_payment_method"]', function() {
+			var _self = $('input[name="sc_payment_method"]:checked');
+			
+			// hide all pm fields
+			$('#scForm .sc_fields_holder').fadeOut("fast");
+			
+			// show current apm_fields
+			_self.closest('.payment-option').find('.sc_fields_holder').toggle('slow');
+			
+			// create CVC object if need to
+			cardCvc = null;
+			
+			if(lastCvcHolder !== '') {
+				$(lastCvcHolder).html('');
+			}
+			
+			if(typeof _self.attr('data-upo-name') != 'undefined') {
+				$('#sc_upo_name').val(_self.attr('data-upo-name'));
+				
+				if(_self.attr('data-upo-name') === 'cc_card') {
+					lastCvcHolder = '#' + _self.closest('.payment-option').find('.sc_upos_cvvs').attr('id');
 
-        {*$('#payment-confirmation button')
-            .prop('type', 'button')
-            .prepend('<i class="material-icons fast-right-spinner sc_hide">sync</i>')
-            .on('click', function(e) {
-                e.stopPropagation();
-                scValidateAPMFields();
+					cardCvc = scFields.create('ccCvc', {
+						classes: scElementClasses
+						,style: scFieldsStyle
+					});
+					cardCvc.attach(lastCvcHolder);
+				}
+			}
+			else {
+				$('#sc_upo_name').val('');
+				
+				if(_self.val() === 'cc_card') {
+					$('#sc_card_number').html('');
+					cardNumber = sfcFirstField = scFields.create('ccNumber', {
+						classes: scElementClasses
+						,style: scFieldsStyle
+					});
+					cardNumber.attach('#sc_card_number');
 
-                return false;
-            });*}
+					$('#sc_card_expiry').html('');
+					cardExpiry = scFields.create('ccExpiration', {
+						classes: scElementClasses
+						,style: scFieldsStyle
+					});
+					cardExpiry.attach('#sc_card_expiry');
 
-        $('#scForm .apm_title').on('click', function(){
-            var apmCont = $(this).parent('.apm_container');
-            // check current radio input
-            $('input[type="radio"]', apmCont).prop('checked', true);
+					lastCvcHolder = '#sc_card_cvc';
 
-            // clear all upo cvv fields
-            $('#scForm .upo_cvv_field').val('');
-
-            // hide all check icons
-            $('#scForm .material-icons').addClass('sc_hide');
-
-            // show current icon
-            $('.material-icons', apmCont).removeClass('sc_hide');
-
-            // hide all apm_fields
-            $('#scForm .apm_fields').fadeOut("fast");
-
-            // show current apm_fields
-            $('.apm_fields', apmCont).toggle('slow');
-
-        });
+					cardCvc = scFields.create('ccCvc', {
+						classes: scElementClasses
+						,style: scFieldsStyle
+					});
+					cardCvc.attach(lastCvcHolder);
+				}
+			}
+		});
+		
+		/*
+		$('input[name="payment-option"]').on('change', function() {
+			if($('input[name="payment-option"]:checked').attr('data-module-name') === 'safecharge') {
+				console.log('selected SC PM');
+				reCreateSCFields();
+			}
+		});
+		 * 
+		 */
     }
 </script>
