@@ -143,6 +143,7 @@ class SafeCharge extends PaymentModule
             Configuration::updateValue('SC_SECRET_KEY',         Tools::getValue('SC_SECRET_KEY'));
             Configuration::updateValue('SC_HASH_TYPE',          Tools::getValue('SC_HASH_TYPE'));
             Configuration::updateValue('SC_PAYMENT_ACTION',     Tools::getValue('SC_PAYMENT_ACTION'));
+            Configuration::updateValue('SC_USE_UPOS',			Tools::getValue('SC_USE_UPOS'));
             Configuration::updateValue('SC_TEST_MODE',          Tools::getValue('SC_TEST_MODE'));
             Configuration::updateValue('SC_HTTP_NOTIFY',        Tools::getValue('SC_HTTP_NOTIFY'));
             Configuration::updateValue('SC_CREATE_LOGS',        Tools::getValue('SC_CREATE_LOGS'));
@@ -169,10 +170,6 @@ class SafeCharge extends PaymentModule
             SC_CLASS::create_log('hookPaymentOptions isPayment not true.');
             return false;
         }
-		
-//		SC_CLASS::create_log($this->context->cart, 'hookPaymentOptions');
-//		SC_CLASS::create_log($this->context->cart->delivery_option, 'hookPaymentOptions');
-//		SC_CLASS::create_log($_SERVER, 'hookPaymentOptions server');
 		
 		if(empty($this->context->cart->delivery_option)) {
 			return array();
@@ -694,7 +691,11 @@ class SafeCharge extends PaymentModule
 				$user_token_id	= $oo_params['userTokenId'];
 				
 				// get them only for registred users when there are APMs
-				if($this->context->customer->isLogged() && !empty($payment_methods)) {
+				if(
+					Configuration::get('SC_USE_UPOS') == 1
+					&& $this->context->customer->isLogged()
+					&& !empty($payment_methods)
+				) {
 					$upo_params = array(
 						'merchantId'		=> $apms_params['merchantId'],
 						'merchantSiteId'	=> $apms_params['merchantSiteId'],

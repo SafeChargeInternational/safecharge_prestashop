@@ -3,6 +3,7 @@
 ## 2020-06-12
 ```
 	* Added UPOs in the payment methods step.
+	* Added option in the admin for use or not the UPOs.
 ```
 
 ## 2020-05-26

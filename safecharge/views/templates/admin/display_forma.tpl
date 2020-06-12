@@ -54,8 +54,18 @@
                 <label class="control-label col-lg-3"> {l s='Payment Action' mod='safecharge'}</label>
                 <div class="col-lg-9">
                     <select name="SC_PAYMENT_ACTION">
-                        <option value="Sale" {if Configuration::get('SC_PAYMENT_ACTION') eq 'Sale'}selected{/if}>Authorize and Capture</option>
-                        <option value="Auth" {if Configuration::get('SC_PAYMENT_ACTION') eq 'Auth'}selected{/if}>Authorize</option>
+                        <option value="Sale" {if Configuration::get('SC_PAYMENT_ACTION') eq 'Sale'}selected{/if}>{l s='Authorize and Capture' mod='safecharge'}</option>
+                        <option value="Auth" {if Configuration::get('SC_PAYMENT_ACTION') eq 'Auth'}selected{/if}>{l s='Authorize' mod='safecharge'}</option>
+                    </select>
+                </div>
+            </div>
+					
+            <div class="form-group">
+                <label class="control-label col-lg-3"> {l s='Enable UPOs' mod='safecharge'}</label>
+                <div class="col-lg-9">
+                    <select name="SC_USE_UPOS">
+                        <option value="1" {if Configuration::get('SC_USE_UPOS') eq 1}selected{/if}>{l s='Use UPOs' mod='safecharge'}</option>
+                        <option value="0" {if Configuration::get('SC_USE_UPOS') eq 0}selected{/if}>{l s='Do NOT use UPOs' mod='safecharge'}</option>
                     </select>
                 </div>
             </div>
@@ -93,7 +103,7 @@
         
         <div class="panel-footer">
             <button type="submit" value="1" name="submitUpdate" class="btn btn-default pull-right">
-                <i class="process-icon-save"></i> Save
+                <i class="process-icon-save"></i> {l s='Save' mod='safecharge'}
             </button>
         </div>
     </div>
