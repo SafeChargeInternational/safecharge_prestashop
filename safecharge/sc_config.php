@@ -44,6 +44,15 @@ else {
     define('SC_TEST_USER_UPOS_URL', 'https://ppp-test.safecharge.com/ppp/api/v1/getUserUPOs.do');
 }
 
+// delete user UPOs
+define('SC_LIVE_DELETE_UPO_URL', 'https://secure.safecharge.com/ppp/api/v1/deleteUPO.do');
+if(strpos(@$_SERVER['HTTP_HOST'], 'gw-4u.com') !== false) {
+    define('SC_TEST_DELETE_UPO_URL', $sc_test_endpoint_host . '/deleteUPO.do');
+}
+else {
+    define('SC_TEST_DELETE_UPO_URL', 'https://ppp-test.safecharge.com/ppp/api/v1/deleteUPO.do');
+}
+
 // refund REST URLs
 define('SC_LIVE_REFUND_URL', 'https://secure.safecharge.com/ppp/api/v1/refundTransaction.do');
 if(strpos(@$_SERVER['HTTP_HOST'], 'gw-4u.com') !== false) {

@@ -1,5 +1,11 @@
 # SafeCharge Prestashop Changelog
 
+## 2020-06-18
+```
+	* Add option for the client to delete the UPOs.
+	* Use the SDK for card UPOs and direct APMs.
+```
+
 ## 2020-06-12
 ```
 	* Added UPOs in the payment methods step.

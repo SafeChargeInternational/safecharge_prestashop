@@ -20,10 +20,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
     {
         parent::initContent();
         
-//		if(isset($_SESSION['sc_order_vars'])) {
-//			unset($_SESSION['sc_order_vars']);
-//		}
-		
         if(
             !Configuration::get('SC_MERCHANT_ID')
             || !Configuration::get('SC_MERCHANT_SITE_ID')
@@ -50,6 +46,11 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             $this->createOpenOrder();
             return;
         }
+		
+		if(Tools::getValue('prestaShopAction', false) == 'deleteUpo') {
+            $this->deleteUpo();
+            return;
+        }
         
         $this->processOrder();
     }
@@ -69,15 +70,17 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			$total_amount	= number_format($cart->getOrderTotal(), 2, '.', '');
 			
 			# when use WebSDK
-			if(!empty($_POST['sc_transaction_id'])) {
+			if(Tools::getValue('sc_transaction_id', false)) {
 				SC_CLASS::create_log('WebSDK Order');
+				
+				$payment_method = str_replace('apmgw_', '', Tools::getValue('sc_payment_method', ''));
 				
 				// save order
 				$res = $this->module->validateOrder(
 					(int)$cart->id
 					,Configuration::get('SC_OS_AWAITING_PAIMENT') // the status
 					,$total_amount
-					,$this->module->displayName . ' - ' . $this->l('Card') // payment_method
+					,$this->module->displayName . ' - ' . $payment_method // payment_method
 					,'' // message
 					,array() // extra_vars
 					,null // currency_special
@@ -254,9 +257,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				$sc_params['paymentOption']['userPaymentOptionId'] = $sc_payment_method;
 				
 				// the UPO is card and this is the CVV
-//				if(!empty($_POST['cvv_for_' . $sc_payment_method])) {
 				if(Tools::getValue('cvv_for_' . $sc_payment_method, false)) {
-//					$sc_params['paymentOption']['card']['CVV'] = $_POST['cvv_for_' . $sc_payment_method];
 					$sc_params['paymentOption']['card']['CVV'] = Tools::getValue('cvv_for_' . $sc_payment_method, '');
 				}
 			}
@@ -265,9 +266,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_URL : SC_TEST_PAYMENT_URL;
 				$sc_params['paymentMethod'] = $sc_payment_method;
 				
-//				if(isset($_POST[$sc_payment_method]) && is_array($_POST[$sc_payment_method])) {
 				if(Tools::getValue($sc_payment_method, false) && is_array(Tools::getValue($sc_payment_method, false))) {
-//					$sc_params['userAccountDetails'] = $_POST[$sc_payment_method];
 					$sc_params['userAccountDetails'] = Tools::getValue($sc_payment_method, false);
 				}
 			}
@@ -833,6 +832,93 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             );
         }
     }
+	
+	private function deleteUpo()
+	{
+		$upo_id = Tools::getValue('upoId', false);
+		
+		if(!$upo_id) {
+			echo json_encode(array(
+				'status' => 'error',
+				'message' => $this->l('Error - the UPO ID is missing.')
+			));
+			
+			exit;
+		}
+		
+		if(!(bool)$this->context->customer->isLogged()) {
+			SC_CLASS::create_log('Delete UPO Error - the user is not logged.');
+			
+            echo json_encode(array(
+				'status' => 'error',
+				'message' => $this->l('Error - the user is not logged.')
+			));
+			
+			exit;
+		}
+		
+//		$cart       = $this->context->cart;
+//		$customer	= new Customer($cart->id_customer);
+        
+//        if (!Validate::isLoadedObject($customer)) {
+        if (!Validate::isLoadedObject($this->context->customer)) {
+            SC_CLASS::create_log('Delete UPO Error - we cannot validate the Customer.');
+			
+            echo json_encode(array(
+				'status' => 'error',
+				'message' => $this->l('Error - we cannot validate the Customer.')
+			));
+			
+			exit;
+        }
+		
+//		if(empty($customer->email)) {
+		if(empty($this->context->customer->email)) {
+			SC_CLASS::create_log('Delete UPO Error - Customer email is empty.');
+			
+            echo json_encode(array(
+				'status' => 'error',
+				'message' => $this->l('Error - Customer email is empty.')
+			));
+			
+			exit;
+		}
+		
+		$timeStamp = date('YmdHis', time());
+		
+		$params = array(
+			'merchantId'			=> Configuration::get('SC_MERCHANT_ID'),
+			'merchantSiteId'		=> Configuration::get('SC_MERCHANT_SITE_ID'),
+//			'userTokenId'			=> $customer->email,
+			'userTokenId'			=> $this->context->customer->email,
+			'clientRequestId'		=> $timeStamp .'_'. uniqid(),
+			'userPaymentOptionId'	=> $upo_id,
+			'timeStamp'	=>			$timeStamp,
+		);
+		
+		$params['checksum'] = hash(
+			Configuration::get('SC_HASH_TYPE'),
+			implode('', $params) . Configuration::get('SC_SECRET_KEY')
+		);
+		
+		$resp = SC_CLASS::call_rest_api(
+			Configuration::get('SC_TEST_MODE') == 'no' ? SC_LIVE_DELETE_UPO_URL : SC_TEST_DELETE_UPO_URL,
+			$params
+		);
+		
+		if(empty($resp['status']) || $resp['status'] != 'SUCCESS') {
+			$msg = !empty($resp['reason']) ? ' - ' . $resp['reason'] : '';
+			
+            echo json_encode(array(
+				'status' => 'error',
+				'message' => $this->l('Error') . $msg
+			));
+			
+			exit;
+		}
+		
+		echo json_encode(array('status' => 'success'));
+	}
     
     /**
      * Function validate

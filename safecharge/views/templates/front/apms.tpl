@@ -107,6 +107,16 @@
     <span class="sc_error_msg">{l s='Please, select a payment method, and if there are fields, fill all of them!' mod='safecharge'}</span>
     <span class="close" onclick="$('#sc_pm_error').hide();">&times;</span>
 </div>
+	
+<div id="sc_remove_upo_error" class="alert alert-warning sc_hide">
+    <span class="sc_error_msg">{l s='UPO remove fails.' mod='safecharge'}</span>
+    <span class="close" onclick="$('#sc_remove_upo_error').hide();">&times;</span>
+</div>
+	
+<div id="sc_remove_upo_success" class="alert alert-success sc_hide">
+    <span class="sc_error_msg">{l s='UPO remove done.' mod='safecharge'}</span>
+    <span class="close" onclick="$('#sc_remove_upo_success').hide();">&times;</span>
+</div>
 
 <form method="post" id="scForm" action="{$formAction}">
 	{if $upos}
@@ -129,13 +139,19 @@
 
 						<span>
 							{if $upo.paymentMethodName == 'cc_card'}
-								<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{$pm.paymentMethodDisplayName[0].message}"  class="sc_visa_mc_maestro_logo" />&nbsp;
+								<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{$pm.paymentMethodDisplayName[0].message}"  class="sc_visa_mc_maestro_logo" />
 								{$upo.upoData.ccCardNumber}
 							{else}
-								<img src="{$upo.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{$upo.paymentMethodDisplayName[0].message}" />&nbsp;
+								<img src="{$upo.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{$upo.paymentMethodDisplayName[0].message}" />
 								{$upo.upoName}
 							{/if}
-						</span>
+						</span>&nbsp;
+						
+						<a id="sc_remove_upo_{$upo.userPaymentOptionId}" rel="nofollow" href="javascript:deleteScUpo({$upo.userPaymentOptionId});">
+							<i class="material-icons icon-trash">delete</i>
+						</a>
+							
+						<i class="material-icons fast-right-spinner sc_hide">sync</i>
 					</label>
 						
 					{if $upo.paymentMethodName == 'cc_card'}
@@ -170,7 +186,7 @@
 				<div class="payment-option clearfix">
 					<label>
 						<span class="custom-radio">
-							<input id="sc_apm_{$pm.paymentMethod}" class="ps-shown-by-js" name="sc_payment_method" type="radio" value="{$pm.paymentMethod}">
+							<input id="sc_apm_{$pm.paymentMethod}" class="ps-shown-by-js" name="sc_payment_method" type="radio" value="{$pm.paymentMethod}" data-sc-is-direct="{$pm.isDirect}">
 							<span></span>
 						</span>
 							
@@ -220,15 +236,14 @@
 							<section class="form-fields">
 								{foreach $pm.fields as $field}
 									<div class="form-group ">
-										<input id="{$pm.paymentMethod}_{$field.name}" 
-											   class="form-control"
-											   name="{$pm.paymentMethod}[{$field.name}]" 
-											   type="{$field.type}" 
-											   {if isset($field.regex) and $field.regex}pattern="{$field.regex}"{/if} 
-											   {if !empty($field.caption[0].message)}placeholder="{$field.caption[0].message}"
-											   {elseif !empty($field.name)}placeholder="{$field.name}"
-											   {/if}
-											/>
+										<input	id="{$pm.paymentMethod}_{$field.name}" 
+												class="form-control"
+												name="{$pm.paymentMethod}[{$field.name}]" 
+												type="{$field.type}" 
+												{if isset($field.regex) and $field.regex}pattern="{$field.regex}"{/if} 
+												placeholder="{if !empty($field.caption[0].message)}{$field.caption[0].message}{elseif !empty($field.name)}{$field.name}{/if}"
+												data-sc-field-name="{$field.name}"
+										/>
 									</div>
 								{/foreach}
 							</section>
@@ -254,7 +269,6 @@
 	
     var selectedPM  = "";
     var payloadURL  = "";
-    var ooAjaxUrl  = "{$ooAjaxUrl}";
 
     // for the fields
     var sfc             = null;
@@ -308,8 +322,6 @@
 	var scDefaultErrorMsg = "{l s='Please, select a payment method, and fill all of its fileds!' mod='safecharge'}";
 
     function scValidateAPMFields() {
-//		console.log('scValidateAPMFields', scAPMsErrorMsg);
-		
         $('#payment-confirmation button.btn.btn-primary').prop('disabled', true);
         $('#payment-confirmation button.btn.btn-primary .fast-right-spinner').removeClass('sc_hide');
 
@@ -326,13 +338,21 @@
         }
 		
 		var formValid		= true;
-		var reloadForm		= false;
 		var pmFieldsHolder	= $('input[name="sc_payment_method"]:checked')
 				.closest('.payment-option')
 				.find('.sc_fields_holder');
+		
+		var scPaymentParams = {
+			sessionToken    : "{$sessionToken}",
+			merchantId      : "{$merchantId}",
+			merchantSiteId  : "{$merchantSiteId}",
+			currency        : "{$currency}",
+			amount          : "{$amount}",
+			webMasterId		: "{$webMasterId}"
+		};
 
 		// use cards
-		if(selectedPM == 'cc_card' || selectedPM == 'dc_card') {
+		if(selectedPM == 'cc_card') {
 			console.log('card');
 			
 			if(jQuery('#sc_card_holder_name').val() === '') {
@@ -366,18 +386,12 @@
 				scFormFalse("{l s='Your CVC is not correct, please check it!' mod='safecharge'}");
 				return;
 			}
+			
+			scPaymentParams.cardHolderName	= document.getElementById('sc_card_holder_name').value;
+			scPaymentParams.paymentOption	= sfcFirstField;
 
 			// create payment with WebSDK
-			sfc.createPayment({
-				sessionToken    : "{$sessionToken}",
-				merchantId      : "{$merchantId}",
-				merchantSiteId  : "{$merchantSiteId}",
-				currency        : "{$currency}",
-				amount          : "{$amount}",
-				cardHolderName  : document.getElementById('sc_card_holder_name').value,
-				paymentOption   : sfcFirstField,
-				webMasterId		: "{$webMasterId}"
-			}, function(resp){
+			sfc.createPayment(scPaymentParams, function(resp){
 				afterSdkResponse(resp);
 			});
 		}
@@ -390,30 +404,29 @@
 				return;
 			}
 			
+			scPaymentParams.paymentOption = {
+				userPaymentOptionId: selectedPM,
+				card: {
+					CVV: window['scCVV' + selectedPM]
+				}
+			};
+			
 			// create payment with WebSDK
-			sfc.createPayment({
-				sessionToken    : "{$sessionToken}",
-				merchantId      : "{$merchantId}",
-				merchantSiteId  : "{$merchantSiteId}",
-				currency        : "{$currency}",
-				amount          : "{$amount}",
-				userTokenId		: '{$userTokenId}',
-				paymentOption   : {
-					userPaymentOptionId: selectedPM,
-					card: {
-						CVV: window['scCVV' + selectedPM]
-					}
-				},
-				webMasterId		: "{$webMasterId}"
-			}, function(resp){
+			sfc.createPayment(scPaymentParams, function(resp){
 				afterSdkResponse(resp);
 			});
 		}
 		// use APM or non-CC UPO
 		else {
-			console.log('apm');
-		
-			// iterate over payment fields
+			console.log(selectedPM, 'APM or non-CC UPO');
+			
+			scPaymentParams.paymentOption = {
+				alternativePaymentMethod: {
+					paymentMethod: selectedPM
+				}
+			};
+			
+			// iterate over payment fields, exclude AstropayPrePaid
 			pmFieldsHolder.find('input').each(function(){
 				var apmField = $(this);
 
@@ -432,27 +445,36 @@
 				else if(apmField.val() == '') {
 					formValid = false;
 				}
-			});
 
-			if(!formValid) {
-				if(isNaN(selectedPM)) {
-					var hashId = 'sc_apms_title';
+				if(!formValid) {
+					scFormFalse("{l s='Please, fill all fileds, of the selected payment method!' mod='safecharge'}");
+					return;
 				}
-				else {
-					var hashId = 'sc_upos_title';
-				}
+
+				// perpare object for the SDK, just in case
+				scPaymentParams.paymentOption.alternativePaymentMethod[apmField.attr('data-sc-field-name')] = apmField.val();
+			});
+			
+			// direct APMs can use the SDK
+			if($('input[name="sc_payment_method"]:checked').attr('data-sc-is-direct') == 'true') {
+				sfc.createPayment(scPaymentParams, function(resp){
+					afterSdkResponse(resp);
+				});
 				
-				scFormFalse("{l s='Please, fill all fileds, of the selected payment method!' mod='safecharge'}");
 				return;
 			}
-
+			// direct APMs can use the SDK END
+			
+			// Non-direct APMs - submit the form
 			$('form#scForm').submit();
 		}
-    } // end of scValidateAPMFields()
+    }
 
 	// process after we get the response from the webSDK
 	function afterSdkResponse(resp) {
 		console.log(resp);
+		
+		var reloadForm = false;
 
 		if(typeof resp.result != 'undefined') {
 			if(resp.result == 'APPROVED' && resp.transactionId != 'undefined') {
@@ -480,9 +502,17 @@
 		}
 		else {
 			reloadForm = true;
-
-			scFormFalse("{l s='Unexpected error, please try again later!' mod='safecharge'}");
-			console.error('Error with SDK response: ' + resp);
+			
+			if(resp.hasOwnProperty('errorDescription') && resp.errorDescription != '') {
+				scFormFalse(resp.errorDescription);
+			}
+			else if(resp.hasOwnProperty('reason') && '' != resp.reason) {
+				scFormFalse(resp.reason);
+			}
+			else {
+				scFormFalse("{l s='Error with your Payment. Please try again later!' mod='safecharge'}");
+			}
+			
 			return;
 		}
 
@@ -524,11 +554,7 @@
 		}, 1000);
     }
 
-    /**
-     * Function createSCFields
-     * Call SafeCharge method and pass the parameters
-     */
-    function createSCFields() {
+    function prepareSCFields() {
 		console.log('createSCFields sessionToken', scData.sessionToken);
 		
 		if(!scData.hasOwnProperty('sessionToken') || '' == scData.sessionToken) {
@@ -553,6 +579,106 @@
 		}
     }
 	
+	function createSCFields() {
+		var _self = $('input[name="sc_payment_method"]:checked');
+			
+		// hide all pm fields
+		$('#scForm .sc_fields_holder').fadeOut("fast");
+
+		// show current apm_fields
+		_self.closest('.payment-option').find('.sc_fields_holder').toggle('slow');
+
+		// create CVC object if need to
+		cardCvc = null;
+
+		if(lastCvcHolder !== '') {
+			$(lastCvcHolder).html('');
+		}
+
+		if(typeof _self.attr('data-upo-name') != 'undefined') {
+			$('#sc_upo_name').val(_self.attr('data-upo-name'));
+
+			// initialize inputs
+			if(_self.attr('data-upo-name') === 'cc_card') {
+				console.log('upo with sdk');
+				
+				lastCvcHolder = '#' + _self.closest('.payment-option').find('.sc_upos_cvvs').attr('id');
+
+				cardCvc = scFields.create('ccCvc', {
+					classes: scElementClasses
+					,style: scFieldsStyle
+				});
+				cardCvc.attach(lastCvcHolder);
+			}
+		}
+		else {
+			$('#sc_upo_name').val('');
+
+			// initialize inputs for CC
+			if(_self.val() === 'cc_card') {
+				console.log('cc with sdk');
+				
+				$('#sc_card_number').html('');
+				cardNumber = sfcFirstField = scFields.create('ccNumber', {
+					classes: scElementClasses
+					,style: scFieldsStyle
+				});
+				cardNumber.attach('#sc_card_number');
+
+				$('#sc_card_expiry').html('');
+				cardExpiry = scFields.create('ccExpiration', {
+					classes: scElementClasses
+					,style: scFieldsStyle
+				});
+				cardExpiry.attach('#sc_card_expiry');
+
+				lastCvcHolder = '#sc_card_cvc';
+
+				cardCvc = scFields.create('ccCvc', {
+					classes: scElementClasses
+					,style: scFieldsStyle
+				});
+				cardCvc.attach(lastCvcHolder);
+			}
+			// initialize inputs for APMs with fields
+			else if(_self.closest('.payment-option').find('.sc_fields_holder').length > 0) {
+				console.log('apm with sdk');
+				
+				{*_self.closest('.payment-option').find('.sc_fields_holder .sc_field_container').each(function() {
+					var containerId = $(this).attr('id');
+					$('#' + containerId).html('');
+					
+					console.log(containerId);
+					
+					if(containerId.search('cc_card_number') >= 0 || containerId.search('ccCardNumber') >= 0) {
+						cardNumber = sfcFirstField = scFields.create('ccNumber', {
+							classes: scElementClasses
+							,style: scFieldsStyle
+						});
+						cardNumber.attach('#' + containerId);
+					}
+					
+					if(containerId.search('cc_cvv') >= 0) {
+						cardCvc = sfcFirstField = scFields.create('ccCvc', {
+							classes: scElementClasses
+							,style: scFieldsStyle
+						});
+						cardCvc.attach('#' + containerId);
+					}
+					
+					if(containerId.search('cc_exp_month') >= 0 || containerId.search('ccExpMonth') >= 0) {
+						cardExpiry = sfcFirstField = scFields.create('ccExpiration', {
+							classes: scElementClasses
+							,style: scFieldsStyle
+						});
+						cardExpiry.attach('#' + containerId);
+					}
+					
+				});*}
+			}
+		}
+	}
+	
 	/**
 	 * Function reCreateSCFields
 	 * use it after DECLINED payment try
@@ -569,7 +695,7 @@
 		
 		$.ajax({
 			dataType: "json",
-			url: ooAjaxUrl,
+			url: "{$ooAjaxUrl}",
 			data: {}
 		})
 		.done(function(res) {
@@ -577,7 +703,7 @@
 			
 			if(typeof res.session_token != 'undefined' && '' != res.session_token) {
 				scData.sessionToken = res.session_token;
-				createSCFields();
+				prepareSCFields();
 				
 				$('.cc_load_spinner').addClass('sc_hide');
 				$('#sc_apms_list').removeClass('sc_hide');
@@ -594,9 +720,43 @@
 			window.location.reload();
 		});
 	}
+	
+	function deleteScUpo(upoId) {
+		if(confirm("{l s='Do you want to delete this UPO?' mod='safecharge'}")) {
+			var thisElem = $('#sc_remove_upo_' + upoId);
+			var parentLabel = thisElem.closest('label');
+			
+			thisElem.addClass('sc_hide');
+			parentLabel.find('.fast-right-spinner').removeClass('sc_hide');
+			
+			$.ajax({
+				dataType: "json",
+				url: "{$scDeleteUpoUrl}",
+				data: {
+					upoId: upoId
+				}
+			})
+			.done(function(res) {
+				console.log('delete UPO response', res);
+
+				if(typeof res.status != 'undefined' && 'success' == res.status) {
+					parentLabel.closest('.payment-option').remove();
+					$('#sc_remove_upo_success').show();
+				}
+				else {
+					parentLabel.find('.fast-right-spinner').addClass('sc_hide');
+					$('#sc_remove_upo_error').show();
+				}
+			})
+			.fail(function(e) {
+				parentLabel.find('.fast-right-spinner').addClass('sc_hide');
+				$('#sc_remove_upo_error').show();
+			});
+		}
+	}
 
     window.onload = function() {
-        createSCFields();
+        prepareSCFields();
 
 		$('#payment-confirmation button')
 			.on('click', function(e) {
@@ -609,71 +769,7 @@
             });
 
 		$('body').on('change', 'input[name="sc_payment_method"]', function() {
-			var _self = $('input[name="sc_payment_method"]:checked');
-			
-			// hide all pm fields
-			$('#scForm .sc_fields_holder').fadeOut("fast");
-			
-			// show current apm_fields
-			_self.closest('.payment-option').find('.sc_fields_holder').toggle('slow');
-			
-			// create CVC object if need to
-			cardCvc = null;
-			
-			if(lastCvcHolder !== '') {
-				$(lastCvcHolder).html('');
-			}
-			
-			if(typeof _self.attr('data-upo-name') != 'undefined') {
-				$('#sc_upo_name').val(_self.attr('data-upo-name'));
-				
-				if(_self.attr('data-upo-name') === 'cc_card') {
-					lastCvcHolder = '#' + _self.closest('.payment-option').find('.sc_upos_cvvs').attr('id');
-
-					cardCvc = scFields.create('ccCvc', {
-						classes: scElementClasses
-						,style: scFieldsStyle
-					});
-					cardCvc.attach(lastCvcHolder);
-				}
-			}
-			else {
-				$('#sc_upo_name').val('');
-				
-				if(_self.val() === 'cc_card') {
-					$('#sc_card_number').html('');
-					cardNumber = sfcFirstField = scFields.create('ccNumber', {
-						classes: scElementClasses
-						,style: scFieldsStyle
-					});
-					cardNumber.attach('#sc_card_number');
-
-					$('#sc_card_expiry').html('');
-					cardExpiry = scFields.create('ccExpiration', {
-						classes: scElementClasses
-						,style: scFieldsStyle
-					});
-					cardExpiry.attach('#sc_card_expiry');
-
-					lastCvcHolder = '#sc_card_cvc';
-
-					cardCvc = scFields.create('ccCvc', {
-						classes: scElementClasses
-						,style: scFieldsStyle
-					});
-					cardCvc.attach(lastCvcHolder);
-				}
-			}
+			createSCFields();
 		});
-		
-		/*
-		$('input[name="payment-option"]').on('change', function() {
-			if($('input[name="payment-option"]:checked').attr('data-module-name') === 'safecharge') {
-				console.log('selected SC PM');
-				reCreateSCFields();
-			}
-		});
-		 * 
-		 */
     }
 </script>
