@@ -6,6 +6,5 @@
 			<br/>
 			<div>{l s='Please, go to your Orders Hisory page, to check your Order!' mod='safecharge'}</div>
 		{/if}
-		{debug}
 	</div>
 {/block}
