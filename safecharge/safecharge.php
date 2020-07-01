@@ -616,6 +616,8 @@ class SafeCharge extends PaymentModule
 				'paymentOption'		=> ['card' => ['threeD' => ['isDynamic3D' => 1]]],
 				'transactionType'	=> Configuration::get('SC_PAYMENT_ACTION'),
 			);
+			
+			$oo_params['userDetails'] = $oo_params['billingAddress'];
 
 			$oo_params['checksum'] = hash(
 				$hash,

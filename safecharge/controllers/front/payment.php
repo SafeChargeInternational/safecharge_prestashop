@@ -647,14 +647,14 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                     . ", Status = " . $status . ", Error code = " . @$request['ErrCode']
                     . ", Message = " . @$request['message'] . $reason;
                 
-                if($_REQUEST['transactionType']) {
-                    $msg .= ", TransactionType = " . $_REQUEST['transactionType'];
+                if($request['transactionType']) {
+                    $msg .= ", TransactionType = " . $request['transactionType'];
                 }
 
                 $msg .= ', TransactionID = ' . @$request['TransactionID'];
                 
                 // Void, do not change status
-                if($_REQUEST['transactionType'] == 'Void') {
+                if($request['transactionType'] == 'Void') {
                     $msg = $this->l('DMN message: Your Void request fail');
                     
                     if(@$_REQUEST['Reason']) {
@@ -668,7 +668,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 }
                 
                 // Refund, do not change status
-                if(in_array($_REQUEST['transactionType'], array('Credit', 'Refund'))) {
+                if(in_array($request['transactionType'], array('Credit', 'Refund'))) {
                     if(!isset($_REQUEST['totalAmount']) || !$_REQUEST['totalAmount']) {
                         break;
                     }
@@ -695,6 +695,11 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                     break;
                 }
                 
+				// Sale or Auth
+				if(in_array($request['transactionType'], array('Sale', 'Auth'))) {
+					$status_id = (int)(Configuration::get('PS_OS_CANCELED'));
+				}
+				
                 break;
 
             case 'PENDING':

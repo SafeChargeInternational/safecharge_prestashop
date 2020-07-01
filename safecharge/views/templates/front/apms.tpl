@@ -31,6 +31,9 @@
 		display: inline-block;
 		width: 90%;
 	}
+	
+	#scForm .payment-option label:first-child { text-align: left; }
+	#scForm .payment-option label span:last-child { float: right; line-height: 36px; }
 
     /* Chrome, Firefox, Opera, Safari 10.1+ */
     #sc_apms_list .apm_field input::placeholder, #sc_upos_list .apm_field input::placeholder,
@@ -137,21 +140,25 @@
 							<span></span>
 						</span>
 
+						{if $upo.paymentMethodName == 'cc_card'}
+							<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{$pm.paymentMethodDisplayName[0].message}"  class="sc_visa_mc_maestro_logo" />
+						{else}
+							<img src="{$upo.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{$upo.paymentMethodDisplayName[0].message}" />
+						{/if}&nbsp;
+						
 						<span>
 							{if $upo.paymentMethodName == 'cc_card'}
-								<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{$pm.paymentMethodDisplayName[0].message}"  class="sc_visa_mc_maestro_logo" />
 								{$upo.upoData.ccCardNumber}
 							{else}
-								<img src="{$upo.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{$upo.paymentMethodDisplayName[0].message}" />
 								{$upo.upoName}
 							{/if}
-						</span>&nbsp;
-						
-						<a id="sc_remove_upo_{$upo.userPaymentOptionId}" rel="nofollow" href="javascript:deleteScUpo({$upo.userPaymentOptionId});">
-							<i class="material-icons icon-trash">delete</i>
-						</a>
-							
-						<i class="material-icons fast-right-spinner sc_hide">sync</i>
+
+							<a id="sc_remove_upo_{$upo.userPaymentOptionId}" rel="nofollow" href="javascript:deleteScUpo({$upo.userPaymentOptionId});">
+								<i class="material-icons icon-trash">delete</i>
+							</a>
+
+							<i class="material-icons fast-right-spinner sc_hide">sync</i>
+						</span>
 					</label>
 						
 					{if $upo.paymentMethodName == 'cc_card'}
@@ -190,14 +197,13 @@
 							<span></span>
 						</span>
 							
-						<span>
-							{if $pm.paymentMethod == 'cc_card'}
-								<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{$pm.paymentMethodDisplayName[0].message}"  class="sc_visa_mc_maestro_logo" />
-							{else}
-								<img src="{$pm.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{$pm.paymentMethodDisplayName[0].message}" />&nbsp;
-								{$pm.paymentMethodDisplayName[0].message}
-							{/if}
-						</span>
+						{if $pm.paymentMethod == 'cc_card'}
+							<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{$pm.paymentMethodDisplayName[0].message}"  class="sc_visa_mc_maestro_logo" />
+							<span></span>
+						{else}
+							<img src="{$pm.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{$pm.paymentMethodDisplayName[0].message}" />&nbsp;
+							<span>{$pm.paymentMethodDisplayName[0].message}</span>
+						{/if}
 					</label>
 						
 					{if in_array($pm.paymentMethod, array('cc_card', 'dc_card'))}
