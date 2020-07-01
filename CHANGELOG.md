@@ -1,5 +1,11 @@
 # SafeCharge Prestashop Changelog
 
+## 2020-07-01
+```
+	* Some style changes for the UPOs and APMs list.
+	* Better message on Error Page.
+```
+
 ## 2020-06-18
 ```
 	* Add option for the client to delete the UPOs.
