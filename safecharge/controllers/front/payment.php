@@ -120,7 +120,14 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			$back_url       = $this->context->link->getPageLink('order');
             
 			$error_url      = $this->context->link
-                ->getModuleLink('safecharge', 'payment', array('prestaShopAction' => 'showError'));
+                ->getModuleLink(
+					'safecharge',
+					'payment',
+					array(
+						'prestaShopAction'	=> 'showError',
+						'id_cart'			=> (int)$cart->id,
+					)
+				);
             
 			$notify_url     = $this->context->link
                 ->getModuleLink(
@@ -353,6 +360,31 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
      */
     private function scOrderError()
     {
+//		if((bool) $this->context->customer->isLogged()) {
+			$cart_id	= Tools::getValue('id_cart');
+			$order_id	= Order::getOrderByCartId((int) $cart_id);
+			$order_info = new Order($order_id);
+			
+			// in case the user owns the order for this cart id, and the order status
+			// is canceled, redirect directly to Reorder Page
+			if(
+				(int) $this->context->customer->id == (int) $order_info->id_customer
+				&& (int) $order_info->current_state == (int) Configuration::get('PS_OS_CANCELED')
+			) {
+				$url = $this->context->link->getPageLink(
+					'order',
+					null,
+					null,
+					array(
+						'submitReorder'	=> '',
+						'id_order'		=> (int) $order_id
+					)
+				);
+				
+				Tools::redirect($url);
+			}
+//		}
+		
         $this->setTemplate('module:safecharge/views/templates/front/order_error.tpl');
     }
 	

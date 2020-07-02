@@ -1,5 +1,10 @@
 # SafeCharge Prestashop Changelog
 
+## 2020-07-02
+```
+	* When Order failed try to recreate it, or in error message describe to the user how to do it manually.
+```
+
 ## 2020-07-01
 ```
 	* Some style changes for the UPOs and APMs list.

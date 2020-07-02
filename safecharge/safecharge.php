@@ -562,6 +562,26 @@ class SafeCharge extends PaymentModule
 					'prestaShopAction'  => 'getDMN',
 					'sc_create_logs'       => $_SESSION['sc_create_logs'],
 				));
+			
+			$error_url		= $this->context->link->getModuleLink(
+				'safecharge',
+				'payment',
+				array('prestaShopAction' => 'showError')
+			);
+
+			$success_url	= $this->context->link->getModuleLink(
+				'safecharge',
+				'payment',
+				array(
+					'prestaShopAction'	=> 'showCompleted',
+					'id_cart'			=> (int)$cart->id,
+					'id_module'			=> $this->id,
+					'status'			=> Configuration::get('PS_OS_PREPARATION'),
+					'amount'			=> $amount,
+					'module'			=> $this->displayName,
+					'key'				=> $customer->secure_key,
+				)
+			);
 
 			if(
 				Configuration::get('SC_HTTP_NOTIFY') == 'yes'
@@ -585,6 +605,9 @@ class SafeCharge extends PaymentModule
 
 				'urlDetails'        => array(
 					'notificationUrl'   => $notify_url,
+					'successUrl'		=> $success_url,
+					'failureUrl'		=> $error_url,
+					'pendingUrl'		=> $success_url,
 				),
 
 				'deviceDetails'     => SC_CLASS::get_device_details(),

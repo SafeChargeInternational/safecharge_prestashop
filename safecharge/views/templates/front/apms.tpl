@@ -122,6 +122,10 @@
 </div>
 
 <form method="post" id="scForm" action="{$formAction}">
+	{if $paymentMethods or $upos}
+		<h4>{l s='Please, choose payment method, then click the button at the end of the form, to finish the order!' mod='safecharge'}</h4>
+	{/if}
+	
 	{if $upos}
 		<h4 id="sc_upos_title">{l s='Choose from preferred payment methods:' mod='safecharge'}</h4>
 		
