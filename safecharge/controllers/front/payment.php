@@ -51,6 +51,11 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             $this->deleteUpo();
             return;
         }
+		
+		if(Tools::getValue('prestaShopAction', false) == 'beforeSuccess') {
+            $this->beforeSuccess();
+            return;
+        }
         
         $this->processOrder();
     }
@@ -69,7 +74,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			
 			$total_amount	= number_format($cart->getOrderTotal(), 2, '.', '');
 			
-			# when use WebSDK
+			# 1. when use WebSDK
 			if(Tools::getValue('sc_transaction_id', false)) {
 				SC_CLASS::create_log('WebSDK Order');
 				
@@ -102,21 +107,38 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					. $cart->id . '&id_module=' . $this->module->id . '&id_order='
 					. $this->module->currentOrder . '&key=' . $customer->secure_key);
 			}
-
-            # get order data
-            $success_url    = $this->context->link->getPageLink(
-                'order-confirmation',
-                null,
-                null,
-                array(
-                    'id_cart'   => (int)$cart->id,
-                    'id_module' => (int)$this->module->id,
-                    'id_order'  => $this->module->currentOrder,
-                    'key'       => $customer->secure_key,
-                )
-            );
+			# 1. when use WebSDK END
 			
-            $pending_url    = $success_url;
+			######################
+			
+			# 2. when use REST
+            // get order data
+//            $success_url    = $this->context->link->getPageLink(
+//                'order-confirmation',
+//                null,
+//                null,
+//                array(
+//                    'id_cart'   => (int)$cart->id,
+//                    'id_module' => (int)$this->module->id,
+//                    'id_order'  => $this->module->currentOrder,
+//                    'key'       => $customer->secure_key,
+//                )
+//            );
+			
+			$success_url	= $this->context->link
+                ->getModuleLink(
+					'safecharge',
+					'payment',
+					array(
+						'prestaShopAction'	=> 'beforeSuccess',
+						'id_cart'			=> (int)$cart->id,
+						'id_order'			=> $this->module->currentOrder,
+						'key'				=> $customer->secure_key,
+						'amount'			=> $total_amount
+					)
+				);
+			
+            $pending_url	= $success_url;
 			$back_url       = $this->context->link->getPageLink('order');
             
 			$error_url      = $this->context->link
@@ -164,7 +186,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             if($total_amount < 0) {
                 $total_amount = number_format(0, 2, '.', '');
             }
-            # get order data END
+            // get order data END
         }
         catch(Exception $e) {
             SC_CLASS::create_log($e->getMessage(), 'Process payment Exception: ');
@@ -186,7 +208,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 		}
 		
 		try {
-			$sc_params = array(
+			$params = array(
 				'merchantId'        => Configuration::get('SC_MERCHANT_ID'),
 				'merchantSiteId'    => Configuration::get('SC_MERCHANT_SITE_ID'),
 				'userTokenId'       => $is_user_logged ? $customer->email : '',
@@ -239,46 +261,46 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				'webMasterId'       => SC_PRESTA_SHOP . _PS_VERSION_,
 			);
 			
-			$sc_params['userDetails'] = $sc_params['billingAddress'];
+			$params['userDetails'] = $params['billingAddress'];
 			
-			$sc_params['items'][0] = array(
+			$params['items'][0] = array(
 				'name'      => $cart->id,
-				'price'     => $sc_params['amount'],
+				'price'     => $params['amount'],
 				'quantity'  => 1
 			);
 
-			$sc_params['checksum'] = hash(
+			$params['checksum'] = hash(
 				Configuration::get('SC_HASH_TYPE'),
-				$sc_params['merchantId']
-					. $sc_params['merchantSiteId']
-					. $sc_params['clientRequestId']
-					. $sc_params['amount']
-					. $sc_params['currency']
-					. $sc_params['timeStamp']
+				$params['merchantId']
+					. $params['merchantSiteId']
+					. $params['clientRequestId']
+					. $params['amount']
+					. $params['currency']
+					. $params['timeStamp']
 					. Configuration::get('SC_SECRET_KEY')
 			);
 			
 			// UPO
 			if(is_numeric($sc_payment_method)) {
 				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_NEW_URL : SC_TEST_PAYMENT_NEW_URL;
-				$sc_params['paymentOption']['userPaymentOptionId'] = $sc_payment_method;
+				$params['paymentOption']['userPaymentOptionId'] = $sc_payment_method;
 				
 				// the UPO is card and this is the CVV
 				if(Tools::getValue('cvv_for_' . $sc_payment_method, false)) {
-					$sc_params['paymentOption']['card']['CVV'] = Tools::getValue('cvv_for_' . $sc_payment_method, '');
+					$params['paymentOption']['card']['CVV'] = Tools::getValue('cvv_for_' . $sc_payment_method, '');
 				}
 			}
 			// APM
 			else {
 				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_URL : SC_TEST_PAYMENT_URL;
-				$sc_params['paymentMethod'] = $sc_payment_method;
+				$params['paymentMethod'] = $sc_payment_method;
 				
 				if(Tools::getValue($sc_payment_method, false) && is_array(Tools::getValue($sc_payment_method, false))) {
-					$sc_params['userAccountDetails'] = Tools::getValue($sc_payment_method, false);
+					$params['userAccountDetails'] = Tools::getValue($sc_payment_method, false);
 				}
 			}
 			
-			$resp = SC_CLASS::call_rest_api($endpoint_url, $sc_params);
+			$resp = SC_CLASS::call_rest_api($endpoint_url, $params);
 
 			$req_status = $this->getRequestStatus($resp);
 		}
@@ -297,28 +319,11 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			Tools::redirect($error_url);
 		}
 		
-		if(!empty($sc_params['paymentMethod'])) {
-			$order_payment_name = str_replace('apmgw_', '', $sc_params['paymentMethod']);
+		if(!empty($params['paymentMethod'])) {
+			$order_payment_name = str_replace('apmgw_', '', $params['paymentMethod']);
 		}
 		elseif(!empty(Tools::getValue('sc_upo_name', ''))) {
 			$order_payment_name = str_replace('apmgw_', '', Tools::getValue('sc_upo_name', 'empty'));
-		}
-
-		// save order
-		$res = $this->module->validateOrder(
-			(int)$cart->id
-			,Configuration::get('SC_OS_AWAITING_PAIMENT') // the status
-			,$sc_params['amount']
-			,$this->module->displayName . ' - ' . $order_payment_name // payment_method
-			,'' // message
-			,array() // extra_vars
-			,null // currency_special
-			,false // dont_touch_amount
-			,$this->context->cart->secure_key // secure_key
-		);
-
-		if(!$res) {
-			Tools::redirect($error_url);
 		}
 
 		$final_url = $success_url;
@@ -360,30 +365,28 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
      */
     private function scOrderError()
     {
-//		if((bool) $this->context->customer->isLogged()) {
-			$cart_id	= Tools::getValue('id_cart');
-			$order_id	= Order::getOrderByCartId((int) $cart_id);
-			$order_info = new Order($order_id);
-			
-			// in case the user owns the order for this cart id, and the order status
-			// is canceled, redirect directly to Reorder Page
-			if(
-				(int) $this->context->customer->id == (int) $order_info->id_customer
-				&& (int) $order_info->current_state == (int) Configuration::get('PS_OS_CANCELED')
-			) {
-				$url = $this->context->link->getPageLink(
-					'order',
-					null,
-					null,
-					array(
-						'submitReorder'	=> '',
-						'id_order'		=> (int) $order_id
-					)
-				);
-				
-				Tools::redirect($url);
-			}
-//		}
+		$cart_id	= Tools::getValue('id_cart');
+		$order_id	= Order::getOrderByCartId((int) $cart_id);
+		$order_info = new Order($order_id);
+
+		// in case the user owns the order for this cart id, and the order status
+		// is canceled, redirect directly to Reorder Page
+		if(
+			(int) $this->context->customer->id == (int) $order_info->id_customer
+			&& (int) $order_info->current_state == (int) Configuration::get('PS_OS_CANCELED')
+		) {
+			$url = $this->context->link->getPageLink(
+				'order',
+				null,
+				null,
+				array(
+					'submitReorder'	=> '',
+					'id_order'		=> (int) $order_id
+				)
+			);
+
+			Tools::redirect($url);
+		}
 		
         $this->setTemplate('module:safecharge/views/templates/front/order_error.tpl');
     }
@@ -894,10 +897,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			exit;
 		}
 		
-//		$cart       = $this->context->cart;
-//		$customer	= new Customer($cart->id_customer);
-        
-//        if (!Validate::isLoadedObject($customer)) {
         if (!Validate::isLoadedObject($this->context->customer)) {
             SC_CLASS::create_log('Delete UPO Error - we cannot validate the Customer.');
 			
@@ -909,7 +908,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			exit;
         }
 		
-//		if(empty($customer->email)) {
 		if(empty($this->context->customer->email)) {
 			SC_CLASS::create_log('Delete UPO Error - Customer email is empty.');
 			
@@ -955,6 +953,50 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 		}
 		
 		echo json_encode(array('status' => 'success'));
+	}
+	
+	private function beforeSuccess()
+	{
+		$error_url = $this->context->link
+			->getModuleLink(
+				'safecharge',
+				'payment',
+				array(
+					'prestaShopAction'	=> 'showError',
+					'id_cart'			=> (int) Tools::getValue('id_cart', 0),
+				)
+			);
+		
+		// save order
+		$res = $this->module->validateOrder(
+			(int) Tools::getValue('id_cart', 0)
+			,Configuration::get('SC_OS_AWAITING_PAIMENT') // the status
+			,Tools::getValue('amount', 0)
+			,$this->module->displayName . ' - ' . $order_payment_name // payment_method
+			,'' // message
+			,array() // extra_vars
+			,null // currency_special
+			,false // dont_touch_amount
+			,Tools::getValue('key', '') // secure_key
+		);
+
+		if(!$res) {
+			Tools::redirect($error_url);
+		}
+		
+		$success_url = $this->context->link->getPageLink(
+			'order-confirmation',
+			null,
+			null,
+			array(
+				'id_cart'   => (int) Tools::getValue('id_cart', 0),
+				'id_module' => (int)$this->module->id,
+				'id_order'  => Tools::getValue('id_order', 0),
+				'key'       => Tools::getValue('key', '')
+			)
+		);
+		
+		Tools::redirect($success_url);
 	}
     
     /**

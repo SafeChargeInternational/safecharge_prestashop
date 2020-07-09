@@ -1,4 +1,10 @@
-# SafeCharge Prestashop Changelog
+# Nuvei Prestashop Changelog
+
+# 2020-07-09
+```
+	* When the user pay via REST and APM, we use custom success page. On it, we save the order after the redirect from the APM page, and on success Order save, redirect to Presashop's default success page.
+	* Started replacing "SafeCharge" company name with "Nuvei".
+```
 
 ## 2020-07-02
 ```

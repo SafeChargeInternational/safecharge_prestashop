@@ -123,7 +123,7 @@
 
 <form method="post" id="scForm" action="{$formAction}">
 	{if $paymentMethods or $upos}
-		<h4>{l s='Please, choose payment method, then click the button at the end of the form, to finish the order!' mod='safecharge'}</h4>
+		<div class="help-block">{l s='Please, choose payment method, then click the button at the end of the form, to finish the order!' mod='safecharge'}</div>
 	{/if}
 	
 	{if $upos}
@@ -714,6 +714,7 @@
 			if(typeof res.session_token != 'undefined' && '' != res.session_token) {
 				scData.sessionToken = res.session_token;
 				prepareSCFields();
+				createSCFields();
 				
 				$('.cc_load_spinner').addClass('sc_hide');
 				$('#sc_apms_list').removeClass('sc_hide');
@@ -781,5 +782,9 @@
 		$('body').on('change', 'input[name="sc_payment_method"]', function() {
 			createSCFields();
 		});
+		
+		{if $preselectCC eq 1}
+			$('#sc_apm_cc_card').trigger('click');
+		{/if}
     }
 </script>

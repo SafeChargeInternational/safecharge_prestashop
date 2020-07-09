@@ -1,8 +1,8 @@
 <br/>
 <div class="alert alert-info">
     <img src="/modules/safecharge/logo.png" style="float:left; margin-right:15px;" height="60" />
-    <p><a target="_blank" href="http://www.safecharge.com/"><strong>Safecharge</strong></a></p>
-    <p>{l s='Safecharge provides secure and reliable turnkey solutions for small to medium sized e-commerce businesses. Powered by SafeCharge Technologies and backed by more than a decade of experience in the e-commerce industry, with expert international staff, Safecharge has the skills, tools, technology, and expertise to accept software vendors and digital service providers and help them succeed online with confidence in a secure and reliable environment. It also helps them promote their software and enjoy increased sales volumes.' mod='safecharge'}</p>
+    <p><a target="_blank" href="http://www.safecharge.com/"><strong>Nuvei</strong></a></p>
+    <p>{l s='Nuvei provides secure and reliable turnkey solutions for small to medium sized e-commerce businesses. Powered by Nuvei Technologies and backed by more than a decade of experience in the e-commerce industry, with expert international staff, Nuvei has the skills, tools, technology, and expertise to accept software vendors and digital service providers and help them succeed online with confidence in a secure and reliable environment. It also helps them promote their software and enjoy increased sales volumes.' mod='safecharge'}</p>
 </div>
 
 <form class="defaultForm form-horizontal" action="{$smarty.server['REQUEST_URI']}" method="post" enctype="multipart/form-data">
@@ -15,7 +15,7 @@
             <div class="form-group">
                 <label class="control-label col-lg-3">{l s='Default title' mod='safecharge'}</label>
                 <div class="col-lg-9">
-                    <input type="text" name="SC_FRONTEND_NAME" value="{if Configuration::get('SC_FRONTEND_NAME')}{Configuration::get('SC_FRONTEND_NAME')}{else}{l s='Secure Payment with SafeCharge' mod='safecharge'}{/if}" />
+                    <input type="text" name="SC_FRONTEND_NAME" value="{if Configuration::get('SC_FRONTEND_NAME')}{Configuration::get('SC_FRONTEND_NAME')}{else}{l s='Secure Payment with Nuvei' mod='safecharge'}{/if}" />
                 </div>
             </div>
             
@@ -66,6 +66,16 @@
                     <select name="SC_USE_UPOS">
                         <option value="1" {if Configuration::get('SC_USE_UPOS') eq 1}selected{/if}>{l s='Use UPOs' mod='safecharge'}</option>
                         <option value="0" {if Configuration::get('SC_USE_UPOS') eq 0}selected{/if}>{l s='Do NOT use UPOs' mod='safecharge'}</option>
+                    </select>
+                </div>
+            </div>
+					
+            <div class="form-group">
+                <label class="control-label col-lg-3"> {l s='Preselect CC payment method' mod='safecharge'}</label>
+                <div class="col-lg-9">
+                    <select name="NUVEI_PRESELECT_CC">
+                        <option value="1" {if Configuration::get('NUVEI_PRESELECT_CC') eq 1}selected{/if}>{l s='Yes' mod='safecharge'}</option>
+                        <option value="0" {if Configuration::get('NUVEI_PRESELECT_CC') eq 0}selected{/if}>{l s='No' mod='safecharge'}</option>
                     </select>
                 </div>
             </div>
