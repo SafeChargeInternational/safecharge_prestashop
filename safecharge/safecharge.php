@@ -708,7 +708,6 @@ class SafeCharge extends PaymentModule
 			# get APMs END
 
 			# get UPOs
-			$icons			= array();
 			$upos			= array();
 			$user_token_id	= $oo_params['userTokenId'];
 
@@ -770,7 +769,6 @@ class SafeCharge extends PaymentModule
 				'paymentMethods'	=> $payment_methods,
 				'userTokenId'		=> $user_token_id,
 				'upos'				=> $upos,
-				'icons'				=> $icons,
 				'isTestEnv'			=> $test_mode,
 			);
 			
