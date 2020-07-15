@@ -182,7 +182,7 @@ class SafeCharge extends PaymentModule
 		
         $newOption
 			->setModuleName($this->name)
-            ->setCallToActionText($this->trans('Pay by Nuvei', array(), 'Modules.safecharge'))
+            ->setCallToActionText($this->trans('Pay by SafeCharge', array(), 'Modules.safecharge'))
             ->setAction($this->context->link->getModuleLink($this->name, 'payment'))
             ->setAdditionalInformation($smarty->fetch('module:safecharge/views/templates/front/apms.tpl'));
         
