@@ -1,4 +1,9 @@
-# Nuvei Prestashop Changelog
+# SafeCharge Prestashop Changelog
+
+# v1.3
+```
+	* Added option in the settings of the plugin to turn ON/OFF the names of the APMs.
+```
 
 # 2020-07-09
 ```

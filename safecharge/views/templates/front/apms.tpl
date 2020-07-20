@@ -122,10 +122,6 @@
 </div>
 
 <form method="post" id="scForm" action="{$formAction}">
-	{if $paymentMethods or $upos}
-		<div class="help-block">{l s='Please, choose payment method, then click the button at the end of the form, to finish the order!' mod='safecharge'}</div>
-	{/if}
-	
 	{if $upos}
 		<h4 id="sc_upos_title">{l s='Choose from preferred payment methods:' mod='safecharge'}</h4>
 		
@@ -195,6 +191,8 @@
         <div id="sc_apms_list">
             {foreach $paymentMethods as $pm}
 				<div class="payment-option clearfix">
+					<p class="help-block sc_hide"><b>{l s='Select your preferred payment method and click pay.' mod='safecharge'}</b></p>
+					
 					<label>
 						<span class="custom-radio">
 							<input id="sc_apm_{$pm.paymentMethod}" class="ps-shown-by-js" name="sc_payment_method" type="radio" value="{$pm.paymentMethod}" data-sc-is-direct="{$pm.isDirect}">
@@ -206,7 +204,7 @@
 							<span></span>
 						{else}
 							<img src="{$pm.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{$pm.paymentMethodDisplayName[0].message}" />&nbsp;
-							<span>{$pm.paymentMethodDisplayName[0].message}</span>
+							{if $showAPMsName eq 1}<span>{$pm.paymentMethodDisplayName[0].message}</span>{/if}
 						{/if}
 					</label>
 						
@@ -325,7 +323,7 @@
     };
 
     {if $isTestEnv eq 'yes'}
-        scData.env = 'test';
+        scData.env = 'int';
     {/if}
     // for the fields END
 	
@@ -406,10 +404,13 @@
 			});
 		}
 		// use CC UPO
-		else if('cc_card' == $('input[name="sc_payment_method"]:checked').attr('data-upo-name')) {
+		else if(
+			typeof $('input[name="sc_payment_method"]:checked').attr('data-upo-name') != 'undefined'
+			&& 'cc_card' == $('input[name="sc_payment_method"]:checked').attr('data-upo-name')
+		) {
 			console.log('upo cc');
 		
-			if( ! $('#cvv_for_' + selectedPM).hasClass('sfc-complete')) {
+			if($('#cvv_for_' + selectedPM + '.sfc-complete').length == 0) {
 				scFormFalse();
 				return;
 			}
@@ -417,7 +418,7 @@
 			scPaymentParams.paymentOption = {
 				userPaymentOptionId: selectedPM,
 				card: {
-					CVV: window['scCVV' + selectedPM]
+					CVV: cardCvc
 				}
 			};
 			
@@ -594,9 +595,11 @@
 			
 		// hide all pm fields
 		$('#scForm .sc_fields_holder').fadeOut("fast");
+		$('#sc_apms_list p.help-block').addClass("sc_hide");
 
 		// show current apm_fields
 		_self.closest('.payment-option').find('.sc_fields_holder').toggle('slow');
+		_self.closest('.payment-option').find('p.help-block').removeClass('sc_hide');
 
 		// create CVC object if need to
 		cardCvc = null;
@@ -649,42 +652,6 @@
 					,style: scFieldsStyle
 				});
 				cardCvc.attach(lastCvcHolder);
-			}
-			// initialize inputs for APMs with fields
-			else if(_self.closest('.payment-option').find('.sc_fields_holder').length > 0) {
-				console.log('apm with sdk');
-				
-				{*_self.closest('.payment-option').find('.sc_fields_holder .sc_field_container').each(function() {
-					var containerId = $(this).attr('id');
-					$('#' + containerId).html('');
-					
-					console.log(containerId);
-					
-					if(containerId.search('cc_card_number') >= 0 || containerId.search('ccCardNumber') >= 0) {
-						cardNumber = sfcFirstField = scFields.create('ccNumber', {
-							classes: scElementClasses
-							,style: scFieldsStyle
-						});
-						cardNumber.attach('#' + containerId);
-					}
-					
-					if(containerId.search('cc_cvv') >= 0) {
-						cardCvc = sfcFirstField = scFields.create('ccCvc', {
-							classes: scElementClasses
-							,style: scFieldsStyle
-						});
-						cardCvc.attach('#' + containerId);
-					}
-					
-					if(containerId.search('cc_exp_month') >= 0 || containerId.search('ccExpMonth') >= 0) {
-						cardExpiry = sfcFirstField = scFields.create('ccExpiration', {
-							classes: scElementClasses
-							,style: scFieldsStyle
-						});
-						cardExpiry.attach('#' + containerId);
-					}
-					
-				});*}
 			}
 		}
 	}

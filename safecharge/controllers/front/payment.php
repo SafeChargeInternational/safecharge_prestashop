@@ -79,6 +79,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				SC_CLASS::create_log('WebSDK Order');
 				
 				$payment_method = str_replace('apmgw_', '', Tools::getValue('sc_payment_method', ''));
+				if(empty($payment_method)) {
+					$payment_method = str_replace('apmgw_', '', Tools::getValue('sc_upo_name', ''));
+				}
 				
 				// save order
 				$res = $this->module->validateOrder(
@@ -125,6 +128,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 //                )
 //            );
 			
+			$sc_payment_method = Tools::getValue('sc_payment_method', '');
+			
 			$success_url	= $this->context->link
                 ->getModuleLink(
 					'safecharge',
@@ -134,7 +139,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 						'id_cart'			=> (int)$cart->id,
 						'id_order'			=> $this->module->currentOrder,
 						'key'				=> $customer->secure_key,
-						'amount'			=> $total_amount
+						'amount'			=> $total_amount,
+						'payment_method'	=> $sc_payment_method,
+						'upo_name'			=> Tools::getValue('sc_upo_name', '')
 					)
 				);
 			
@@ -200,9 +207,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 		
 		#########
 		
-		$sc_payment_method = Tools::getValue('sc_payment_method', false);
-        
-		if(!$sc_payment_method) {
+		if(empty($sc_payment_method)) {
 			SC_CLASS::create_log('REST API Order, but parameter sc_payment_method is empty.');
 			Tools::redirect($error_url);
 		}
@@ -285,19 +290,25 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_NEW_URL : SC_TEST_PAYMENT_NEW_URL;
 				$params['paymentOption']['userPaymentOptionId'] = $sc_payment_method;
 				
+				/** 
+				 * TODO - we catch this case with webSDK
+				 */
 				// the UPO is card and this is the CVV
-				if(Tools::getValue('cvv_for_' . $sc_payment_method, false)) {
-					$params['paymentOption']['card']['CVV'] = Tools::getValue('cvv_for_' . $sc_payment_method, '');
-				}
+//				if(Tools::getValue('cvv_for_' . $sc_payment_method, false)) {
+//					$params['paymentOption']['card']['CVV'] = Tools::getValue('cvv_for_' . $sc_payment_method, '');
+//				}
 			}
 			// APM
 			else {
 				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_URL : SC_TEST_PAYMENT_URL;
 				$params['paymentMethod'] = $sc_payment_method;
 				
-				if(Tools::getValue($sc_payment_method, false) && is_array(Tools::getValue($sc_payment_method, false))) {
-					$params['userAccountDetails'] = Tools::getValue($sc_payment_method, false);
-				}
+				/** 
+				 * TODO - we catch this case with webSDK
+				 */
+//				if(Tools::getValue($sc_payment_method, false) && is_array(Tools::getValue($sc_payment_method, false))) {
+//					$params['userAccountDetails'] = Tools::getValue($sc_payment_method, false);
+//				}
 			}
 			
 			$resp = SC_CLASS::call_rest_api($endpoint_url, $params);
@@ -319,13 +330,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			Tools::redirect($error_url);
 		}
 		
-		if(!empty($params['paymentMethod'])) {
-			$order_payment_name = str_replace('apmgw_', '', $params['paymentMethod']);
-		}
-		elseif(!empty(Tools::getValue('sc_upo_name', ''))) {
-			$order_payment_name = str_replace('apmgw_', '', Tools::getValue('sc_upo_name', 'empty'));
-		}
-
 		$final_url = $success_url;
 
 		if($req_status == 'SUCCESS') {
@@ -967,12 +971,18 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				)
 			);
 		
+		$payment_method = str_replace('apmgw_', '', Tools::getValue('payment_method', ''));
+		
+		if(empty($payment_method) || is_numeric($payment_method)) {
+			$payment_method = str_replace('apmgw_', '', Tools::getValue('upo_name', ''));
+		}
+		
 		// save order
 		$res = $this->module->validateOrder(
 			(int) Tools::getValue('id_cart', 0)
 			,Configuration::get('SC_OS_AWAITING_PAIMENT') // the status
 			,Tools::getValue('amount', 0)
-			,$this->module->displayName . ' - ' . $order_payment_name // payment_method
+			,$this->module->displayName . ' - ' . $payment_method // payment_method
 			,'' // message
 			,array() // extra_vars
 			,null // currency_special

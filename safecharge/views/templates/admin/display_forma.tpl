@@ -109,6 +109,16 @@
                     </select>
                 </div>
             </div>
+					
+            <div class="form-group">
+                <label class="control-label col-lg-3">{l s='Show APMs names' mod='safecharge'}</label>
+                <div class="col-lg-9">
+                    <select name="NUVEI_SHOW_APMS_NAMES">
+                        <option value="1" {if Configuration::get('NUVEI_SHOW_APMS_NAMES') eq 1}selected{/if}>{l s='Yes' mod='safecharge'}</option>
+                        <option value="0" {if Configuration::get('NUVEI_SHOW_APMS_NAMES') eq 0}selected{/if}>{l s='No' mod='safecharge'}</option>
+                    </select>
+                </div>
+            </div>
         </div><!-- /.form-wrapper -->
         
         <div class="panel-footer">

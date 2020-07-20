@@ -148,6 +148,7 @@ class SafeCharge extends PaymentModule
             Configuration::updateValue('SC_HTTP_NOTIFY',        Tools::getValue('SC_HTTP_NOTIFY'));
             Configuration::updateValue('SC_CREATE_LOGS',        Tools::getValue('SC_CREATE_LOGS'));
             Configuration::updateValue('NUVEI_PRESELECT_CC',    Tools::getValue('NUVEI_PRESELECT_CC'));
+            Configuration::updateValue('NUVEI_SHOW_APMS_NAMES', Tools::getValue('NUVEI_SHOW_APMS_NAMES'));
         }
 
         $this->_postValidation();
@@ -542,6 +543,7 @@ class SafeCharge extends PaymentModule
 			$this->context->smarty->assign('merchantId',		Configuration::get('SC_MERCHANT_ID'));
 			$this->context->smarty->assign('merchantSideId',	Configuration::get('SC_MERCHANT_SITE_ID'));
 			$this->context->smarty->assign('preselectCC',		Configuration::get('NUVEI_PRESELECT_CC'));
+			$this->context->smarty->assign('showAPMsName',		Configuration::get('NUVEI_SHOW_APMS_NAMES'));
 			$this->context->smarty->assign('formAction',		$this->context->link->getModuleLink('safecharge', 'payment'));
 			$this->context->smarty->assign('webMasterId',		SC_PRESTA_SHOP . _PS_VERSION_);
 			$this->context->smarty->assign('sourceApplication',	SC_SOURCE_APPLICATION);
