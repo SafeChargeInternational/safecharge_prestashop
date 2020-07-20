@@ -289,26 +289,11 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			if(is_numeric($sc_payment_method)) {
 				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_NEW_URL : SC_TEST_PAYMENT_NEW_URL;
 				$params['paymentOption']['userPaymentOptionId'] = $sc_payment_method;
-				
-				/** 
-				 * TODO - we catch this case with webSDK
-				 */
-				// the UPO is card and this is the CVV
-//				if(Tools::getValue('cvv_for_' . $sc_payment_method, false)) {
-//					$params['paymentOption']['card']['CVV'] = Tools::getValue('cvv_for_' . $sc_payment_method, '');
-//				}
 			}
 			// APM
 			else {
 				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_URL : SC_TEST_PAYMENT_URL;
 				$params['paymentMethod'] = $sc_payment_method;
-				
-				/** 
-				 * TODO - we catch this case with webSDK
-				 */
-//				if(Tools::getValue($sc_payment_method, false) && is_array(Tools::getValue($sc_payment_method, false))) {
-//					$params['userAccountDetails'] = Tools::getValue($sc_payment_method, false);
-//				}
 			}
 			
 			$resp = SC_CLASS::call_rest_api($endpoint_url, $params);
