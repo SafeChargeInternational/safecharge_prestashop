@@ -41,9 +41,10 @@
             </div>
                 
             <div class="form-group">
-                <label class="control-label col-lg-3"> {l s='Hash type' mod='safecharge'}</label>
+                <label class="control-label col-lg-3 required"> {l s='Hash type' mod='safecharge'}</label>
                 <div class="col-lg-9">
-                    <select name="SC_HASH_TYPE">
+                    <select name="SC_HASH_TYPE" required="">
+                        <option value="">{l s='Please, select an option...' mod='safecharge'}</option>
                         <option value="sha256" {if Configuration::get('SC_HASH_TYPE') eq 'sha256'}selected{/if}>sha256</option>
                         <option value="md5" {if Configuration::get('SC_HASH_TYPE') eq 'md5'}selected{/if}>md5</option>
                     </select>
@@ -51,9 +52,10 @@
             </div>
 					
             <div class="form-group">
-                <label class="control-label col-lg-3"> {l s='Payment Action' mod='safecharge'}</label>
+                <label class="control-label col-lg-3 required"> {l s='Payment Action' mod='safecharge'}</label>
                 <div class="col-lg-9">
-                    <select name="SC_PAYMENT_ACTION">
+                    <select name="SC_PAYMENT_ACTION" required="">
+						<option value="">{l s='Please, select an option...' mod='safecharge'}</option>
                         <option value="Sale" {if Configuration::get('SC_PAYMENT_ACTION') eq 'Sale'}selected{/if}>{l s='Authorize and Capture' mod='safecharge'}</option>
                         <option value="Auth" {if Configuration::get('SC_PAYMENT_ACTION') eq 'Auth'}selected{/if}>{l s='Authorize' mod='safecharge'}</option>
                     </select>
@@ -64,6 +66,7 @@
                 <label class="control-label col-lg-3"> {l s='Enable UPOs' mod='safecharge'}</label>
                 <div class="col-lg-9">
                     <select name="SC_USE_UPOS">
+						<option value="">{l s='Please, select an option...' mod='safecharge'}</option>
                         <option value="1" {if Configuration::get('SC_USE_UPOS') eq 1}selected{/if}>{l s='Use UPOs' mod='safecharge'}</option>
                         <option value="0" {if Configuration::get('SC_USE_UPOS') eq 0}selected{/if}>{l s='Do NOT use UPOs' mod='safecharge'}</option>
                     </select>
@@ -74,6 +77,7 @@
                 <label class="control-label col-lg-3"> {l s='Preselect CC payment method' mod='safecharge'}</label>
                 <div class="col-lg-9">
                     <select name="NUVEI_PRESELECT_CC">
+						<option value="">{l s='Please, select an option...' mod='safecharge'}</option>
                         <option value="1" {if Configuration::get('NUVEI_PRESELECT_CC') eq 1}selected{/if}>{l s='Yes' mod='safecharge'}</option>
                         <option value="0" {if Configuration::get('NUVEI_PRESELECT_CC') eq 0}selected{/if}>{l s='No' mod='safecharge'}</option>
                     </select>
@@ -81,9 +85,10 @@
             </div>
                     
             <div class="form-group">
-                <label class="control-label col-lg-3">{l s='Test mode' mod='safecharge'}</label>
+                <label class="control-label col-lg-3 required"> {l s='Test mode' mod='safecharge'}</label>
                 <div class="col-lg-9">
-                    <select name="SC_TEST_MODE">
+                    <select name="SC_TEST_MODE" required="">
+						<option value="">{l s='Please, select an option...' mod='safecharge'}</option>
                         <option value="yes" {if Configuration::get('SC_TEST_MODE') eq 'yes'}selected{/if}>{l s='Yes' mod='safecharge'}</option>
                         <option value="no" {if Configuration::get('SC_TEST_MODE') eq 'no'}selected{/if}>{l s='No' mod='safecharge'}</option>
                     </select>
@@ -94,6 +99,7 @@
                 <label class="control-label col-lg-3" for="SC_HTTP_NOTIFY">{l s='Force HTTP notify URLs' mod='safecharge'}</label>
                 <div class="col-lg-9">
                     <select name="SC_HTTP_NOTIFY">
+						<option value="">{l s='Please, select an option...' mod='safecharge'}</option>
                         <option value="yes" {if Configuration::get('SC_HTTP_NOTIFY') eq 'yes'}selected{/if}>{l s='Yes' mod='safecharge'}</option>
                         <option value="no" {if Configuration::get('SC_HTTP_NOTIFY') eq 'no'}selected{/if}>{l s='No' mod='safecharge'}</option>
                     </select>
@@ -114,6 +120,7 @@
                 <label class="control-label col-lg-3">{l s='Show APMs names' mod='safecharge'}</label>
                 <div class="col-lg-9">
                     <select name="NUVEI_SHOW_APMS_NAMES">
+						<option value="">{l s='Please, select an option...' mod='safecharge'}</option>
                         <option value="1" {if Configuration::get('NUVEI_SHOW_APMS_NAMES') eq 1}selected{/if}>{l s='Yes' mod='safecharge'}</option>
                         <option value="0" {if Configuration::get('NUVEI_SHOW_APMS_NAMES') eq 0}selected{/if}>{l s='No' mod='safecharge'}</option>
                     </select>
