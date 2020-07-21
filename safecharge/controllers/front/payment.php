@@ -446,12 +446,17 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				
                 $order_info = new Order($order_id);
                 $this->updateCustomPaymentFields($order_id);
-
-                if(intval($order_info->current_state) != intval(Configuration::get('PS_OS_PAYMENT'))) {
+				
+                if(
+					intval($order_info->current_state) != intval(Configuration::get('PS_OS_PAYMENT'))
+					&& intval($order_info->current_state) != intval(Configuration::get('PS_OS_ERROR'))
+				) {
                     $this->changeOrderStatus(array(
                             'id'            => $order_id,
                             'current_state' => $order_info->current_state,
                             'has_invoice'	=> $order_info->hasInvoice(),
+                            'total_paid'	=> $order_info->total_paid,
+                            'id_customer'	=> $order_info->id_customer,
                         )
                         ,$req_status
                     );
@@ -580,7 +585,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
      * Function changeOrderStatus
      * Change the status of the order.
      * 
-     * @param Order $order_info
+     * @param array $order_info
      * @param string $status
      * @param array $res_args - we must use $res_args instead $_REQUEST, if not empty
      */
@@ -590,15 +595,18 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             'Order ' . $order_info['id'] .' has Status: ' . $status,
             'Change_order_status(): '
         );
+		
+		SC_CLASS::create_log($order_info, 'changeOrderStatus $order_info');
         
         $request = @$_REQUEST;
         if(!empty($res_args)) {
             $request = $res_args;
         }
         
-        $msg = '';
-        $message = new MessageCore();
-        $message->id_order = $order_info['id'];
+        $msg				= '';
+		$is_msg_private		= true;
+        $message			= new MessageCore();
+        $message->id_order	= $order_info['id'];
         
         switch($status) {
             case 'CANCELED':
@@ -638,13 +646,26 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 
                 if($_REQUEST['transactionType'] == 'Auth') {
                     $msg = 'The amount has been authorized and wait to for Settle.';
-//                    $status_id = (int)(Configuration::get('PS_OS_PREPARATION'));
-//                    $status_id = (int)(Configuration::get('SC_OS_AWAITING_PAIMENT'));
 					$status_id = ''; // if we set the id we will have twice this status in the history
                 }
                 elseif($_REQUEST['transactionType'] == 'Settle') {
                     $msg = 'The amount has been captured by ' . SC_GATEWAY_TITLE . '. ';
                 }
+				// compare DMN amount and Order amount
+				elseif(Tools::getValue('transactionType', false) === 'Sale') {
+					$dmn_amount		= round(floatval(Tools::getValue('totalAmount', -1)), 2);
+					$order_amount	= round(floatval($order_info['total_paid']), 2);
+					
+					if($dmn_amount !== $order_amount) {
+						$is_msg_private			= false;
+						$message->id_customer	= $order_info['id_customer'];
+						$status_id				= (int)(Configuration::get('PS_OS_ERROR'));
+						$msg					= 'Order/Payment ERROR - the paid amount ('. $dmn_amount
+							.') is different than Order amount ('. $order_amount .'). ';
+
+						SC_CLASS::create_log($msg);
+					}
+				}
                 
                 $msg .= 'PPP_TransactionID = ' . @$request['PPP_TransactionID']
                     . ", Status = ". $status;
@@ -727,7 +748,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 break;
 
             case 'PENDING':
-//                $status_id = (int)(Configuration::get('PS_OS_PREPARATION'));
                 $status_id = (int)(Configuration::get('SC_OS_AWAITING_PAIMENT'));
                 
                 if ($order_info['current_state'] == 2 || $order_info['current_state'] == 3) {
@@ -767,7 +787,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         }
         
         // save order message
-        $message->private = true;
+        $message->private = $is_msg_private;
         $message->message = $msg;
         $message->add();
 		

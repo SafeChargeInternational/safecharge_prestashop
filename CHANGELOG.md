@@ -3,6 +3,9 @@
 # v1.3
 ```
 	* Added option in the settings of the plugin to turn ON/OFF the names of the APMs.
+	* Added texarea in the plugin settings for the APMs and UPOs style.
+	* Added help text to APMs and UPOs.
+	* If there is difference between Order Total and Paid Total, mark the Order with status Payment Error and add message.
 ```
 
 # 2020-07-09

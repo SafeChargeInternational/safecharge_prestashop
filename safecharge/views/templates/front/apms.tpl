@@ -256,7 +256,8 @@
 			merchantSiteId  : "{$merchantSiteId}",
 			currency        : "{$currency}",
 			amount          : "{$amount}",
-			webMasterId		: "{$webMasterId}"
+			webMasterId		: "{$webMasterId}",
+			userTokenId		: "{$userTokenId}"
 		};
 
 		// use cards
