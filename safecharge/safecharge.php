@@ -149,6 +149,7 @@ class SafeCharge extends PaymentModule
             Configuration::updateValue('SC_CREATE_LOGS',        Tools::getValue('SC_CREATE_LOGS'));
             Configuration::updateValue('NUVEI_PRESELECT_CC',    Tools::getValue('NUVEI_PRESELECT_CC'));
             Configuration::updateValue('NUVEI_SHOW_APMS_NAMES', Tools::getValue('NUVEI_SHOW_APMS_NAMES'));
+            Configuration::updateValue('NUVEI_PMS_STYLE',		Tools::getValue('NUVEI_PMS_STYLE'));
         }
 
         $this->_postValidation();

@@ -119,6 +119,13 @@
                     </select>
                 </div>
             </div>
+					
+            <div class="form-group">
+                <label class="control-label col-lg-3">{l s='Payment methods style' mod='safecharge'}</label>
+                <div class="col-lg-9">
+                    <textarea name="NUVEI_PMS_STYLE" rows="10">{Configuration::get('NUVEI_PMS_STYLE')}</textarea>
+                </div>
+            </div>
         </div><!-- /.form-wrapper -->
         
         <div class="panel-footer">
