@@ -134,6 +134,8 @@
 			
 			{foreach $upos as $upo}
 				<div class="payment-option clearfix">
+					<p class="help-block sc_hide"><b></b></p>
+					
 					<label>
 						<span class="custom-radio">
 							<input id="upo_{$upo.userPaymentOptionId}" class="ps-shown-by-js" name="sc_payment_method" type="radio" value="{$upo.userPaymentOptionId}" data-upo-name="{$upo.paymentMethodName}">
@@ -191,7 +193,7 @@
         <div id="sc_apms_list">
             {foreach $paymentMethods as $pm}
 				<div class="payment-option clearfix">
-					<p class="help-block sc_hide"><b>{l s='Select your preferred payment method and click pay.' mod='safecharge'}</b></p>
+					<p class="help-block sc_hide"><b></b></p>
 					
 					<label>
 						<span class="custom-radio">
@@ -273,7 +275,7 @@
 </form>
 
 <script type="text/javascript">
-	var scAPMsErrorMsg = "{$scAPMsErrorMsg}";
+	var scAPMsErrorMsg	= "{$scAPMsErrorMsg}";
 	
     var selectedPM  = "";
     var payloadURL  = "";
@@ -586,7 +588,7 @@
         });
 		
 		if($('#payment-confirmation button .fast-right-spinner').length == 0) {
-			$('#payment-confirmation button').prepend('<i class="material-icons fast-right-spinner sc_hide">sync</i>');
+			$('#payment-confirmation button').prepend('<i class="material-icons fast-right-spinner sc_hide"></i>');
 		}
     }
 	
@@ -595,7 +597,7 @@
 			
 		// hide all pm fields
 		$('#scForm .sc_fields_holder').fadeOut("fast");
-		$('#sc_apms_list p.help-block').addClass("sc_hide");
+		$('#scForm p.help-block').addClass("sc_hide");
 
 		// show current apm_fields
 		_self.closest('.payment-option').find('.sc_fields_holder').toggle('slow');
@@ -749,6 +751,9 @@
 		$('body').on('change', 'input[name="sc_payment_method"]', function() {
 			createSCFields();
 		});
+		
+		$('#scForm').find('p.help-block b').text("{l s='Select your preferred payment method and click ' mod='safecharge'}"
+			+ '"' + $('#payment-confirmation button').text().trim() + '".');
 		
 		{if $preselectCC eq 1}
 			$('#sc_apm_cc_card').trigger('click');
