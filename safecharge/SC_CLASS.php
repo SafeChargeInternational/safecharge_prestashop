@@ -399,11 +399,11 @@ class SC_CLASS
 					$data['paymentOption'] = 'paymentOption array';
                 }
 				
-				array_walk_recursive($data, function (&$value, $key) {
-					if($key == 'ccCardNumber' && !empty($value)) {
-						$value = '****';
-					}
-				});
+//				array_walk_recursive($data, function (&$value, $key) {
+//					if($key == 'ccCardNumber' && !empty($value)) {
+//						$value = '****';
+//					}
+//				});
 				
 				if(!empty($data['paymentMethods']) && is_array($data['paymentMethods'])) {
 					$data['paymentMethods'] = json_encode($data['paymentMethods']);

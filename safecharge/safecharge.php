@@ -22,7 +22,7 @@ class SafeCharge extends PaymentModule
     {
         $this->name						= 'safecharge';
         $this->tab						= SafeChargeVersionResolver::set_tab();
-        $this->version					= '1.1';
+        $this->version					= '1.3';
         $this->author					= 'SafeCharge';
         $this->need_instance			= 1;
         $this->ps_versions_compliancy	= array('min' => '1.7', 'max' => _PS_VERSION_);
@@ -68,8 +68,10 @@ class SafeCharge extends PaymentModule
             return false;
         }
         
-        // safecharge_order_data table
-        $sql = $q =
+        # safecharge_order_data table
+		$db = Db::getInstance();
+		
+        $sql =
             "CREATE TABLE IF NOT EXISTS `safecharge_order_data` (
                 `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
                 `order_id` int(11) unsigned NOT NULL,
@@ -77,13 +79,31 @@ class SafeCharge extends PaymentModule
                 `related_transaction_id` varchar(20) NOT NULL,
                 `resp_transaction_type` varchar(20) NOT NULL,
                 `payment_method` varchar(50) NOT NULL,
+				`error_msg` text,
                 
                 PRIMARY KEY (`id`),
                 KEY `order_id` (`order_id`),
                 UNIQUE KEY `un_order_id` (`order_id`)
-              ) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
+			
+			. "";
         
-        Db::getInstance()->execute($sql);
+        $db->execute($sql);
+		
+		// for the old versions try to add the error_msg column only
+//		$sql =
+//			"SELECT COUNT(COLUMN_NAME)"
+//			. "FROM INFORMATION_SCHEMA.columns "
+//			. "WHERE TABLE_NAME = 'safecharge_order_data' "
+//			. "AND COLUMN_NAME = 'error_msg';";
+//		
+//		$result = intval(current($db->getRow($sql)));
+//		
+//		if($result == 0) {
+//			$sql = "ALTER TABLE `safecharge_order_data` ADD `error_msg` text NOT NULL;";
+//			$db->execute($sql);
+//		}
+		# safecharge_order_data table END
         
         // create tab for the admin module
         $invisible_tab = new Tab();
@@ -137,19 +157,20 @@ class SafeCharge extends PaymentModule
         $this->_html .= '<h2>'.$this->displayName.'</h2>';
         
         if (Tools::isSubmit('submitUpdate')) {
-            Configuration::updateValue('SC_FRONTEND_NAME',      Tools::getValue('SC_FRONTEND_NAME'));
-            Configuration::updateValue('SC_MERCHANT_ID',        Tools::getValue('SC_MERCHANT_ID'));
-            Configuration::updateValue('SC_MERCHANT_SITE_ID',   Tools::getValue('SC_MERCHANT_SITE_ID'));
-            Configuration::updateValue('SC_SECRET_KEY',         Tools::getValue('SC_SECRET_KEY'));
-            Configuration::updateValue('SC_HASH_TYPE',          Tools::getValue('SC_HASH_TYPE'));
-            Configuration::updateValue('SC_PAYMENT_ACTION',     Tools::getValue('SC_PAYMENT_ACTION'));
-            Configuration::updateValue('SC_USE_UPOS',			Tools::getValue('SC_USE_UPOS'));
-            Configuration::updateValue('SC_TEST_MODE',          Tools::getValue('SC_TEST_MODE'));
-            Configuration::updateValue('SC_HTTP_NOTIFY',        Tools::getValue('SC_HTTP_NOTIFY'));
-            Configuration::updateValue('SC_CREATE_LOGS',        Tools::getValue('SC_CREATE_LOGS'));
-            Configuration::updateValue('NUVEI_PRESELECT_CC',    Tools::getValue('NUVEI_PRESELECT_CC'));
-            Configuration::updateValue('NUVEI_SHOW_APMS_NAMES', Tools::getValue('NUVEI_SHOW_APMS_NAMES'));
-            Configuration::updateValue('NUVEI_PMS_STYLE',		Tools::getValue('NUVEI_PMS_STYLE'));
+            Configuration::updateValue('SC_FRONTEND_NAME',						Tools::getValue('SC_FRONTEND_NAME'));
+            Configuration::updateValue('SC_MERCHANT_ID',						Tools::getValue('SC_MERCHANT_ID'));
+            Configuration::updateValue('SC_MERCHANT_SITE_ID',					Tools::getValue('SC_MERCHANT_SITE_ID'));
+            Configuration::updateValue('SC_SECRET_KEY',							Tools::getValue('SC_SECRET_KEY'));
+            Configuration::updateValue('SC_HASH_TYPE',							Tools::getValue('SC_HASH_TYPE'));
+            Configuration::updateValue('SC_PAYMENT_ACTION',						Tools::getValue('SC_PAYMENT_ACTION'));
+            Configuration::updateValue('SC_USE_UPOS',							Tools::getValue('SC_USE_UPOS'));
+            Configuration::updateValue('SC_TEST_MODE',							Tools::getValue('SC_TEST_MODE'));
+            Configuration::updateValue('SC_HTTP_NOTIFY',						Tools::getValue('SC_HTTP_NOTIFY'));
+            Configuration::updateValue('SC_CREATE_LOGS',						Tools::getValue('SC_CREATE_LOGS'));
+            Configuration::updateValue('NUVEI_PRESELECT_CC',					Tools::getValue('NUVEI_PRESELECT_CC'));
+            Configuration::updateValue('NUVEI_SHOW_APMS_NAMES',					Tools::getValue('NUVEI_SHOW_APMS_NAMES'));
+            Configuration::updateValue('NUVEI_PMS_STYLE',						Tools::getValue('NUVEI_PMS_STYLE'));
+            Configuration::updateValue('NUVEI_SAVE_ORDER_AFTER_APM_PAYMENT',	Tools::getValue('NUVEI_SAVE_ORDER_AFTER_APM_PAYMENT'));
         }
 
         $this->_postValidation();

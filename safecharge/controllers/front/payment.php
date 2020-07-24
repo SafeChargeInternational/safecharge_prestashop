@@ -65,9 +65,43 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 		SC_CLASS::create_log(@$_REQUEST, 'processOrder params');
 		
         try {
+			$sc_payment_method	= Tools::getValue('sc_payment_method', '');
+			$cart				= $this->context->cart;
+			$customer			= $this->validate($cart);
+			
+			$error_url			= $this->context->link
+                ->getModuleLink(
+					'safecharge',
+					'payment',
+					array(
+						'prestaShopAction'	=> 'showError',
+						'id_cart'			=> (int)$cart->id,
+					)
+				);
+			
+			$success_url		= $this->context->link->getPageLink(
+					'order-confirmation',
+					null,
+					null,
+					array(
+						'id_cart'   => (int)$cart->id,
+						'id_module' => (int)$this->module->id,
+						'id_order'  => $this->module->currentOrder,
+						'key'       => $customer->secure_key,
+					)
+				);
+			
+			if(empty($sc_payment_method)) {
+				SC_CLASS::create_log('REST API Order, but parameter sc_payment_method is empty.');
+				Tools::redirect($error_url);
+			}
+			
+			$payment_method = str_replace('apmgw_', '', $sc_payment_method);
+			if(empty($payment_method)) {
+				$payment_method = str_replace('apmgw_', '', Tools::getValue('sc_upo_name', ''));
+			}
+			
             # prepare Order data
-            $cart           = $this->context->cart;
-            $customer       = $this->validate($cart);
             $order_time     = date('YmdHis', time());
             $is_user_logged = (bool)$this->context->customer->isLogged();
             $test_mode      = Configuration::get('SC_TEST_MODE');
@@ -77,11 +111,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			# 1. when use WebSDK
 			if(Tools::getValue('sc_transaction_id', false)) {
 				SC_CLASS::create_log('WebSDK Order');
-				
-				$payment_method = str_replace('apmgw_', '', Tools::getValue('sc_payment_method', ''));
-				if(empty($payment_method)) {
-					$payment_method = str_replace('apmgw_', '', Tools::getValue('sc_upo_name', ''));
-				}
 				
 				// save order
 				$res = $this->module->validateOrder(
@@ -98,66 +127,38 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 
 				if(!$res) {
 					SC_CLASS::create_log('Order was not validated');
-
-					Tools::redirect($this->context->link->getModuleLink(
-						'safecharge',
-						'payment',
-						array('prestaShopAction' => 'showError')
-					));
+					Tools::redirect(Tools::redirect($error_url));
 				}
 
-				Tools::redirect('index.php?controller=order-confirmation&id_cart='
-					. $cart->id . '&id_module=' . $this->module->id . '&id_order='
-					. $this->module->currentOrder . '&key=' . $customer->secure_key);
+				Tools::redirect($success_url);
 			}
 			# 1. when use WebSDK END
 			
 			######################
 			
 			# 2. when use REST
-            // get order data
-//            $success_url    = $this->context->link->getPageLink(
-//                'order-confirmation',
-//                null,
-//                null,
-//                array(
-//                    'id_cart'   => (int)$cart->id,
-//                    'id_module' => (int)$this->module->id,
-//                    'id_order'  => $this->module->currentOrder,
-//                    'key'       => $customer->secure_key,
-//                )
-//            );
+			$save_order_after_apm = intval(Configuration::get('NUVEI_SAVE_ORDER_AFTER_APM_PAYMENT'));
 			
-			$sc_payment_method = Tools::getValue('sc_payment_method', '');
-			
-			$success_url	= $this->context->link
-                ->getModuleLink(
-					'safecharge',
-					'payment',
-					array(
-						'prestaShopAction'	=> 'beforeSuccess',
-						'id_cart'			=> (int)$cart->id,
-						'id_order'			=> $this->module->currentOrder,
-						'key'				=> $customer->secure_key,
-						'amount'			=> $total_amount,
-						'payment_method'	=> $sc_payment_method,
-						'upo_name'			=> Tools::getValue('sc_upo_name', '')
-					)
-				);
+			// modify success page
+			if($save_order_after_apm == 1) {
+				$success_url = $this->context->link
+					->getModuleLink(
+						'safecharge',
+						'payment',
+						array(
+							'prestaShopAction'	=> 'beforeSuccess',
+							'id_cart'			=> (int)$cart->id,
+							'id_order'			=> $this->module->currentOrder,
+							'key'				=> $customer->secure_key,
+							'amount'			=> $total_amount,
+							'payment_method'	=> $sc_payment_method,
+							'upo_name'			=> Tools::getValue('sc_upo_name', '')
+						)
+					);
+			}
 			
             $pending_url	= $success_url;
 			$back_url       = $this->context->link->getPageLink('order');
-            
-			$error_url      = $this->context->link
-                ->getModuleLink(
-					'safecharge',
-					'payment',
-					array(
-						'prestaShopAction'	=> 'showError',
-						'id_cart'			=> (int)$cart->id,
-					)
-				);
-            
 			$notify_url     = $this->context->link
                 ->getModuleLink(
 					'safecharge', 
@@ -194,25 +195,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 $total_amount = number_format(0, 2, '.', '');
             }
             // get order data END
-        }
-        catch(Exception $e) {
-            SC_CLASS::create_log($e->getMessage(), 'Process payment Exception: ');
-            
-			Tools::redirect($this->context->link->getModuleLink(
-				'safecharge', 
-				'payment', 
-				array('prestaShopAction' => 'showError')
-			));
-        }
 		
-		#########
+			#########
 		
-		if(empty($sc_payment_method)) {
-			SC_CLASS::create_log('REST API Order, but parameter sc_payment_method is empty.');
-			Tools::redirect($error_url);
-		}
-		
-		try {
 			$params = array(
 				'merchantId'        => Configuration::get('SC_MERCHANT_ID'),
 				'merchantSiteId'    => Configuration::get('SC_MERCHANT_SITE_ID'),
@@ -301,21 +286,46 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			$req_status = $this->getRequestStatus($resp);
 		}
 		catch(Exception $e) {
-			SC_CLASS::create_log($e->getMessage(), 'Process APM payment Exception: ');
+			SC_CLASS::create_log($e->getMessage(), 'Process payment Exception:');
             
-			Tools::redirect($error_url);
+			Tools::redirect(
+				$this->context->link->getModuleLink(
+					'safecharge', 
+					'payment', 
+					array('prestaShopAction'	=> 'showError')
+				)
+			);
 		}
 
 		if(
 			!$resp
 			|| $req_status == 'ERROR'
-			|| @$resp['w kre'] == 'ERROR'
+			|| @$resp['message'] == 'ERROR'
 			|| @$resp['transactionStatus'] == 'DECLINED'
 		) {
 			Tools::redirect($error_url);
 		}
 		
 		$final_url = $success_url;
+		
+		if($save_order_after_apm == 0) {
+			$res = $this->module->validateOrder(
+				(int)$cart->id
+				,Configuration::get('SC_OS_AWAITING_PAIMENT') // the status
+				,$total_amount
+				,$this->module->displayName . ' - ' . $payment_method // payment_method
+				,'' // message
+				,array() // extra_vars
+				,null // currency_special
+				,false // dont_touch_amount
+				,$this->context->cart->secure_key // secure_key
+			);
+
+			if(!$res) {
+				SC_CLASS::create_log('Order was not validated');
+				Tools::redirect($error_url);
+			}
+		}
 
 		if($req_status == 'SUCCESS') {
 			// APM
@@ -457,6 +467,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                             'has_invoice'	=> $order_info->hasInvoice(),
                             'total_paid'	=> $order_info->total_paid,
                             'id_customer'	=> $order_info->id_customer,
+                            'reference'		=> $order_info->reference,
                         )
                         ,$req_status
                     );
@@ -596,8 +607,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             'Change_order_status(): '
         );
 		
-		SC_CLASS::create_log($order_info, 'changeOrderStatus $order_info');
-        
         $request = @$_REQUEST;
         if(!empty($res_args)) {
             $request = $res_args;
@@ -607,6 +616,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 		$is_msg_private		= true;
         $message			= new MessageCore();
         $message->id_order	= $order_info['id'];
+		$error_order_status	= '';
         
         switch($status) {
             case 'CANCELED':
@@ -657,13 +667,25 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					$order_amount	= round(floatval($order_info['total_paid']), 2);
 					
 					if($dmn_amount !== $order_amount) {
-						$is_msg_private			= false;
-						$message->id_customer	= $order_info['id_customer'];
-						$status_id				= (int)(Configuration::get('PS_OS_ERROR'));
-						$msg					= 'Order/Payment ERROR - the paid amount ('. $dmn_amount
-							.') is different than Order amount ('. $order_amount .'). ';
-
-						SC_CLASS::create_log($msg);
+//						$status_id = (int)(Configuration::get('PS_OS_ERROR'));
+						$error_order_status = (int)(Configuration::get('PS_OS_ERROR'));
+						
+//						 $this->l('Your request was Canceled');
+						
+//						Db::getInstance()->update(
+//							'safecharge_order_data',
+////							array('error_msg' => 'The paid amount is'. $dmn_amount . ' ' . @$request['currency']),
+//							array(
+//								'error_msg' => $this->module->l('Amount paid') . ' (' 
+//									. $dmn_amount . ' ' . @$request['currency'] . ') '
+//									. $this->module->l('doesn\'t match Order amount')
+//							),
+//							'order_id = ' . $order_info['id'],
+//							0,
+//							false,
+//							true,
+//							false
+//						);
 					}
 				}
                 
@@ -784,6 +806,30 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             $history->id_order = (int)$order_info['id'];
             $history->changeIdOrderState($status_id, (int)($order_info['id']), !$order_info['has_invoice']);
             $history->add(true);
+			
+			// in case ot Payment error
+			if(!empty($error_order_status)) {
+				// add Error status
+				$history->changeIdOrderState($error_order_status, (int)($order_info['id']));
+				$history->add(true);
+				
+				// get and manipulate Order Payment
+				$payment = new OrderPaymentCore();
+				$order_payments	= $payment->getByOrderReference($order_info['reference']);
+				
+				if(is_array($order_payments) && !empty($order_payments)) {
+					$order_payment	= end($order_payments);
+
+					if(round($order_payment->amount, 2) != $dmn_amount) {
+						Db::getInstance()->update(
+							'order_payment',
+							array('amount' => $dmn_amount),
+							"order_reference = '" . $order_info['reference'] . "' AND amount = "
+								. $order_amount . ' AND  	id_order_payment = ' . $order_payment->id
+						);
+					}
+				}
+			}
         }
         
         // save order message

@@ -29,6 +29,18 @@
     }
 </style>
 
+{if $scDataError}
+    <span class="span label label-danger">
+        <i class="icon-warning-sign"></i>&nbsp;{$scDataError}
+    </span>
+{/if}
+
+{if $scData.error_msg}
+    <span class="span label label-danger">
+        <i class="icon-warning-sign"></i>&nbsp;{$scData.error_msg}
+    </span>
+{/if}
+
 {if $scData.resp_transaction_type eq "Auth"}
     <button type="button" id="sc_settle_btn" class="btn btn-default" onclick="scOrderAction('settle', {$orderId})" title="{l s='You will be redirected to Orders list.' mod='safecharge'}">
         <i class="icon-thumbs-up"></i>
@@ -47,12 +59,6 @@
         <i class="icon-repeat fast-right-spinner hidden"></i>
         {l s='Void' mod='safecharge'}
     </button>
-{/if}
-    
-{if $scDataError}
-    <span class="span label label-danger">
-        <i class="icon-warning-sign"></i>&nbsp;{$scDataError}
-    </span>
 {/if}
     
 <script type="text/javascript">
