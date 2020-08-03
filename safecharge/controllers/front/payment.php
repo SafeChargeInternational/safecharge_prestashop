@@ -97,7 +97,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			}
 			
 			$payment_method = str_replace('apmgw_', '', $sc_payment_method);
-			if(empty($payment_method)) {
+			if(empty($payment_method) || is_numeric($payment_method)) {
 				$payment_method = str_replace('apmgw_', '', Tools::getValue('sc_upo_name', ''));
 			}
 			
