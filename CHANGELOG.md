@@ -1,5 +1,12 @@
 # SafeCharge Prestashop Changelog
 
+# v1.4
+```
+	* Added option in the settings of the plugin to show custom message over each APM.
+	* The Safecharge HTML elements are cleaned and with default style. If the merchant want to change it, it must add its style in the Plugin settings textarea.
+	* The loading and trash icons now are png files, not Bootstrap glyphs.
+```
+
 # v1.3
 ```
 	* Added option in the settings of the plugin to turn ON/OFF the names of the APMs.

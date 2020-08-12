@@ -1,8 +1,290 @@
 <script type="text/javascript" src="https://cdn.safecharge.com/safecharge_resources/v1/websdk/safecharge.js"></script>
 
 <style type="text/css">
-    {Configuration::get('NUVEI_PMS_STYLE')}
+	#scForm div, #scForm p { display: block; }
+	#scForm span, #scForm label { display: inline; }
+	
+	#scForm *, ::after, ::before {
+		box-sizing: revert;
+	}
+	
+	#scForm h4 {
+		font-size: 1.125rem;
+		margin-bottom: .5rem;
+		font-family: Noto Sans, sans-serif;
+		font-weight: 700;
+		line-height: 1.1;
+		color: black;
+		margin-top: 0;
+	}
+	
+	#scForm h4:after, #scForm h4:before {
+		box-sizing: inherit;
+	}
+	
+	/***/
+	
+	#scForm #sc_apms_list, #scForm #sc_upos_list {
+		margin-top: 15px;
+		font-size: .875rem;
+		color: #232323;
+		direction: ltr;
+		font-family: Noto Sans,sans-serif;
+		line-height: 1.25em;
+	}
+	
+	#scForm #sc_apms_list:after,
+	#scForm #sc_apms_list:before,
+	#scForm #sc_upos_list:after 
+	#scForm #sc_upos_list:before {
+		box-sizing: inherit;
+	}
+	
+	/***/
+	
+	#scForm .payment-option {
+		margin-bottom: .5rem;
+		font-size: .875rem;
+		color: #232323;
+		direction: ltr;
+		font-family: Noto Sans,sans-serif;
+		line-height: 1.25em;
+	}
+	
+	#scForm .payment-option  p.help-block {
+		margin-top: .625rem;
+		font-size: .9375rem;
+		color: #7a7a7a;
+		font-weight: 400;
+		margin-bottom: 1rem;
+		direction: ltr;
+		font-family: Noto Sans,sans-serif;
+		line-height: 1.25em;
+	}
+	
+	#scForm .payment-option p.help-block b {
+		font-weight: bolder;
+		font-size: .9375rem;
+		color: #7a7a7a;
+		direction: ltr;
+		font-family: Noto Sans,sans-serif;
+		line-height: 1.25em;
+	}
+	
+	#scForm .payment-option label {
+		display: table-cell;
+		color: #232323;
+		text-align: left;
+		font-size: .875rem;
+		margin-bottom: .5rem;
+		touch-action: manipulation;
+		direction: ltr;
+		font-family: Noto Sans,sans-serif;
+		line-height: 1.25em;
+	}
+	
+	#scForm .payment-option label:first-child { text-align: left; }
+	
+	#scForm .payment-option label .custom-radio {
+		margin-right: 1.25rem;
+		display: inline-block;
+		position: relative;
+		width: 20px;
+		height: 20px;
+		vertical-align: middle;
+		cursor: pointer;
+		border-radius: 50%;
+		border: 2px solid #7a7a7a;
+		background: #fff;
+		color: #232323;
+		text-align: right;
+		font-size: .875rem;
+		direction: ltr;
+		font-family: Noto Sans,sans-serif;
+		line-height: 1.25em;
+		margin-right: 0.5rem
+	}
+	
+	#scForm .payment-option label span:last-child { float: right; line-height: 36px; }
+	
+	#scForm .payment-option label .custom-radio input[type="radio"] {
+		height: 1.25rem;
+		width: 1.25rem;
+		opacity: 0;
+		cursor: pointer;
+		box-sizing: border-box;
+		padding: 0;
+		line-height: inherit;
+		touch-action: manipulation;
+		overflow: visible;
+		font: inherit;
+		margin: 0;
+		color: #232323;
+		text-align: right;
+		direction: ltr;
+		margin-right: 0.5rem
+	}
+	
+	#scForm .payment-option label .sc_visa_mc_maestro_logo {
+		height: 39px;
+		width: auto;
+		margin-left: -2px;
+	}
+	
+	#scForm .payment-option label img {
+		vertical-align: middle;
+		border-style: none;
+		color: #232323;
+		text-align: right;
+		font-size: .875rem;
+		direction: ltr;
+		font-family: Noto Sans,sans-serif;
+		line-height: 1.25em;
+	}
+	
+	#scForm .payment-option .sc_fields_holder {
+		margin-top: 1rem;
+		margin-left: 3rem;
+		display: none;
+	}
+	
+	#scForm .sc_upos_cvvs { max-width: 100px; }
+	
+	#scForm .alert {
+		font-size: .8125rem;
+		padding: .75rem 1.25rem;
+		margin-bottom: 1rem;
+		border: 1px solid transparent;
+		border-radius: 0;
+		direction: ltr;
+		font-family: Noto Sans,sans-serif;
+		line-height: 1.25em;
+	}
+	
+	#scForm .alert-warning {
+		background-color: rgba(255,154,82,.3);
+		border-color: #ff9a52;
+		color: #232323;
+		display: none;
+	}
+	
+	#scForm .close {
+		float: right;
+		font-size: 1.5rem;
+		font-weight: 700;
+		line-height: 0.5;
+		color: #000;
+		text-shadow: 0 1px 0 #fff;
+		opacity: .2;
+		direction: ltr;
+		font-family: Noto Sans,sans-serif;
+	}
+	
+    #safechargesubmit .sc_pm_error {
+        color: red;
+        font-size: 12px;
+    }
+
+	#sc_error_msg {
+		display: inline-block;
+		width: 90%;
+	}
+	
+	body .sc_hide { display: none !important; }
+	
+
+    /* Chrome, Firefox, Opera, Safari 10.1+ */
+    #scForm #sc_apms_list .apm_field input::placeholder,
+	#scForm #sc_upos_list .apm_field input::placeholder,
+    /* Internet Explorer 10-11 */
+    #scForm #sc_apms_list .apm_field input:-ms-input-placeholder,
+	#scForm #sc_upos_list .apm_field input:-ms-input-placeholder,
+    /* Microsoft Edge */
+    #scForm #sc_apms_list .apm_field input::-ms-input-placeholder,
+	#scForm #sc_upos_list .apm_field input::-ms-input-placeholder,
+    #scForm .SfcField iframe::placeholder
+    {
+        opacity: 0.6; /* Firefox */
+    }
+
+    #scForm #sc_apms_list .apm_error, #scForm #sc_upos_list .apm_error {
+        background: none;
+        width: 100%;
+        margin-top: 0.2rem;
+        padding-top: 5px;
+    }
+
+    #scForm .SfcField, #scForm .sc_fields_holder input {
+		width: 100%;
+		padding: 5px;
+		margin-bottom: 1rem;
+		border: 2px solid lightgray;
+	}
+	
+	#scForm .SfcField {
+		padding-bottom: 4px;
+		padding-top: 5px;
+	}
+	
+    #scForm .SfcField iframe {
+        min-height: 20px;
+    }
+
+    #scForm img.fast-right-spinner {
+        -webkit-animation: sc_spin 1s infinite linear;
+        animation: sc_spin 1s infinite linear;
+    }
+    
+    /* for the 3DS popup */
+    .sfcModal-dialog {
+        margin-top: 10%;
+    }
+	
+	#scForm .cc_load_spinner {
+		text-align: center;
+		padding-top: 10px;
+	}
+	
+	#scForm .cc_load_spinner img {
+		-webkit-animation: sc_spin 1s infinite linear;
+        animation: sc_spin 1s infinite linear;
+	}
+	
+	@media screen and (max-width: 380px) {
+		#scForm .sc_visa_mc_maestro_logo { height: 24px !important; }
+		#sc_error_msg { width: 80%; }
+	}
+
+    @-webkit-keyframes sc_spin {
+        0% {
+            -webkit-transform: rotate(0deg);
+            transform: rotate(0deg);
+        }
+
+        100% {
+            -webkit-transform: rotate(359deg);
+            transform: rotate(359deg);
+        }
+    }
+
+    @keyframes sc_spin {
+        0% {
+            -webkit-transform: rotate(0deg);
+            transform: rotate(0deg);
+        }
+
+        100% {
+            -webkit-transform: rotate(359deg);
+            transform: rotate(359deg);
+        }
+    }
 </style>
+
+{if $customStyle}
+	<style type="text/css">
+		{$customStyle}
+	</style>
+{/if}
 
 <div id="sc_pm_error" class="alert alert-warning sc_hide">
     <span class="sc_error_msg">{l s='Please, select a payment method, and if there are fields, fill all of them!' mod='safecharge'}</span>
@@ -23,15 +305,15 @@
 	{if $upos}
 		<h4 id="sc_upos_title">{l s='Choose from preferred payment methods:' mod='safecharge'}</h4>
 		
-		<div class="sc_hide cc_load_spinner">
-			<i class="material-icons fast-right-spinner">sync</i>
+		<div class="cc_load_spinner sc_hide">
+			<img class="sc_rotate_img" src="/modules/safecharge/views/img/loading.png" alt="loading..." />
 		</div>
 		
 		<div id="sc_upos_list">
 			<input type="hidden" id="sc_upo_name" name="sc_upo_name" value="" />
 			
 			{foreach $upos as $upo}
-				<div class="payment-option clearfix">
+				<div class="payment-option">
 					<p class="help-block sc_hide"><b></b></p>
 					
 					<label>
@@ -54,22 +336,18 @@
 							{/if}
 
 							<a id="sc_remove_upo_{$upo.userPaymentOptionId}" rel="nofollow" href="javascript:deleteScUpo({$upo.userPaymentOptionId});">
-								<i class="material-icons icon-trash">delete</i>
+								<img src="/modules/safecharge/views/img/trash.png" alt="delete..." />
 							</a>
 
-							<i class="material-icons fast-right-spinner sc_hide">sync</i>
+							<img src="/modules/safecharge/views/img/loading.png" class="fast-right-spinner sc_hide" alt="sync..." />
 						</span>
 					</label>
 						
 					{if $upo.paymentMethodName == 'cc_card'}
-						<div class="container-fluid sc_fields_holder">
-							<section class="form-fields">
-								<div class="form-group">
-									<div id="cvv_for_{$upo.userPaymentOptionId}" class="form-control sc_upos_cvvs" data-upo-id="{$upo.userPaymentOptionId}"></div>
-								</div>
-							</section>
+						<div class="sc_fields_holder">
+							<div id="cvv_for_{$upo.userPaymentOptionId}" class="sc_upos_cvvs" data-upo-id="{$upo.userPaymentOptionId}"></div>
 								
-							<div class="alert alert-warning sc_hide">
+							<div class="alert alert-warning">
 								<span class="sc_error_msg">{l s='Please, fill the card CVC!' mod='safecharge'}</span>
 								<span class="close" onclick="$(this).closest('.alert-warning').hide();">×</span>
 							</div>
@@ -85,12 +363,12 @@
         <h4 id="sc_apms_title">{l s='Choose from available payment methods:' mod='safecharge'}</h4>
 		
 		<div class="sc_hide cc_load_spinner">
-			<i class="material-icons fast-right-spinner">sync</i>
+			<img src="/modules/safecharge/views/img/loading.png" class="fast-right-spinner sc_hide" alt="sync..." />
 		</div>
 		
         <div id="sc_apms_list">
             {foreach $paymentMethods as $pm}
-				<div class="payment-option clearfix">
+				<div class="payment-option">
 					<p class="help-block sc_hide"><b></b></p>
 					
 					<label>
@@ -109,52 +387,30 @@
 					</label>
 						
 					{if in_array($pm.paymentMethod, array('cc_card', 'dc_card'))}
-						<div class="container-fluid sc_fields_holder">
-							<section class="form-fields" id="sc_{$pm.paymentMethod}">
-								<div class="form-group ">
-									<input class="form-control" type="text" id="sc_card_holder_name" name="{$pm.paymentMethod}[cardHolderName]" placeholder="{l s='Card holder name' mod='safecharge'}" />
-								</div>
-								
-								<div class="form-group row " style="margin-bottom: 0;">
-									<div class="col-md-6 col-xs-12">
-										<div id="sc_card_number" class="form-control"></div>
-									</div>
+						<div class="sc_fields_holder" id="sc_{$pm.paymentMethod}">
+							<input class="" type="text" id="sc_card_holder_name" name="{$pm.paymentMethod}[cardHolderName]" placeholder="{l s='Card holder name' mod='safecharge'}" />
 
-									<div class="col-md-6 col-xs-12 margin-top-5rem">
-										<div class="form-group row ">
-											<div class="col-xs-6">
-												<div id="sc_card_expiry" class="form-control"></div>
-											</div>
-
-											<div class="col-xs-6">
-												<div id="sc_card_cvc" class="form-control"></div>
-											</div>
-										</div>
-									</div>
-								</div>
-							</section>
+							<div id="sc_card_number" class=""></div>
+							<div id="sc_card_expiry" class=""></div>
+							<div id="sc_card_cvc" class=""></div>
 								
-							<div class="alert alert-warning sc_hide">
+							<div class="alert alert-warning">
 								<span class="sc_error_msg"></span>
 								<span class="close" onclick="$(this).closest('.alert-warning').hide();">×</span>
 							</div>
 						</div>
 					{elseif $pm.fields}
-						<div class="container-fluid sc_fields_holder">
-							<section class="form-fields">
-								{foreach $pm.fields as $field}
-									<div class="form-group ">
-										<input	id="{$pm.paymentMethod}_{$field.name}" 
-												class="form-control"
-												name="{$pm.paymentMethod}[{$field.name}]" 
-												type="{$field.type}" 
-												{if isset($field.regex) and $field.regex}pattern="{$field.regex}"{/if} 
-												placeholder="{if !empty($field.caption[0].message)}{$field.caption[0].message}{elseif !empty($field.name)}{$field.name}{/if}"
-												data-sc-field-name="{$field.name}"
-										/>
-									</div>
-								{/foreach}
-							</section>
+						<div class="sc_fields_holder">
+							{foreach $pm.fields as $field}
+								<input	id="{$pm.paymentMethod}_{$field.name}" 
+										class=""
+										name="{$pm.paymentMethod}[{$field.name}]" 
+										type="{$field.type}" 
+										{if isset($field.regex) and $field.regex}pattern="{$field.regex}"{/if} 
+										placeholder="{if !empty($field.caption[0].message)}{$field.caption[0].message}{elseif !empty($field.name)}{$field.name}{/if}"
+										data-sc-field-name="{$field.name}"
+								/>
+							{/foreach}
 							
 							<div class="alert alert-warning sc_hide">
 								<span class="sc_error_msg"></span>
@@ -487,7 +743,7 @@
         });
 		
 		if($('#payment-confirmation button .fast-right-spinner').length == 0) {
-			$('#payment-confirmation button').prepend('<i class="material-icons fast-right-spinner sc_hide"></i>');
+			$('#payment-confirmation button').prepend('<img src="/modules/safecharge/views/img/loading.png" class="fast-right-spinner sc_hide" alt="sync..." />');
 		}
     }
 	
@@ -651,8 +907,10 @@
 			createSCFields();
 		});
 		
-		$('#scForm').find('p.help-block b').text("{l s='Select your preferred payment method and click ' mod='safecharge'}"
-			+ '"' + $('#payment-confirmation button').text().trim() + '".');
+		{if $customAPMsNote}
+			$('#scForm').find('p.help-block b').text("{$customAPMsNote}"
+				+ ' "' + $('#payment-confirmation button').text().trim() + '".');
+		{/if}
 		
 		{if $preselectCC eq 1}
 			$('#sc_apm_cc_card').trigger('click');

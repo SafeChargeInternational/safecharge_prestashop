@@ -157,20 +157,25 @@ class SafeCharge extends PaymentModule
         $this->_html .= '<h2>'.$this->displayName.'</h2>';
         
         if (Tools::isSubmit('submitUpdate')) {
-            Configuration::updateValue('SC_FRONTEND_NAME',						Tools::getValue('SC_FRONTEND_NAME'));
-            Configuration::updateValue('SC_MERCHANT_ID',						Tools::getValue('SC_MERCHANT_ID'));
-            Configuration::updateValue('SC_MERCHANT_SITE_ID',					Tools::getValue('SC_MERCHANT_SITE_ID'));
-            Configuration::updateValue('SC_SECRET_KEY',							Tools::getValue('SC_SECRET_KEY'));
-            Configuration::updateValue('SC_HASH_TYPE',							Tools::getValue('SC_HASH_TYPE'));
-            Configuration::updateValue('SC_PAYMENT_ACTION',						Tools::getValue('SC_PAYMENT_ACTION'));
-            Configuration::updateValue('SC_USE_UPOS',							Tools::getValue('SC_USE_UPOS'));
-            Configuration::updateValue('SC_TEST_MODE',							Tools::getValue('SC_TEST_MODE'));
-            Configuration::updateValue('SC_HTTP_NOTIFY',						Tools::getValue('SC_HTTP_NOTIFY'));
-            Configuration::updateValue('SC_CREATE_LOGS',						Tools::getValue('SC_CREATE_LOGS'));
-            Configuration::updateValue('NUVEI_PRESELECT_CC',					Tools::getValue('NUVEI_PRESELECT_CC'));
-            Configuration::updateValue('NUVEI_SHOW_APMS_NAMES',					Tools::getValue('NUVEI_SHOW_APMS_NAMES'));
-            Configuration::updateValue('NUVEI_PMS_STYLE',						Tools::getValue('NUVEI_PMS_STYLE'));
-            Configuration::updateValue('NUVEI_SAVE_ORDER_AFTER_APM_PAYMENT',	Tools::getValue('NUVEI_SAVE_ORDER_AFTER_APM_PAYMENT'));
+            Configuration::updateValue('SC_FRONTEND_NAME',		Tools::getValue('SC_FRONTEND_NAME'));
+            Configuration::updateValue('SC_MERCHANT_ID',		Tools::getValue('SC_MERCHANT_ID'));
+            Configuration::updateValue('SC_MERCHANT_SITE_ID',	Tools::getValue('SC_MERCHANT_SITE_ID'));
+            Configuration::updateValue('SC_SECRET_KEY',			Tools::getValue('SC_SECRET_KEY'));
+            Configuration::updateValue('SC_HASH_TYPE',			Tools::getValue('SC_HASH_TYPE'));
+            Configuration::updateValue('SC_PAYMENT_ACTION',		Tools::getValue('SC_PAYMENT_ACTION'));
+            Configuration::updateValue('SC_USE_UPOS',			Tools::getValue('SC_USE_UPOS'));
+            Configuration::updateValue('SC_TEST_MODE',			Tools::getValue('SC_TEST_MODE'));
+            Configuration::updateValue('SC_HTTP_NOTIFY',		Tools::getValue('SC_HTTP_NOTIFY'));
+            Configuration::updateValue('SC_CREATE_LOGS',		Tools::getValue('SC_CREATE_LOGS'));
+            Configuration::updateValue('NUVEI_PRESELECT_CC',	Tools::getValue('NUVEI_PRESELECT_CC'));
+            Configuration::updateValue('NUVEI_SHOW_APMS_NAMES',	Tools::getValue('NUVEI_SHOW_APMS_NAMES'));
+            Configuration::updateValue('NUVEI_APMS_NOTE',		Tools::getValue('NUVEI_APMS_NOTE'));
+            Configuration::updateValue('NUVEI_PMS_STYLE',		Tools::getValue('NUVEI_PMS_STYLE'));
+            
+			Configuration::updateValue(
+				'NUVEI_SAVE_ORDER_AFTER_APM_PAYMENT',
+				Tools::getValue('NUVEI_SAVE_ORDER_AFTER_APM_PAYMENT')
+			);
         }
 
         $this->_postValidation();
@@ -566,7 +571,10 @@ class SafeCharge extends PaymentModule
 			$this->context->smarty->assign('merchantSideId',	Configuration::get('SC_MERCHANT_SITE_ID'));
 			$this->context->smarty->assign('preselectCC',		Configuration::get('NUVEI_PRESELECT_CC'));
 			$this->context->smarty->assign('showAPMsName',		Configuration::get('NUVEI_SHOW_APMS_NAMES'));
+			$this->context->smarty->assign('customAPMsNote',	Configuration::get('NUVEI_APMS_NOTE'));
+			$this->context->smarty->assign('customStyle',		Configuration::get('NUVEI_PMS_STYLE'));
 			$this->context->smarty->assign('formAction',		$this->context->link->getModuleLink('safecharge', 'payment'));
+			
 			$this->context->smarty->assign('webMasterId',		SC_PRESTA_SHOP . _PS_VERSION_);
 			$this->context->smarty->assign('sourceApplication',	SC_SOURCE_APPLICATION);
 			$this->context->smarty->assign('ooAjaxUrl',			$this->context->link->getModuleLink(
