@@ -1038,7 +1038,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			,array() // extra_vars
 			,null // currency_special
 			,false // dont_touch_amount
-			,Tools::getValue('key', '') // secure_key
+//			,$this->context->cart->secure_key // secure_key
+			,Tools::getValue('key', $this->context->cart->secure_key) // secure_key
 		);
 
 		if(!$res) {

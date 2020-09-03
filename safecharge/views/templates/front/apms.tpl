@@ -72,7 +72,7 @@
 	}
 	
 	#scForm .payment-option label {
-		display: table-cell;
+		display: block;
 		color: #232323;
 		text-align: left;
 		font-size: .875rem;
@@ -215,10 +215,12 @@
     }
 
     #scForm .SfcField, #scForm .sc_fields_holder input {
-		width: 100%;
+		width: auto;
 		padding: 5px;
 		margin-bottom: 1rem;
 		border: 2px solid lightgray;
+		border-radius: 0px;
+		background-color: white;
 	}
 	
 	#scForm .SfcField {
@@ -483,11 +485,13 @@
     {/if}
     // for the fields END
 	
-	var scDefaultErrorMsg = "{l s='Please, select a payment method, and fill all of its fileds!' mod='safecharge'}";
+	var scDefaultErrorMsg	= "{l s='Please, select a payment method, and fill all of its fileds!' mod='safecharge'}";
+	var scPayButton			= '#payment-confirmation button[type="submit"]';
+	var scPayButtonOriginId = '';
 
     function scValidateAPMFields() {
-        $('#payment-confirmation button.btn.btn-primary').prop('disabled', true);
-        $('#payment-confirmation button.btn.btn-primary .fast-right-spinner').removeClass('sc_hide');
+        $(scPayButton).prop('disabled', true);
+        $(scPayButton + ' .fast-right-spinner').removeClass('sc_hide');
 
 		if('' != scAPMsErrorMsg) {
 			scFormFalse("{l s=$scAPMsErrorMsg mod='safecharge'}");
@@ -689,15 +693,15 @@
 			reCreateSCFields();
 		}
 		else {
-			$('#payment-confirmation button.btn.btn-primary').prop('disabled', false);
-			$('#payment-confirmation button.btn.btn-primary .fast-right-spinner').addClass('sc_hide');
+			$(scPayButton).prop('disabled', false);
+			$(scPayButton + ' .fast-right-spinner').addClass('sc_hide');
 		}
 	}
 	
 	// show error message
     function scFormFalse(_text) {
-        $('#payment-confirmation button.btn.btn-primary').prop('disabled', false);
-        $('#payment-confirmation button.btn.btn-primary .fast-right-spinner').addClass('sc_hide');
+        $(scPayButton).prop('disabled', false);
+        $(scPayButton + ' .fast-right-spinner').addClass('sc_hide');
 		
 		var selectedCheckbox = $('input[name="sc_payment_method"]:checked');
 			
@@ -742,8 +746,8 @@
             locale: "{$languageCode}"
         });
 		
-		if($('#payment-confirmation button .fast-right-spinner').length == 0) {
-			$('#payment-confirmation button').prepend('<img src="/modules/safecharge/views/img/loading.png" class="fast-right-spinner sc_hide" alt="sync..." />');
+		if($(scPayButton + ' .fast-right-spinner').length == 0) {
+			$(scPayButton).prepend('<img src="/modules/safecharge/views/img/loading.png" class="fast-right-spinner sc_hide" alt="sync..." />');
 		}
     }
 	
@@ -843,8 +847,8 @@
 				$('.cc_load_spinner').addClass('sc_hide');
 				$('#sc_apms_list').removeClass('sc_hide');
 				
-				$('#payment-confirmation button.btn.btn-primary').prop('disabled', false);
-				$('#payment-confirmation button.btn.btn-primary .fast-right-spinner').addClass('sc_hide');
+				$(scPayButton).prop('disabled', false);
+				$(scPayButton + ' .fast-right-spinner').addClass('sc_hide');
 			}
 			else {
 				window.location.reload();
@@ -889,11 +893,40 @@
 			});
 		}
 	}
+	
+	function scFindPaymentButton() {
+		// One Page Checkout PS
+		if(typeof OnePageCheckoutPS != 'undefined' && $('#btn_place_orders').length == 1) {
+			scPayButtonOriginId = '#btn_place_orders';
+			scPayButton = '#sc_pay_button';
+			
+			$('#btn_place_orders').attr('id', scPayButton);
+		}
+	}
 
-    window.onload = function() {
+	document.addEventListener('DOMContentLoaded', function(event) {
         prepareSCFields();
 
-		$('#payment-confirmation button')
+		$('body').on('change', 'input[name="sc_payment_method"]', function() {
+			createSCFields();
+		});
+
+		// find payment button
+		$('input[name=payment-option]').on('change', function() {
+			console.log('payment-option', $('input[name=payment-option]:checked').attr('data-module-name'));
+			
+			if ($('input[name=payment-option]:checked').attr('data-module-name') == 'safecharge') {
+				if($('#scForm').closest('#payment-confirmation').length == 0) {
+					scFindPaymentButton();
+				}
+			}
+			else if (scPayButtonOriginId != scPayButton && '' != scPayButtonOriginId) {
+				$(scPayButton).attr('id', scPayButtonOriginId);
+			}
+		});
+		// find payment button END
+
+		$(scPayButton)
 			.on('click', function(e) {
 				if($('input[name=payment-option]:checked').attr('data-module-name') == 'safecharge') {
 					e.stopPropagation();
@@ -903,17 +936,13 @@
 				}
             });
 
-		$('body').on('change', 'input[name="sc_payment_method"]', function() {
-			createSCFields();
-		});
-		
 		{if $customAPMsNote}
 			$('#scForm').find('p.help-block b').text("{$customAPMsNote}"
-				+ ' "' + $('#payment-confirmation button').text().trim() + '".');
+				+ ' "' + $(scPayButton).text().trim() + '".');
 		{/if}
 		
 		{if $preselectCC eq 1}
 			$('#sc_apm_cc_card').trigger('click');
 		{/if}
-    }
+	});
 </script>
