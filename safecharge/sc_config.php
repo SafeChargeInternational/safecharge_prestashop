@@ -160,3 +160,4 @@ define('SC_DEVICES_TYPES', json_encode(array('macintosh', 'tablet', 'mobile', 't
 
 define('SC_PRESTA_SHOP', 'PrestaShop ');
 define('SC_SOURCE_APPLICATION', '');
+define('SC_STOP_DMN', 0);

@@ -349,13 +349,13 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 	 */
 	private function createOpenOrder()
 	{
-		$plugin_root = dirname(dirname(dirname(__FILE__)));
-		require_once $plugin_root . '/safecharge.php';
+//		$plugin_root = dirname(dirname(dirname(__FILE__)));
+//		require_once $plugin_root . '/safecharge.php';
 		
-		$sc				= new SafeCharge();
-		SC_CLASS::create_log($_SERVER, 'createOpenOrder() call prepareOrderData');
-		SC_CLASS::create_log($_REQUEST, 'createOpenOrder() call prepareOrderData');
-		$session_token	= $sc->prepareOrderData(true);
+//		$sc				= new SafeCharge();
+		//SC_CLASS::create_log($_SERVER, 'createOpenOrder() call prepareOrderData');
+//		$session_token	= $sc->prepareOrderData(true);
+		$this->module->prepareOrderData(true, true);
 	}
 
 	/**
@@ -398,6 +398,12 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
     private function scGetDMN()
     {
         SC_CLASS::create_log(@$_REQUEST, 'DMN request:');
+		
+		if(Tools::getValue('sc_stop_dmn', 0) == 1) {
+			SC_CLASS::create_log('DMN report: Manually stopped process.');
+            echo 'DMN report: Manually stopped process.';
+            exit;
+		}
         
         if(!$this->checkAdvancedCheckSum()) {
             SC_CLASS::create_log('DMN report: You receive DMN from not trusted source. The process ends here.');
@@ -419,13 +425,13 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         
         # Sale and Auth
         if(
-            isset($_REQUEST['invoice_id'])
-            && in_array($_REQUEST['transactionType'], array('Sale', 'Auth'))
+			Tools::getValue('invoice_id') !== false
+            && in_array(Tools::getValue('transactionType'), array('Sale', 'Auth'))
         ) {
 			// REST and WebSDK
 			SC_CLASS::create_log('REST sale.');
 			
-			if(empty($_REQUEST['merchant_unique_id'])) {
+			if(!Tools::getValue('merchant_unique_id')) {
 				SC_CLASS::create_log('Sale/Auth Error - merchant_unique_id is empty!');
 				echo 'Sale/Auth Error - merchant_unique_id is empty!';
 				exit;
@@ -441,7 +447,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                     $order_id = Order::getIdByCartId($_REQUEST['merchant_unique_id']);
 
                     if(!$order_id) {
-						SC_CLASS::create_log($order_id, '$order_id:');
+//						SC_CLASS::create_log($order_id, '$order_id:');
                         sleep(3);
                     }
                 }
@@ -455,6 +461,24 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 }
 				
                 $order_info = new Order($order_id);
+				
+				// check for previous DMN data
+				$sc_data = Db::getInstance()->getRow(
+					'SELECT * FROM safecharge_order_data '
+					. 'WHERE order_id = ' . $order_id
+				);
+				
+				SC_CLASS::create_log($sc_data, '$sc_data');
+				
+				// there is prevous DMN data
+				if(!empty($sc_data) && 'declined' == strtolower($req_status)) {
+					SC_CLASS::create_log('DMN Error - Declined DMN for already Approved Order. Stop process here.');
+					
+					echo 'DMN Error - Declined DMN for already Approved Order. Process Stops here.';
+                    exit;
+				}
+				// check for previous DMN data END
+				
                 $this->updateCustomPaymentFields($order_id);
 				
                 if(
@@ -689,7 +713,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					}
 				}
                 
-                $msg .= 'PPP_TransactionID = ' . @$request['PPP_TransactionID']
+                $msg .= ' PPP_TransactionID = ' . @$request['PPP_TransactionID']
                     . ", Status = ". $status;
                 
                 if($_REQUEST['transactionType']) {
@@ -899,11 +923,18 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
     {
         $data = array(
             'order_id'                  => $order_id,
-            'auth_code'                 => isset($_REQUEST['AuthCode']) ? $_REQUEST['AuthCode'] : '',
-            'related_transaction_id'    => isset($_REQUEST['TransactionID']) ? $_REQUEST['TransactionID'] : '',
-            'resp_transaction_type'     => isset($_REQUEST['transactionType']) ? $_REQUEST['transactionType'] : '',
-            'payment_method'            => isset($_REQUEST['payment_method']) ? $_REQUEST['payment_method'] : '',
+//            'auth_code'                 => isset($_REQUEST['AuthCode']) ? $_REQUEST['AuthCode'] : '',
+            'auth_code'                 => Tools::getValue('AuthCode', ''),
+//            'related_transaction_id'    => isset($_REQUEST['TransactionID']) ? $_REQUEST['TransactionID'] : '',
+            'related_transaction_id'    => Tools::getValue('TransactionID', ''),
+//            'resp_transaction_type'     => isset($_REQUEST['transactionType']) ? $_REQUEST['transactionType'] : '',
+            'resp_transaction_type'     => Tools::getValue('transactionType', ''),
+//            'payment_method'            => isset($_REQUEST['payment_method']) ? $_REQUEST['payment_method'] : '',
+            'payment_method'            => Tools::getValue('payment_method', ''),
+//            'responseTimeStamp'         => Tools::getValue('responseTimeStamp', ''),
         );
+		
+		SC_CLASS::create_log($data, 'updateCustomPaymentFields');
         
         if($insert) {
             $res = Db::getInstance()->insert(

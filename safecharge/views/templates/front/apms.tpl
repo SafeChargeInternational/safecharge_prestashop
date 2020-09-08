@@ -215,7 +215,8 @@
     }
 
     #scForm .SfcField, #scForm .sc_fields_holder input {
-		width: auto;
+		max-width: 400px;
+		width: 100%;
 		padding: 5px;
 		margin-bottom: 1rem;
 		border: 2px solid lightgray;
@@ -236,6 +237,10 @@
         -webkit-animation: sc_spin 1s infinite linear;
         animation: sc_spin 1s infinite linear;
     }
+	
+	#scAddStepPayBtn {
+		
+	}
     
     /* for the 3DS popup */
     .sfcModal-dialog {
@@ -303,13 +308,14 @@
     <span class="close" onclick="$('#sc_remove_upo_success').hide();">&times;</span>
 </div>
 
+</br>
 <form method="post" id="scForm" action="{$formAction}">
+	<div class="cc_load_spinner">
+		<img class="sc_rotate_img" src="/modules/safecharge/views/img/loading.png" alt="loading..." />
+	</div>
+	
 	{if $upos}
 		<h4 id="sc_upos_title">{l s='Choose from preferred payment methods:' mod='safecharge'}</h4>
-		
-		<div class="cc_load_spinner sc_hide">
-			<img class="sc_rotate_img" src="/modules/safecharge/views/img/loading.png" alt="loading..." />
-		</div>
 		
 		<div id="sc_upos_list">
 			<input type="hidden" id="sc_upo_name" name="sc_upo_name" value="" />
@@ -428,6 +434,17 @@
 
     <input type="hidden" name="lst" id="sc_lst" value="{$sessionToken}" />
     <input type="hidden" name="sc_transaction_id" id="sc_transaction_id" value="" />
+	
+	{if $scAddStep}
+		<div id="payment-confirmation">
+			<div class="ps-shown-by-js">
+				<button type="submit" class="btn btn-primary center-block" onclick="scValidateAPMFields(); return false;">
+					{l s='Order with an obligation to pay' d='Shop.Theme.Checkout'}
+				</button>
+			</div>
+		</div>
+		</br>
+	{/if}
 </form>
 
 <script type="text/javascript">
@@ -706,7 +723,7 @@
 		var selectedCheckbox = $('input[name="sc_payment_method"]:checked');
 			
 		if(selectedCheckbox.length == 0) {
-			$('#sc_pm_error').show();
+			$('#sc_pm_error').removeClass('sc_hide').show();
 			
 			$("body,html").animate({
 				scrollTop: $('html').offset().top - 50
@@ -719,7 +736,7 @@
 			selectedCheckbox.closest('.payment-option').find('.alert .sc_error_msg').html(_text);
 		}
 		
-		selectedCheckbox.closest('.payment-option').find('.alert').show();
+		selectedCheckbox.closest('.payment-option').find('.alert').removeClass('sc_hide').show();
 
 		$("body, html").animate({
 			scrollTop: $('input[name="sc_payment_method"]:checked').offset().top - 50
@@ -897,10 +914,12 @@
 	function scFindPaymentButton() {
 		// One Page Checkout PS
 		if(typeof OnePageCheckoutPS != 'undefined' && $('#btn_place_orders').length == 1) {
-			scPayButtonOriginId = '#btn_place_orders';
-			scPayButton = '#sc_pay_button';
+			scPayButton = '#btn_place_orders';
 			
-			$('#btn_place_orders').attr('id', scPayButton);
+			{*scPayButtonOriginId = '#btn_place_orders';
+			scPayButton = '#sc_pay_button';*}
+			
+{*			$('#btn_place_orders').attr('id', scPayButton);*}
 		}
 	}
 
@@ -929,6 +948,7 @@
 		$(scPayButton)
 			.on('click', function(e) {
 				if($('input[name=payment-option]:checked').attr('data-module-name') == 'safecharge') {
+{*					e.preventDefault();*}
 					e.stopPropagation();
 			
 					scValidateAPMFields();
@@ -944,5 +964,7 @@
 		{if $preselectCC eq 1}
 			$('#sc_apm_cc_card').trigger('click');
 		{/if}
+			
+		$('.cc_load_spinner').addClass('sc_hide');
 	});
 </script>

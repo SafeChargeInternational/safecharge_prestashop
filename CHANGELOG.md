@@ -1,5 +1,12 @@
 # SafeCharge Prestashop Changelog
 
+# v1.5
+```
+	* Fixed bug for Settle and Void buttons in the Admin.
+	* Added new option in the plugin, that adds one more step in the checkout to show the APMs. It is a must to set the option to Yes if use One-Page-Checkout.
+	* If site receive DMN with status Declined for already Approved transaction, we ignore it.
+```
+
 # v1.4
 ```
 	* Added option in the settings of the plugin to show custom message over each APM.

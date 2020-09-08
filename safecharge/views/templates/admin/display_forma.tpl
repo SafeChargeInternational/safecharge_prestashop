@@ -148,6 +148,19 @@
                 <label class="control-label col-lg-3">{l s='Payment methods style' mod='safecharge'}</label>
                 <div class="col-lg-9">
                     <textarea name="NUVEI_PMS_STYLE" rows="10">{Configuration::get('NUVEI_PMS_STYLE')}</textarea>
+					<span class="help-block">{l s='Override predefined style of the SafeCharge elements.' mod='safecharge'}</span>
+                </div>
+            </div>
+				
+            <div class="form-group">
+                <label class="control-label col-lg-3">{l s='Use Additional Checkout Step' mod='safecharge'}</label>
+                <div class="col-lg-9">
+                    <select name="NUVEI_ADD_CHECKOUT_STEP">
+                        <option value="0" {if Configuration::get('NUVEI_ADD_CHECKOUT_STEP') eq 0}selected{/if}>{l s='No' mod='safecharge'}</option>
+                        <option value="1" {if Configuration::get('NUVEI_ADD_CHECKOUT_STEP') eq 1}selected{/if}>{l s='Yes' mod='safecharge'}</option>
+                    </select>
+					
+					<span class="help-block">{l s='Please, use this only, when you use some kind of One Step Checkout modul!' mod='safecharge'}</span>
                 </div>
             </div>
         </div><!-- /.form-wrapper -->
