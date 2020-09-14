@@ -584,7 +584,7 @@ class SafeCharge extends PaymentModule
 			
 			// set some parameters
 			$this->context->smarty->assign('merchantId',		Configuration::get('SC_MERCHANT_ID'));
-			$this->context->smarty->assign('merchantSideId',	Configuration::get('SC_MERCHANT_SITE_ID'));
+			$this->context->smarty->assign('merchantSiteId',	Configuration::get('SC_MERCHANT_SITE_ID'));
 			$this->context->smarty->assign('preselectCC',		Configuration::get('NUVEI_PRESELECT_CC'));
 			$this->context->smarty->assign('showAPMsName',		Configuration::get('NUVEI_SHOW_APMS_NAMES'));
 			$this->context->smarty->assign('customAPMsNote',	Configuration::get('NUVEI_APMS_NOTE'));
