@@ -491,7 +491,7 @@
 	};
 	
     var scData          = {
-        merchantSiteId		: "{$merchantSideId}",
+        merchantSiteId		: "{$merchantSiteId}",
         merchantId			: "{$merchantId}",
         sessionToken		: "{$sessionToken}",
         sourceApplication	: "{$sourceApplication}"
