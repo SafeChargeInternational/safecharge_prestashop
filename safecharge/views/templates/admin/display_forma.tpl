@@ -160,7 +160,7 @@
                         <option value="1" {if Configuration::get('NUVEI_ADD_CHECKOUT_STEP') eq 1}selected{/if}>{l s='Yes' mod='safecharge'}</option>
                     </select>
 					
-					<span class="help-block">{l s='Please, use this only, when you use some kind of One Step Checkout modul!' mod='safecharge'}</span>
+					<span class="help-block">{l s='Please enable /Yes/ only when using a Once Step Checkout module!' mod='safecharge'}</span>
                 </div>
             </div>
 				
