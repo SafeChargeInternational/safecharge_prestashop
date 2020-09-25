@@ -61,11 +61,12 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
         
         $_SESSION['sc_create_logs'] = Configuration::get('SC_CREATE_LOGS');
         
-        $notify_url = $this->context->link->getModuleLink('safecharge', 'payment', array(
-            'prestaShopAction'  => 'getDMN',
-            'prestaShopOrderID' => $order_id,
-            'create_logs'       => $_SESSION['sc_create_logs'],
-        ));
+        $notify_url = Configuration::get('NUVEI_DMN_URL');
+//        $notify_url = $this->context->link->getModuleLink('safecharge', 'payment', array(
+//            'prestaShopAction'  => 'getDMN',
+//            'prestaShopOrderID' => $order_id,
+//            'create_logs'       => $_SESSION['sc_create_logs'],
+//        ));
 		
         if(
 			Configuration::get('SC_HTTP_NOTIFY') == 'yes'

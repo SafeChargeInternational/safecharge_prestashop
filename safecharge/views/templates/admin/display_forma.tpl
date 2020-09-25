@@ -163,6 +163,24 @@
 					<span class="help-block">{l s='Please, use this only, when you use some kind of One Step Checkout modul!' mod='safecharge'}</span>
                 </div>
             </div>
+				
+            <div class="form-group">
+                <label class="control-label col-lg-3">{l s='Notification (DMN) URL'}</label>
+                <div class="col-lg-9">
+                    <input type="text" name="NUVEI_DMN_URL" readonly="" value="{if Configuration::get('NUVEI_DMN_URL') eq ''}{$defaultDmnUrl}{else}{Configuration::get('NUVEI_DMN_URL')}{/if}" placeholder="{$defaultDmnUrl}" style="display: inline-block; width: 80%;" />
+					
+					&nbsp;<label><input type="checkbox" id="sc_edit_dmn_url" />&nbsp;Enable edit</label>
+					<span class="help-block">{l s='Please, DO NOT change the URL, if you are not sure what you doing. This can brake the normal behave of the plugin!' mod='safecharge'}</span>
+					
+					<script>
+						jQuery(function(){
+							jQuery('#sc_edit_dmn_url').on('click', function(){
+								jQuery('input[name="NUVEI_DMN_URL"]').prop('readonly', jQuery(this).is(':checked') ? false : true);
+							});
+						});
+					</script>
+                </div>
+            </div>
         </div><!-- /.form-wrapper -->
         
         <div class="panel-footer">

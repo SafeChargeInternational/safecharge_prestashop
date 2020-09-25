@@ -172,6 +172,7 @@ class SafeCharge extends PaymentModule
             Configuration::updateValue('NUVEI_APMS_NOTE',			Tools::getValue('NUVEI_APMS_NOTE'));
             Configuration::updateValue('NUVEI_PMS_STYLE',			Tools::getValue('NUVEI_PMS_STYLE'));
             Configuration::updateValue('NUVEI_ADD_CHECKOUT_STEP',	Tools::getValue('NUVEI_ADD_CHECKOUT_STEP'));
+            Configuration::updateValue('NUVEI_DMN_URL',				Tools::getValue('NUVEI_DMN_URL'));
             
 			Configuration::updateValue(
 				'NUVEI_SAVE_ORDER_AFTER_APM_PAYMENT',
@@ -188,6 +189,14 @@ class SafeCharge extends PaymentModule
         }
         
         $this->smarty->assign('img_path', '/modules/safecharge/views/img/');
+        $this->smarty->assign(
+			'defaultDmnUrl',
+			$this->context->link
+				->getModuleLink('safecharge', 'payment', array(
+					'prestaShopAction'  => 'getDMN',
+					'sc_create_logs'    => $_SESSION['sc_create_logs'],
+					'sc_stop_dmn'       => SC_STOP_DMN,
+		)));
 
         return $this->display(__FILE__, 'views/templates/admin/display_forma.tpl');
     }
@@ -377,12 +386,14 @@ class SafeCharge extends PaymentModule
             $sc_order_info = Db::getInstance()->getRow(
                 "SELECT * FROM safecharge_order_data WHERE order_id = {$order_id}");
                 
-            $notify_url = $this->context->link
-                ->getModuleLink('safecharge', 'payment', array(
-                    'prestaShopAction'  => 'getDMN',
-                    'prestaShopOrderID' => $order_id,
-                    'sc_create_logs'    => $_SESSION['sc_create_logs'],
-                ));
+//            $notify_url = $this->context->link
+//                ->getModuleLink('safecharge', 'payment', array(
+//                    'prestaShopAction'  => 'getDMN',
+//                    'prestaShopOrderID' => $order_id,
+//                    'sc_create_logs'    => $_SESSION['sc_create_logs'],
+//                ));
+//			
+            $notify_url = Configuration::get('NUVEI_DMN_URL');
             
             if(
 				Configuration::get('SC_HTTP_NOTIFY') == 'yes'
@@ -605,12 +616,13 @@ class SafeCharge extends PaymentModule
 				array('prestaShopAction' => 'deleteUpo')
 			));
 			
-			$notify_url     = $this->context->link
-				->getModuleLink('safecharge', 'payment', array(
-					'prestaShopAction'  => 'getDMN',
-					'sc_create_logs'    => $_SESSION['sc_create_logs'],
-					'sc_stop_dmn'       => SC_STOP_DMN,
-				));
+//			$notify_url     = $this->context->link
+//				->getModuleLink('safecharge', 'payment', array(
+//					'prestaShopAction'  => 'getDMN',
+//					'sc_create_logs'    => $_SESSION['sc_create_logs'],
+//					'sc_stop_dmn'       => SC_STOP_DMN,
+//				));
+			$notify_url     = Configuration::get('NUVEI_DMN_URL');
 			
 			$error_url		= $this->context->link->getModuleLink(
 				'safecharge',

@@ -159,15 +159,17 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			
             $pending_url	= $success_url;
 			$back_url       = $this->context->link->getPageLink('order');
-			$notify_url     = $this->context->link
-                ->getModuleLink(
-					'safecharge', 
-					'payment', 
-					array(
-						'prestaShopAction'  => 'getDMN',
-						'sc_create_logs'       => $_SESSION['sc_create_logs'],
-					)
-				);
+			
+			$notify_url     = Configuration::get('NUVEI_DMN_URL');
+//			$notify_url     = $this->context->link
+//                ->getModuleLink(
+//					'safecharge', 
+//					'payment', 
+//					array(
+//						'prestaShopAction'  => 'getDMN',
+//						'sc_create_logs'       => $_SESSION['sc_create_logs'],
+//					)
+//				);
 			
             if(
 				Configuration::get('SC_HTTP_NOTIFY') == 'yes'

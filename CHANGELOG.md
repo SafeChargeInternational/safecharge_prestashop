@@ -1,5 +1,10 @@
 # SafeCharge Prestashop Changelog
 
+# v1.6
+```
+	* Added possibility to edit the Notify (DMN) URL in the settings. If the URL saved as empty string, the default one will be fill in the input.
+```
+
 # v1.5
 ```
 	* Fixed bug for Settle and Void buttons in the Admin.
