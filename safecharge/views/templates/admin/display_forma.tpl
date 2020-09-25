@@ -170,7 +170,7 @@
                     <input type="text" name="NUVEI_DMN_URL" readonly="" value="{if Configuration::get('NUVEI_DMN_URL') eq ''}{$defaultDmnUrl}{else}{Configuration::get('NUVEI_DMN_URL')}{/if}" placeholder="{$defaultDmnUrl}" style="display: inline-block; width: 80%;" />
 					
 					&nbsp;<label><input type="checkbox" id="sc_edit_dmn_url" />&nbsp;Enable edit</label>
-					<span class="help-block">{l s='Please, DO NOT change the URL, if you are not sure what you doing. This can brake the normal behave of the plugin!' mod='safecharge'}</span>
+					<span class="help-block">{l s='Please DO NOT change this URL unless you really must. Overriding this value may break the normal behavior of the plugin!' mod='safecharge'}</span>
 					
 					<script>
 						jQuery(function(){
