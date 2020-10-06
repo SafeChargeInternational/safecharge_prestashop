@@ -27,10 +27,10 @@ class SC_CLASS
             'length' => 255,
             'flag'    => FILTER_DEFAULT
         ),
-        'ipAddress' => array(
-            'length' => 15,
-            'flag'    => FILTER_VALIDATE_IP
-        ),
+//        'ipAddress' => array(
+//            'length' => 15,
+//            'flag'    => FILTER_VALIDATE_IP
+//        ),
         // deviceDetails END
         
         // userDetails, shippingAddress, billingAddress

@@ -843,7 +843,7 @@ class SafeCharge extends PaymentModule
 			$this->context->smarty->assign('paymentMethods',	$sc_order_vars['paymentMethods']);
 			$this->context->smarty->assign('userTokenId',		$sc_order_vars['userTokenId']);
 			$this->context->smarty->assign('upos',				$sc_order_vars['upos']);
-			$this->context->smarty->assign('icons',				$sc_order_vars['icons']);
+//			$this->context->smarty->assign('icons',				$sc_order_vars['icons']);
 			$this->context->smarty->assign('isTestEnv',			$sc_order_vars['isTestEnv']);
 		}
 		catch(Exception $e) {
