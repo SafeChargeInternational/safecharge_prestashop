@@ -331,9 +331,9 @@
 						</span>
 
 						{if $upo.paymentMethodName == 'cc_card'}
-							<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{$pm.paymentMethodDisplayName[0].message}"  class="sc_visa_mc_maestro_logo" />
+							<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}"  class="sc_visa_mc_maestro_logo" />
 						{else}
-							<img src="{$upo.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{$upo.paymentMethodDisplayName[0].message}" />
+							<img src="{$upo.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{if isset($upo.paymentMethodDisplayName[0].message)}{$upo.paymentMethodDisplayName[0].message}{/if}" />
 						{/if}&nbsp;
 						
 						<span>
@@ -381,16 +381,18 @@
 					
 					<label>
 						<span class="custom-radio">
-							<input id="sc_apm_{$pm.paymentMethod}" class="ps-shown-by-js" name="sc_payment_method" type="radio" value="{$pm.paymentMethod}" data-sc-is-direct="{$pm.isDirect}">
+							<input id="sc_apm_{$pm.paymentMethod}" class="ps-shown-by-js" name="sc_payment_method" type="radio" value="{$pm.paymentMethod}" data-sc-is-direct="{if isset($pm.isDirect)}{$pm.isDirect}{else}false{/if}">
 							<span></span>
 						</span>
 							
 						{if $pm.paymentMethod == 'cc_card'}
-							<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{$pm.paymentMethodDisplayName[0].message}"  class="sc_visa_mc_maestro_logo" />
+							<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}"  class="sc_visa_mc_maestro_logo" />
 							<span></span>
 						{else}
-							<img src="{$pm.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{$pm.paymentMethodDisplayName[0].message}" />&nbsp;
-							{if $showAPMsName eq 1}<span>{$pm.paymentMethodDisplayName[0].message}</span>{/if}
+							<img src="{$pm.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}" />&nbsp;
+							{if $showAPMsName eq 1}
+								<span>{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}</span
+							>{/if}
 						{/if}
 					</label>
 						
