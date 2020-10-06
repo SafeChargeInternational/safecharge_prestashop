@@ -1,5 +1,13 @@
 # SafeCharge Prestashop Changelog
 
+# v1.6.1
+```
+	* Fixed wrong class name Toolss with correct one - Tools.
+	* Do not validate IP before the requests, beacuse we do it when get it.
+	* Removed an unused row of code.
+	* Added checks for few Smarty parameters.
+```
+
 # v1.6
 ```
 	* Added possibility to edit the Notify (DMN) URL in the settings. If the URL saved as empty string, the default one will be fill in the input.
