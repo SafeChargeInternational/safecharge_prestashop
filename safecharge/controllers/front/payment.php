@@ -1109,8 +1109,17 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             || $cart->id_address_invoice == 0 
             || !$this->module->active
         ) {
-            SC_CLASS::create_log($cart, '$cart: ');
-            Tools::redirect($this->context->link->getPageLink('order'));
+            SC_CLASS::create_log(
+				array(
+					'$cart->id_customer' => $cart->id_customer,
+					'$cart->id_address_delivery' => $cart->id_address_delivery,
+					'$cart->id_address_invoice' => $cart->id_address_invoice,
+					'$this->module->active' => $this->module->active,
+				),
+				'Validate error'
+			);
+            
+			Tools::redirect($this->context->link->getPageLink('order'));
         }
 
         $authorized = false;
