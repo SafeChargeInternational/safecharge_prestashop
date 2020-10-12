@@ -1,6 +1,6 @@
 {extends file='page.tpl'}
 {block name='page_content'}
-	<div class="cc_load_spinner" style="margin: 0 auto;">
+	<div class="cc_load_spinner" style="margin: 0 auto; text-align: center;">
 		<img class="sc_rotate_img" src="/modules/safecharge/views/img/loading.png" alt="loading..." />
 	</div>
 	

@@ -332,14 +332,14 @@
 
 						{if $upo.paymentMethodName == 'cc_card'}
 							<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}"  class="sc_visa_mc_maestro_logo" />
-						{else}
+						{elseif !empty($upo.logoURL)}
 							<img src="{$upo.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{if isset($upo.paymentMethodDisplayName[0].message)}{$upo.paymentMethodDisplayName[0].message}{/if}" />
 						{/if}&nbsp;
 						
 						<span>
 							{if $upo.paymentMethodName == 'cc_card'}
 								{$upo.upoData.ccCardNumber}
-							{else}
+							{elseif !empty($upo.upoName)}
 								{$upo.upoName}
 							{/if}
 
@@ -388,7 +388,7 @@
 						{if $pm.paymentMethod == 'cc_card'}
 							<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}"  class="sc_visa_mc_maestro_logo" />
 							<span></span>
-						{else}
+						{elseif !empty($pm.logoURL)}
 							<img src="{$pm.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}" />&nbsp;
 							{if $showAPMsName eq 1}
 								<span>{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}</span
@@ -858,7 +858,7 @@
 		.done(function(res) {
 			console.log('reCreate response', res);
 			
-			if(typeof res.session_token != 'undefined' && '' != res.session_token) {
+			if(res.hasOwnProperty('session_token') && '' != res.session_token) {
 				scData.sessionToken = res.session_token;
 				prepareSCFields();
 				createSCFields();

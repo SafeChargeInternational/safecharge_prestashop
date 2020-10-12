@@ -1,5 +1,15 @@
 # SafeCharge Prestashop Changelog
 
+# v1.7
+```
+	* For the Order Status "Awaiting SafeCharge payment" we changed "logable" parameter to true.
+	* When client pay with CC we save the Transaction ID from the sdk response in the Order payment.
+	* Create Order, based on Success DMN, if Order does not exists. This is in case when client does not reach order-confirm page.
+	* Added more checks for variables in template files.
+	* Fix of small bugs.
+	* Added few logs in few negative cases.
+```
+
 # v1.6.1
 ```
 	* Fixed wrong class name Toolss with correct one - Tools.

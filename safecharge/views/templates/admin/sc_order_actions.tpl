@@ -29,19 +29,31 @@
     }
 </style>
 
-{if $scDataError}
+{if !empty($scDataError)}
     <span class="span label label-danger">
         <i class="icon-warning-sign"></i>&nbsp;{$scDataError}
     </span>
 {/if}
 
-{if $scData.error_msg}
+{if !empty($scData.error_msg)}
     <span class="span label label-danger">
         <i class="icon-warning-sign"></i>&nbsp;{$scData.error_msg}
-    </span>
+    </span>&nbsp;
 {/if}
 
-{if $scData.resp_transaction_type eq "Auth" and $scData.order_state eq $state_sc_await_paiment}
+{if empty($scData.resp_transaction_type)}
+    <span class="span label label-danger">
+        <i class="icon-warning-sign"></i>&nbsp;{l s='Missing Order Transaction Type.' mod='safecharge'}
+    </span>&nbsp;
+{/if}
+
+{if empty($scData.related_transaction_id)}
+    <span class="span label label-danger">
+        <i class="icon-warning-sign"></i>&nbsp;{l s='Missing Order Transaction ID.' mod='safecharge'}
+    </span>&nbsp;
+{/if}
+
+{if !empty($scData.resp_transaction_type) and $scData.resp_transaction_type eq "Auth" and !empty($scData.order_state) and $scData.order_state eq $state_sc_await_paiment}
     <button type="button" id="sc_settle_btn" class="btn btn-default" onclick="scOrderAction('settle', {$orderId})" title="{l s='You will be redirected to Orders list.' mod='safecharge'}">
         <i class="icon-thumbs-up"></i>
         <i class="icon-repeat fast-right-spinner hidden"></i>
@@ -49,10 +61,10 @@
     </button>
 {/if}
 
-{if $scData.payment_method eq 'cc_card'}
+{if !empty($scData.payment_method) and $scData.payment_method eq 'cc_card'}
 	{if 
-		($scData.order_state eq $state_completed and $scData.resp_transaction_type|in_array:array('Sale', 'Settle'))
-		or ($scData.order_state eq $state_sc_await_paiment and $scData.resp_transaction_type eq 'Auth')
+		($scData.order_state eq $state_completed and !empty($scData.resp_transaction_type) and $scData.resp_transaction_type|in_array:array('Sale', 'Settle'))
+		or ($scData.order_state eq $state_sc_await_paiment and !empty($scData.resp_transaction_type) and $scData.resp_transaction_type eq 'Auth')
 	}
 		<button type="button" id="sc_void_btn" class="btn btn-default" onclick="scOrderAction('void', {$orderId})">
 			<i class="icon-retweet"></i>
@@ -146,7 +158,7 @@
     *}
 	{if
 		!in_array($scData.order_state, array($state_completed, $state_refunded))
-        or !in_array($scData.payment_method, array('cc_card', 'dc_card', 'apmgw_expresscheckout'))
+        or (isset($scData.payment_method) and !in_array($scData.payment_method, array('cc_card', 'dc_card', 'apmgw_expresscheckout')))
     }
     
         $('#desc-order-partial_refund').hide();

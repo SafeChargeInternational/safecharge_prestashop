@@ -167,7 +167,7 @@
             <div class="form-group">
                 <label class="control-label col-lg-3">{l s='Notification (DMN) URL'}</label>
                 <div class="col-lg-9">
-                    <input type="text" name="NUVEI_DMN_URL" readonly="" value="{if Configuration::get('NUVEI_DMN_URL') eq ''}{$defaultDmnUrl}{else}{Configuration::get('NUVEI_DMN_URL')}{/if}" placeholder="{$defaultDmnUrl}" style="display: inline-block; width: 80%;" />
+                    <input type="text" name="NUVEI_DMN_URL" readonly="" value="{if Configuration::get('NUVEI_DMN_URL') neq ''}{Configuration::get('NUVEI_DMN_URL')}{/if}" placeholder="{$defaultDmnUrl}" style="display: inline-block; width: 80%;" />
 					
 					&nbsp;<label><input type="checkbox" id="sc_edit_dmn_url" />&nbsp;Enable edit</label>
 					<span class="help-block">{l s='Please DO NOT change this URL unless you really must. Overriding this value may break the normal behavior of the plugin!' mod='safecharge'}</span>

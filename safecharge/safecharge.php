@@ -22,7 +22,7 @@ class SafeCharge extends PaymentModule
     {
         $this->name						= 'safecharge';
         $this->tab						= SafeChargeVersionResolver::set_tab();
-        $this->version					= '1.3';
+        $this->version					= '1.7';
         $this->author					= 'SafeCharge';
         $this->need_instance			= 1;
         $this->ps_versions_compliancy	= array('min' => '1.7', 'max' => _PS_VERSION_);
@@ -84,23 +84,25 @@ class SafeCharge extends PaymentModule
                 PRIMARY KEY (`id`),
                 KEY `order_id` (`order_id`),
                 UNIQUE KEY `un_order_id` (`order_id`)
-              ) ENGINE=InnoDB DEFAULT CHARSET=utf8;"
-			
-			. "";
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
         
-        $db->execute($sql);
+        $res = $db->execute($sql);
 		
-		// for the old versions try to add the error_msg column only
+		SC_CLASS::create_log($res);
+		SC_CLASS::create_log($db->getMsgError());
+		SC_CLASS::create_log($db->getNumberError());
+		
+		// for the old versions try to add the session_token column only
 //		$sql =
 //			"SELECT COUNT(COLUMN_NAME)"
 //			. "FROM INFORMATION_SCHEMA.columns "
 //			. "WHERE TABLE_NAME = 'safecharge_order_data' "
-//			. "AND COLUMN_NAME = 'error_msg';";
+//			. "AND COLUMN_NAME = 'session_token';";
 //		
 //		$result = intval(current($db->getRow($sql)));
 //		
 //		if($result == 0) {
-//			$sql = "ALTER TABLE `safecharge_order_data` ADD `error_msg` text NOT NULL;";
+//			$sql = "ALTER TABLE `safecharge_order_data` ADD `session_token` VARCHAR(36) NOT NULL DEFAULT '';";
 //			$db->execute($sql);
 //		}
 		# safecharge_order_data table END
@@ -115,6 +117,8 @@ class SafeCharge extends PaymentModule
         foreach (Language::getLanguages(true) as $lang) {
             $invisible_tab->name[$lang['id_lang']] = 'AdminSafeChargeAjax';
         }
+		
+		SC_CLASS::create_log('Finish install');
         
         return true;
     }
@@ -142,8 +146,9 @@ class SafeCharge extends PaymentModule
     {
         if (
             !Configuration::deleteByName('SC_MERCHANT_SITE_ID') || 
-            !Configuration::deleteByName('SC_MERCHANT_ID') ||
-            !Configuration::deleteByName('SC_SECRET_KEY') ||      
+            !Configuration::deleteByName('SC_MERCHANT_ID') || 
+            !Configuration::deleteByName('SC_SECRET_KEY') || 
+			!Configuration::deleteByName('SC_OS_AWAITING_PAIMENT') ||
             !parent::uninstall()
         ) {
             return false;
@@ -191,15 +196,39 @@ class SafeCharge extends PaymentModule
         $this->smarty->assign('img_path', '/modules/safecharge/views/img/');
         $this->smarty->assign(
 			'defaultDmnUrl',
-			$this->context->link
+//			$this->context->link
+//				->getModuleLink('safecharge', 'payment', array(
+//					'prestaShopAction'  => 'getDMN',
+//					'sc_create_logs'    => $_SESSION['sc_create_logs'],
+//					'sc_stop_dmn'       => SC_STOP_DMN,
+//				))
+			$this->getNotifyUrl()
+		);
+
+        return $this->display(__FILE__, 'views/templates/admin/display_forma.tpl');
+    }
+	
+	public function getNotifyUrl() {
+		$url = trim(Configuration::get('NUVEI_DMN_URL'));
+		
+		if(empty($url)) {
+			$url = $this->context->link
 				->getModuleLink('safecharge', 'payment', array(
 					'prestaShopAction'  => 'getDMN',
 					'sc_create_logs'    => $_SESSION['sc_create_logs'],
 					'sc_stop_dmn'       => SC_STOP_DMN,
-		)));
-
-        return $this->display(__FILE__, 'views/templates/admin/display_forma.tpl');
-    }
+				));
+		}
+		
+		if(
+			Configuration::get('SC_HTTP_NOTIFY') == 'yes'
+			&& false !== strpos($url, 'https://')
+		) {
+			$url = str_replace('https://', 'http://', $url);
+		}
+		
+		return $url;
+	}
      
     public function hookPaymentOptions($params)
     {
@@ -274,7 +303,9 @@ class SafeCharge extends PaymentModule
 			$smarty->assign('scDataError', 'Error - The Payment miss specific SafeCharge data!');
         }
         
-        $sc_data['order_state']     = $order_data->current_state;
+        $sc_data['order_state'] = $order_data->current_state;
+		
+//		echo '<pre>'.print_r($sc_data, true).'</pre>'; 
 		
         $smarty->assign('scData', $sc_data);
         $smarty->assign('state_completed', Configuration::get('PS_OS_PAYMENT'));
@@ -393,17 +424,18 @@ class SafeCharge extends PaymentModule
 //                    'sc_create_logs'    => $_SESSION['sc_create_logs'],
 //                ));
 //			
-            $notify_url = Configuration::get('NUVEI_DMN_URL');
+//            $notify_url = Configuration::get('NUVEI_DMN_URL');
             
-            if(
-				Configuration::get('SC_HTTP_NOTIFY') == 'yes'
-				&& false !== strpos($notify_url, 'https://')
-			) {
-                $notify_url = str_replace('https://', 'http://', $notify_url);
-            }
+//            if(
+//				Configuration::get('SC_HTTP_NOTIFY') == 'yes'
+//				&& false !== strpos($notify_url, 'https://')
+//			) {
+//                $notify_url = str_replace('https://', 'http://', $notify_url);
+//            }
             
-            $time = date('YmdHis', time());
-            $test_mode = Configuration::get('SC_TEST_MODE');
+			$notify_url	= $this->getNotifyUrl();
+            $time		= date('YmdHis', time());
+            $test_mode	= Configuration::get('SC_TEST_MODE');
             
             $ref_parameters = array(
                 'merchantId'            => Configuration::get('SC_MERCHANT_ID'),
@@ -572,6 +604,8 @@ class SafeCharge extends PaymentModule
 	public function prepareOrderData($return = false, $force = false)
 	{
 		global $smarty;
+		
+		$session_token = '';
         
 		try {
 			$cart               = $this->context->cart;
@@ -584,6 +618,9 @@ class SafeCharge extends PaymentModule
 			$hash               = Configuration::get('SC_HASH_TYPE');
 			$secret             = Configuration::get('SC_SECRET_KEY');
 			$amount				= (string) number_format($cart->getOrderTotal(), 2, '.', '');
+			$payment_methods	= array();
+			$upos				= array();
+			$user_token_id		= $customer->email;
 			
 			$address_delivery	= $address_invoice;
 			$country_delivery	= $country_inv;
@@ -616,13 +653,7 @@ class SafeCharge extends PaymentModule
 				array('prestaShopAction' => 'deleteUpo')
 			));
 			
-//			$notify_url     = $this->context->link
-//				->getModuleLink('safecharge', 'payment', array(
-//					'prestaShopAction'  => 'getDMN',
-//					'sc_create_logs'    => $_SESSION['sc_create_logs'],
-//					'sc_stop_dmn'       => SC_STOP_DMN,
-//				));
-			$notify_url     = Configuration::get('NUVEI_DMN_URL');
+			$notify_url     = $this->getNotifyUrl();
 			
 			$error_url		= $this->context->link->getModuleLink(
 				'safecharge',
@@ -643,13 +674,6 @@ class SafeCharge extends PaymentModule
 					'key'				=> $customer->secure_key,
 				)
 			);
-
-			if(
-				Configuration::get('SC_HTTP_NOTIFY') == 'yes'
-				&& false !== strpos($notify_url, 'https://')
-			) {
-				$notify_url = str_replace('https://', 'http://', $notify_url);
-			}
 
 			if(Configuration::get('NUVEI_ADD_CHECKOUT_STEP') == 0 || $force) {
 				# Open Order
@@ -673,7 +697,7 @@ class SafeCharge extends PaymentModule
 					),
 
 					'deviceDetails'     => SC_CLASS::get_device_details(),
-					'userTokenId'       => $customer->email,
+					'userTokenId'       => $user_token_id,
 
 					'billingAddress'    => array(
 						"firstName"	=> $address_invoice->firstname,
@@ -700,6 +724,7 @@ class SafeCharge extends PaymentModule
 					'webMasterId'       => SC_PRESTA_SHOP . _PS_VERSION_,
 					'paymentOption'		=> ['card' => ['threeD' => ['isDynamic3D' => 1]]],
 					'transactionType'	=> Configuration::get('SC_PAYMENT_ACTION'),
+					'merchantDetails'	=> array('customField1' => $cart->secure_key,),
 				);
 
 				$oo_params['userDetails'] = $oo_params['billingAddress'];
@@ -733,6 +758,7 @@ class SafeCharge extends PaymentModule
 
 				$session_token = $resp['sessionToken'];
 
+				// when need session token only
 				if($return) {
 					SC_CLASS::create_log($session_token, 'Session token for Ajax call');
 
@@ -770,9 +796,6 @@ class SafeCharge extends PaymentModule
 				# get APMs END
 
 				# get UPOs
-				$upos			= array();
-				$user_token_id	= $oo_params['userTokenId'];
-
 				// get them only for registred users when there are APMs
 				if(
 					Configuration::get('SC_USE_UPOS') == 1
@@ -822,29 +845,15 @@ class SafeCharge extends PaymentModule
 				# get UPOs END
 			}
 
-			$sc_order_vars = array(
-				'create_time'		=> time(),
-				'sessionToken'		=> $session_token,
-				'amount'			=> $oo_params['amount'],
-				'currency'			=> $oo_params['currency'],
-				'languageCode'		=> $apms_params['languageCode'],
-				'country'			=> $country_inv->iso_code,
-				'paymentMethods'	=> $payment_methods,
-				'userTokenId'		=> $user_token_id,
-				'upos'				=> $upos,
-				'isTestEnv'			=> $test_mode,
-			);
-			
 			$this->context->smarty->assign('scAPMsErrorMsg',	'');
-			$this->context->smarty->assign('sessionToken',		$sc_order_vars['sessionToken']);
-			$this->context->smarty->assign('amount',			$sc_order_vars['amount']);
-			$this->context->smarty->assign('currency',			$sc_order_vars['currency']);
-			$this->context->smarty->assign('languageCode',		$sc_order_vars['languageCode']);
-			$this->context->smarty->assign('paymentMethods',	$sc_order_vars['paymentMethods']);
-			$this->context->smarty->assign('userTokenId',		$sc_order_vars['userTokenId']);
-			$this->context->smarty->assign('upos',				$sc_order_vars['upos']);
-//			$this->context->smarty->assign('icons',				$sc_order_vars['icons']);
-			$this->context->smarty->assign('isTestEnv',			$sc_order_vars['isTestEnv']);
+			$this->context->smarty->assign('sessionToken',		$session_token);
+			$this->context->smarty->assign('amount',			$amount);
+			$this->context->smarty->assign('currency',			$currency->iso_code);
+			$this->context->smarty->assign('languageCode',		substr($this->context->language->locale, 0, 2));
+			$this->context->smarty->assign('paymentMethods',	$payment_methods);
+			$this->context->smarty->assign('userTokenId',		$customer->email);
+			$this->context->smarty->assign('upos',				$upos);
+			$this->context->smarty->assign('isTestEnv',			$test_mode);
 		}
 		catch(Exception $e) {
 			SC_CLASS::create_log($e->getMessage(), 'hookPaymentOptions Exception: ');
@@ -859,6 +868,8 @@ class SafeCharge extends PaymentModule
 			$this->context->smarty->assign('upos',				'');
 			$this->context->smarty->assign('icons',				'');
 			$this->context->smarty->assign('isTestEnv',			'');
+			
+//			$this->prepareOrderData();
 		}
 	}
     
@@ -876,7 +887,7 @@ class SafeCharge extends PaymentModule
 			$order_state->module_name	= 'SafeCharge';
 			$order_state->color			= '#4169E1';
 			$order_state->hidden		= false;
-			$order_state->logable		= false;
+			$order_state->logable		= true;
 			$order_state->delivery		= false;
 
 			$order_state->name	= array();
@@ -900,6 +911,15 @@ class SafeCharge extends PaymentModule
 			Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $order_state->id);
 
 			return true;
+		}
+		else {
+			$db = Db::getInstance();
+		
+			$sql = "UPDATE " . _DB_PREFIX_  . "order_state "
+				. "SET logable = '1' "
+				. "WHERE module_name` = 'SafeCharge';";
+
+			$db->execute($sql);
 		}
 		
 		return true;

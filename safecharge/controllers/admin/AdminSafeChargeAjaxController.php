@@ -61,30 +61,32 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
         
         $_SESSION['sc_create_logs'] = Configuration::get('SC_CREATE_LOGS');
         
-        $notify_url = Configuration::get('NUVEI_DMN_URL');
+        $notify_url = $this->module->getNotifyUrl();
+//        $notify_url = Configuration::get('NUVEI_DMN_URL');
 //        $notify_url = $this->context->link->getModuleLink('safecharge', 'payment', array(
 //            'prestaShopAction'  => 'getDMN',
 //            'prestaShopOrderID' => $order_id,
 //            'create_logs'       => $_SESSION['sc_create_logs'],
 //        ));
 		
-        if(
-			Configuration::get('SC_HTTP_NOTIFY') == 'yes'
-			&& false !== strpos($notify_url, 'https://')
-		) {
-            $notify_url = str_replace('https://', 'http://', $notify_url);
-        }
+//        if(
+//			Configuration::get('SC_HTTP_NOTIFY') == 'yes'
+//			&& false !== strpos($notify_url, 'https://')
+//		) {
+//            $notify_url = str_replace('https://', 'http://', $notify_url);
+//        }
         
-        $test_mode = Configuration::get('SC_TEST_MODE');
+        $test_mode	= Configuration::get('SC_TEST_MODE');
+		$trans_id	= !empty($sc_data['transaction_id']) ? $sc_data['transaction_id'] : $sc_data['related_transaction_id'];
         
         $params = array(
             'merchantId'            => Configuration::get('SC_MERCHANT_ID'),
             'merchantSiteId'        => Configuration::get('SC_MERCHANT_SITE_ID'),
-            'clientRequestId'       => $time . '_' . $sc_data['related_transaction_id'],
+            'clientRequestId'       => $time . '_' . $trans_id,
             'clientUniqueId'        => $order_id,
             'amount'                => number_format($order_info->total_paid, 2, '.', ''),
             'currency'              => $currency->iso_code,
-            'relatedTransactionId'  => $sc_data['related_transaction_id'],
+            'relatedTransactionId'  => $trans_id,
             'authCode'              => $sc_data['auth_code'],
             'urlDetails'            => array('notificationUrl' => $notify_url),
             'timeStamp'             => $time,
