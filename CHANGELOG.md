@@ -5,6 +5,8 @@
 	* For the Order Status "Awaiting SafeCharge payment" we changed "logable" parameter to true.
 	* When client pay with CC we save the Transaction ID from the sdk response in the Order payment.
 	* Create Order, based on Success DMN, if Order does not exists. This is in case when client does not reach order-confirm page.
+	* When Install (Reset), update existing SC Order state, instead add it every time.
+	* When something went wrong, when open Second Step, redirect to order page.
 	* Added more checks for variables in template files.
 	* Fix of small bugs.
 	* Added few logs in few negative cases.

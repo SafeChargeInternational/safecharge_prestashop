@@ -19,19 +19,14 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
         parent::__construct();
         
         if(
-            isset($_POST['scOrder'])
-            && is_numeric($_POST['scOrder'])
-            && intval($_POST['scOrder']) > 0
-            && in_array(@$_POST['scAction'], array('settle', 'void'))
+            is_numeric(Tools::getValue('scOrder'))
+            && intval(Tools::getValue('scOrder')) > 0
+            && in_array(Tools::getValue('scAction'), array('settle', 'void'))
         ) {
             $this->order_void_settle();
         }
         
-//        if(@$_POST['scAction'] == 'deleteLogs') {
-//            $this->delete_logs();
-//        }
-		
-		if(@$_POST['scAction'] == 'saveOrder') {
+		if(Tools::getValue('scAction') == 'saveOrder') {
 			$this->save_order();
 		}
             
@@ -47,7 +42,7 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
     {
         SC_CLASS::create_log('Void/Settle');
         
-        if(!$_POST['scAction'] or empty($_POST['scAction'])) {
+        if(empty(Tools::getValue('scAction', ''))) {
             echo json_encode(array('status' => 0, 'msg' => 'There is no action.'));
             exit;
         }

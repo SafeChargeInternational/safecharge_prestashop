@@ -88,9 +88,11 @@ class SafeCharge extends PaymentModule
         
         $res = $db->execute($sql);
 		
-		SC_CLASS::create_log($res);
-		SC_CLASS::create_log($db->getMsgError());
-		SC_CLASS::create_log($db->getNumberError());
+		if(!$res) {
+			SC_CLASS::create_log($res, 'On Install create SC table response');
+			SC_CLASS::create_log($db->getMsgError(), 'getMsgError');
+			SC_CLASS::create_log($db->getNumberError(), 'getNumberError');
+		}
 		
 		// for the old versions try to add the session_token column only
 //		$sql =
@@ -875,10 +877,19 @@ class SafeCharge extends PaymentModule
     
 	private function addOrderState()
 	{
-		if (
-			!Configuration::get('SC_OS_AWAITING_PAIMENT')
-            || !Validate::isLoadedObject(new OrderState(Configuration::get('SC_OS_AWAITING_PAIMENT')))
-		) {
+		$db = Db::getInstance();
+		
+		$res = $db->getRow('SELECT * '
+			. 'FROM ' . _DB_PREFIX_ . "order_state "
+			. "WHERE module_name = 'SafeCharge' "
+			. "ORDER BY id_order_state DESC;");
+		
+//		if (
+//			!Configuration::get('SC_OS_AWAITING_PAIMENT')
+//            || !Validate::isLoadedObject(new OrderState(Configuration::get('SC_OS_AWAITING_PAIMENT')))
+//		) {
+		// create
+		if(empty($res)) {
 			// create new order state
 			$order_state = new OrderState();
 
@@ -908,19 +919,19 @@ class SafeCharge extends PaymentModule
 			copy($source, $destination);
 
 			// set status in the config
-			Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $order_state->id);
-
-			return true;
+//			Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $order_state->id);
 		}
-		else {
-			$db = Db::getInstance();
-		
+		// update if need to
+		elseif(intval($res['logable']) != 1) {
 			$sql = "UPDATE " . _DB_PREFIX_  . "order_state "
 				. "SET logable = '1' "
-				. "WHERE module_name` = 'SafeCharge';";
+				. "WHERE module_name = 'SafeCharge' "
+					. "AND id_order_state = " . $res['id_order_state'];
 
 			$db->execute($sql);
 		}
+		
+		Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $res['id_order_state']);
 		
 		return true;
 	}

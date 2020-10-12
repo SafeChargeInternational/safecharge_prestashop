@@ -18,15 +18,16 @@ class SafeChargeAddStepModuleFrontController extends ModuleFrontController
     {
         parent::initContent();
 		
-		$error_url = $this->context->link
-			->getModuleLink(
-				'safecharge',
-				'payment',
-				array(
-					'prestaShopAction'	=> 'showError',
-					'id_cart'			=> Tools::getValue('cartId'),
-				)
-			);
+//		$error_url = $this->context->link
+//			->getModuleLink(
+//				'safecharge',
+//				'payment',
+//				array(
+//					'prestaShopAction'	=> 'showError',
+//					'id_cart'			=> Tools::getValue('cartId'),
+//				)
+//			);
+		$error_url = $this->context->link->getPageLink('order');
 		
 		$cart = $this->context->cart;
 		
