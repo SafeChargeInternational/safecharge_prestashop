@@ -575,7 +575,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					. 'WHERE order_id = ' . $order_id
 				);
 				
-				SC_CLASS::create_log($sc_data, '$sc_data');
+				SC_CLASS::create_log($sc_data, 'sc_data');
 				
 				// there is prevous DMN data
 				if(!empty($sc_data) && 'declined' == strtolower($req_status)) {
@@ -606,7 +606,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             }
             catch (Exception $ex) {
                 SC_CLASS::create_log($ex->getMessage(), 'Sale DMN Exception: ');
-                echo 'DMN Exception: ' . $ex->getMessage();
+                SC_CLASS::create_log($ex->getTrace());
+                
+				echo 'DMN Exception: ' . $ex->getMessage();
                 exit;
             }
             

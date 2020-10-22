@@ -681,10 +681,16 @@
 				reloadForm = true;
 
 				if(resp.hasOwnProperty('errorDescription') && resp.errorDescription != '') {
-					scFormFalse(resp.errorDescription);
+					scFormFalse(
+						"{l s='Error with your Payment. Please try again later!' mod='safecharge'}<br/>"
+						+ resp.errorDescription
+					);
 				}
 				else if(resp.hasOwnProperty('reason') && '' != resp.reason) {
-					scFormFalse(resp.reason);
+					scFormFalse(
+						"{l s='Error with your Payment. Please try again later!' mod='safecharge'}<br/>"
+						+ resp.reason
+					);
 				}
 				else {
 					scFormFalse("{l s='Error with your Payment. Please try again later!' mod='safecharge'}");
@@ -695,10 +701,16 @@
 			reloadForm = true;
 			
 			if(resp.hasOwnProperty('errorDescription') && resp.errorDescription != '') {
-				scFormFalse(resp.errorDescription);
+				scFormFalse(
+					"{l s='Error with your Payment. Please try again later!' mod='safecharge'}<br/>"
+					+ resp.errorDescription
+				);
 			}
 			else if(resp.hasOwnProperty('reason') && '' != resp.reason) {
-				scFormFalse(resp.reason);
+				scFormFalse(
+					"{l s='Error with your Payment. Please try again later!' mod='safecharge'}<br/>"
+					+ resp.reason
+				);
 			}
 			else {
 				scFormFalse("{l s='Error with your Payment. Please try again later!' mod='safecharge'}");
