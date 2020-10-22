@@ -1,5 +1,12 @@
 # SafeCharge Prestashop Changelog
 
+#1.7.2
+```
+	* Added style for the spinner in add_step.tpl
+	* Added check for existing APMs, if there are no APMs we show error message.
+	* In case of CC sdk payment, but missing sc_transaction_id parameter, redirect to error page.
+```
+
 #1.7.1
 ```
 	* Added trace log on DMN exception.

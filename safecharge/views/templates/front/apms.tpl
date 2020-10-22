@@ -314,7 +314,7 @@
 		<img class="sc_rotate_img" src="/modules/safecharge/views/img/loading.png" alt="loading..." />
 	</div>
 	
-	{if $upos}
+	{if !empty($upos)}
 		<h4 id="sc_upos_title">{l s='Choose from preferred payment methods:' mod='safecharge'}</h4>
 		
 		<div id="sc_upos_list">
@@ -367,7 +367,7 @@
 		<br/>
 	{/if}
 	
-    {if $paymentMethods}
+    {if !empty($paymentMethods)}
         <h4 id="sc_apms_title">{l s='Choose from available payment methods:' mod='safecharge'}</h4>
 		
 		<div class="sc_hide cc_load_spinner">
@@ -434,7 +434,7 @@
         <br/>
     {/if}
 
-    <input type="hidden" name="lst" id="sc_lst" value="{$sessionToken}" />
+    <input type="hidden" name="lst" id="sc_lst" value="{if !empty($sessionToken)}{$sessionToken}{/if}" />
     <input type="hidden" name="sc_transaction_id" id="sc_transaction_id" value="" />
 	
 	{if $scAddStep}
@@ -450,7 +450,7 @@
 </form>
 
 <script type="text/javascript">
-	var scAPMsErrorMsg	= "{$scAPMsErrorMsg}";
+	var scAPMsErrorMsg	= "{if !empty($scAPMsErrorMsg)}{l s=$scAPMsErrorMsg mod='safecharge'}{/if}";
 	
     var selectedPM  = "";
     var payloadURL  = "";
@@ -495,11 +495,11 @@
     var scData          = {
         merchantSiteId		: "{$merchantSiteId}",
         merchantId			: "{$merchantId}",
-        sessionToken		: "{$sessionToken}",
+        sessionToken		: document.getElementById('sc_lst').value,
         sourceApplication	: "{$sourceApplication}"
     };
 
-    {if $isTestEnv eq 'yes'}
+    {if !empty($isTestEnv) and $isTestEnv eq 'yes'}
         scData.env = 'int';
     {/if}
     // for the fields END
@@ -513,7 +513,7 @@
         $(scPayButton + ' .fast-right-spinner').removeClass('sc_hide');
 
 		if('' != scAPMsErrorMsg) {
-			scFormFalse("{l s=$scAPMsErrorMsg mod='safecharge'}");
+			scFormFalse(scAPMsErrorMsg);
 			return;
 		}
 
@@ -530,7 +530,7 @@
 				.find('.sc_fields_holder');
 		
 		var scPaymentParams = {
-			sessionToken    : "{$sessionToken}",
+			sessionToken    : scData.sessionToken,
 			merchantId      : "{$merchantId}",
 			merchantSiteId  : "{$merchantSiteId}",
 			currency        : "{$currency}",

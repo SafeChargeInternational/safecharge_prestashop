@@ -181,6 +181,14 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			
 			######################
 			
+			// in case there is no sc_transaction_id, but the order is CC, redirect to error page
+			if(Tools::getValue('sc_payment_method', false) == 'cc_card') {
+				SC_CLASS::create_log('Error - this is payment with CC, but there is no transaction ID.');
+				Tools::redirect(Tools::redirect($error_url));
+			}
+			
+			######################
+			
 			# 2. when use REST
 			$save_order_after_apm = intval(Configuration::get('NUVEI_SAVE_ORDER_AFTER_APM_PAYMENT'));
 			
