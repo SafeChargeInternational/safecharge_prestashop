@@ -1,5 +1,11 @@
 # SafeCharge Prestashop Changelog
 
+#1.7.1
+```
+	* Added trace log on DMN exception.
+	* Added default error message, before error reason/message returned from webSDK.
+```
+
 # v1.7
 ```
 	* For the Order Status "Awaiting SafeCharge payment" we changed "logable" parameter to true.
