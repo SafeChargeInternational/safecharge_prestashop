@@ -440,7 +440,7 @@
 	{if $scAddStep}
 		<div id="payment-confirmation">
 			<div class="ps-shown-by-js">
-				<button type="submit" class="btn btn-primary center-block" onclick="scValidateAPMFields(); return false;">
+				<button type="button" class="btn btn-primary center-block" onclick="scValidateAPMFields(); return false;">
 					{l s='Order with an obligation to pay' d='Shop.Theme.Checkout'}
 				</button>
 			</div>

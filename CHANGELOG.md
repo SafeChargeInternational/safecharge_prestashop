@@ -1,5 +1,10 @@
 # SafeCharge Prestashop Changelog
 
+#1.7.3
+```
+	* Checkout pay button changed type from submit to button.
+```
+
 #1.7.2
 ```
 	* Added style for the spinner in add_step.tpl
