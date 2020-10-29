@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @author SafeCharge
+ * @author Nuvei
  * @year 2019
  */
 

@@ -1,5 +1,10 @@
 # SafeCharge Prestashop Changelog
 
+#1.7.4
+```
+	* Rebranding started. Try to replace SafeCharge with Nuvei.
+```
+
 #1.7.3
 ```
 	* Checkout pay button changed type from submit to button.

@@ -22,8 +22,8 @@ class SafeCharge extends PaymentModule
     {
         $this->name						= 'safecharge';
         $this->tab						= SafeChargeVersionResolver::set_tab();
-        $this->version					= '1.7.3';
-        $this->author					= 'SafeCharge';
+        $this->version					= '1.7.4';
+        $this->author					= 'Nuvei';
         $this->need_instance			= 1;
         $this->ps_versions_compliancy	= array('min' => '1.7', 'max' => _PS_VERSION_);
         $this->bootstrap				= true;
@@ -36,8 +36,8 @@ class SafeCharge extends PaymentModule
         parent::__construct();
 
         $this->page				= basename(__FILE__, '.php'); // ?
-        $this->displayName		= 'SafeCharge';
-        $this->description		= $this->l('Accepts payments by Safecharge.');
+        $this->displayName		= 'Nuvei Payments'; // we see this in Prestashop Modules list
+        $this->description		= $this->l('Accepts payments by Nuvei.');
         $this->confirmUninstall	= $this->l('Are you sure you want to delete your details?');
         
         if (!isset($this->owner) || !isset($this->details) || !isset($this->address)) {
@@ -251,7 +251,7 @@ class SafeCharge extends PaymentModule
 		
         $newOption
 			->setModuleName($this->name)
-            ->setCallToActionText($this->trans('Pay by SafeCharge', array(), 'Modules.safecharge'));
+            ->setCallToActionText($this->trans('Pay by Nuvei', array(), 'Modules.safecharge'));
             
 		if(Configuration::get('NUVEI_ADD_CHECKOUT_STEP') == 0) {
             $newOption
@@ -283,15 +283,20 @@ class SafeCharge extends PaymentModule
             return false;
         }
 		
-		if(empty($_GET['id_order'])) {
+		if(empty($order_id = Tools::getValue('id_order'))) {
 			return false;
 		}
         
-        $order_id = intval($_GET['id_order']);
+        $order_id = intval($order_id);
         $order_data = new Order($order_id);
 		
+		$payment = strtolower($order_data->payment);
+		
 		// not SC order
-		if(strpos(strtolower($order_data->payment), 'safecharge') === false) {
+		if(
+			strpos($payment, 'safecharge') === false
+			&& strpos($payment, 'nuvei payments') === false
+		) {
 			return false;
 		}
 		
@@ -302,7 +307,7 @@ class SafeCharge extends PaymentModule
         
         if(empty($sc_data)) {
             SC_CLASS::create_log('Missing safecharge_order_data for order ' . $order_id);
-			$smarty->assign('scDataError', 'Error - The Payment miss specific SafeCharge data!');
+			$smarty->assign('scDataError', 'Error - The Payment miss specific Nuvei data!');
         }
         
         $sc_data['order_state'] = $order_data->current_state;
@@ -326,7 +331,7 @@ class SafeCharge extends PaymentModule
     /**
      * Function hookDisplayAdminOrderLeft
      * At the bottom of the left column we will print Notes and other
-     * SafeCharge information.
+     * Nuvei information.
      * 
      * @return template
      */
@@ -341,12 +346,14 @@ class SafeCharge extends PaymentModule
 			return false;
 		}
 		
-		$order_data = new Order(intval($_GET['id_order']));
+		$order_data	= new Order(intval($_GET['id_order']));
+		$payment	= strtolower($order_data->payment);
 
 		// not SC order
 		if(
 			!empty($order_data->payment)
-			&& strpos(strtolower($order_data->payment), 'safecharge') === false
+			&& strpos($payment, 'safecharge') === false
+			&& strpos($payment, 'nuvei payment') === false
 		) {
 			return false;
 		}
@@ -906,7 +913,7 @@ class SafeCharge extends PaymentModule
 
 			// set the name for all lanugaes
 			foreach ($languages as $language) {
-				$order_state->name[ $language['id_lang'] ] = 'Awaiting SafeCharge payment';
+				$order_state->name[ $language['id_lang'] ] = 'Awaiting Nuvei payment';
 			}
 
 			if(!$order_state->add()) {
@@ -914,7 +921,7 @@ class SafeCharge extends PaymentModule
 			}
 			
 			// on success add icon
-			$source = _PS_MODULE_DIR_ . 'safecharge/views/img/safecharge_os.png';
+			$source = _PS_MODULE_DIR_ . 'safecharge/views/img/nuvei.png';
 			$destination = _PS_ROOT_DIR_ . '/img/os/' . (int)$order_state->id . '.gif';
 			copy($source, $destination);
 
@@ -929,7 +936,21 @@ class SafeCharge extends PaymentModule
 					. "AND id_order_state = " . $res['id_order_state'];
 
 			$db->execute($sql);
+			
+			// update icon just in case
+			$source = _PS_MODULE_DIR_ . 'safecharge/views/img/nuvei.png';
+			$destination = _PS_ROOT_DIR_ . '/img/os/' . (int)$order_state->id . '.gif';
+			copy($source, $destination);
 		}
+		
+		// replace the state name
+//		$res = $db->execute('SELECT * '
+//			. 'FROM ' . _DB_PREFIX_ . "order_state_lang "
+//			. "WHERE name LIKE '%SafeCharge%' ");
+//		
+//		SC_CLASS::create_log($res, 'order_state_lang');
+//		
+//		var_dump($res);
 		
 		Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $res['id_order_state']);
 		

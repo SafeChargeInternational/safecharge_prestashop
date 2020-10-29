@@ -4,7 +4,7 @@
  * SC_CLASS Class
  * 
  * @year 2020
- * @author SafeCharge
+ * @author Nuvei
  */
 class SC_CLASS
 {
@@ -427,7 +427,7 @@ class SC_CLASS
 
             try {
                 file_put_contents(
-                    $logs_path . 'SafeCharge-' . date('Y-m-d', time()) . '.txt',
+                    $logs_path . 'Nuvei-' . date('Y-m-d', time()) . '.txt',
                     date('H:i:s', time()) . ': ' . $d, FILE_APPEND
                 );
             }

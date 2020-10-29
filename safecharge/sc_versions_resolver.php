@@ -6,7 +6,7 @@
  * Try to resolve different versions problem in the plugin here
  * 
  * 2018-09
- * SafeCharge
+ * @author Nuvei
  */
 class SafeChargeVersionResolver
 {

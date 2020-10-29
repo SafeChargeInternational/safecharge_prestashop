@@ -1,7 +1,7 @@
 <div class="panel">
     <div class="panel-heading">
         <i class="icon-file-text"></i>
-        {l s="SafeCharge notes" mod='safecharge'} <span class="badge">{$messages|count}</span>
+        {l s="Nuvei notes" mod='safecharge'} <span class="badge">{$messages|count}</span>
     </div>
     
     <div class="table-responsive">
