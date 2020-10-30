@@ -57,20 +57,6 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
         $_SESSION['sc_create_logs'] = Configuration::get('SC_CREATE_LOGS');
         
         $notify_url = $this->module->getNotifyUrl();
-//        $notify_url = Configuration::get('NUVEI_DMN_URL');
-//        $notify_url = $this->context->link->getModuleLink('safecharge', 'payment', array(
-//            'prestaShopAction'  => 'getDMN',
-//            'prestaShopOrderID' => $order_id,
-//            'create_logs'       => $_SESSION['sc_create_logs'],
-//        ));
-		
-//        if(
-//			Configuration::get('SC_HTTP_NOTIFY') == 'yes'
-//			&& false !== strpos($notify_url, 'https://')
-//		) {
-//            $notify_url = str_replace('https://', 'http://', $notify_url);
-//        }
-        
         $test_mode	= Configuration::get('SC_TEST_MODE');
 		$trans_id	= !empty($sc_data['transaction_id']) ? $sc_data['transaction_id'] : $sc_data['related_transaction_id'];
         
@@ -132,29 +118,29 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
 	{
 		SC_CLASS::create_log('save_order()');
 		
-		if(
-			empty($_POST['cart_id'])
-			|| empty($_POST['orderStatus'])
-			|| empty($_POST['amount'])
-			|| empty($_POST['moduleName'])
-			|| empty($_POST['customerKey'])
-		) {
-			echo json_encode(array('status' => 0, 'msg' => 'Missing mandatory data'));
-			exit;
-		}
-		
-		$this->module->validateOrder(
-			(int)$cart->id
-//			,Configuration::get('PS_OS_PREPARATION') // the status
-//			,Configuration::get('SC_OS_PENDING') // the status
-			,$sc_params['amount']
-			,$this->module->displayName
-		//    ,null
-		//    ,null // for the mail
-		//    ,(int)$currency->id
-		//    ,false
-		//    ,$customer->secure_key
-		);
+//		if(
+//			empty($_POST['cart_id'])
+//			|| empty($_POST['orderStatus'])
+//			|| empty($_POST['amount'])
+//			|| empty($_POST['moduleName'])
+//			|| empty($_POST['customerKey'])
+//		) {
+//			echo json_encode(array('status' => 0, 'msg' => 'Missing mandatory data'));
+//			exit;
+//		}
+//		
+//		$this->module->validateOrder(
+//			(int)$cart->id
+////			,Configuration::get('PS_OS_PREPARATION') // the status
+////			,Configuration::get('SC_OS_PENDING') // the status
+//			,$sc_params['amount']
+//			,$this->module->displayName
+//		//    ,null
+//		//    ,null // for the mail
+//		//    ,(int)$currency->id
+//		//    ,false
+//		//    ,$customer->secure_key
+//		);
 		
 	}
 }

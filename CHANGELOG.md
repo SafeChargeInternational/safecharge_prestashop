@@ -2,7 +2,13 @@
 
 #1.7.4
 ```
-	* Rebranding started. Try to replace SafeCharge with Nuvei.
+	* Plugin rebranded. Replaced SafeCharge with Nuvei.
+	* Added new state - Awaiting Nuvei Payment.
+	* Some of the log comments in Payment class were beautified.
+	* When DMN with status Pending come, do not change status of the Order again, just save a Note.
+	* Added one more check for existing Payment before our try to create an Order in proccessOrder().
+	* Fixed the problem when the Order was created by the DMN and the client was redirected to wrong Confirm-Page.
+	* Fixed the exception after the Declined DMN and the not existing Order when pay with CC. Now process stop, and we log and return a message.
 ```
 
 #1.7.3

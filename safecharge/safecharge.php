@@ -301,7 +301,8 @@ class SafeCharge extends PaymentModule
 		}
 		
 		global $smarty;
-        $smarty->assign('orderId', $_GET['id_order']);
+//        $smarty->assign('orderId', $_GET['id_order']);
+        $smarty->assign('orderId', $order_id);
         
         $sc_data = Db::getInstance()->getRow('SELECT * FROM safecharge_order_data WHERE order_id = ' . $order_id);
         
@@ -360,7 +361,8 @@ class SafeCharge extends PaymentModule
         
         global $smarty;
         
-        $messages = MessageCore::getMessagesByOrderId($_GET['id_order'], true);
+//        $messages = MessageCore::getMessagesByOrderId($_GET['id_order'], true);
+        $messages = MessageCore::getMessagesByOrderId(Tools::getValue('id_order'), true);
         $smarty->assign('messages', $messages);
         
         return $this->display(__FILE__, 'views/templates/admin/sc_order_notes.tpl');
@@ -375,10 +377,15 @@ class SafeCharge extends PaymentModule
      */
     public function hookActionOrderSlipAdd($params)
     {
+		$payment_name = strtolower($params['order']->payment);
+		
 		if(
 			empty($params['order']->payment)
 			|| empty($_REQUEST['id_order'])
-			|| strpos(strtolower($params['order']->payment), 'safecharge') === false // not SC order
+			|| (
+				strpos($payment_name, 'safecharge') === false
+				&& strpos($payment_name, 'nuvei payment') === false
+			) // not SC order
 		) {
 			SC_CLASS::create_log('hookActionOrderSlipAdd first check fail.');
 			return false;
@@ -386,17 +393,27 @@ class SafeCharge extends PaymentModule
 		
         if(
             $this->isPayment() !== true
-            || !isset($_REQUEST['partialRefund'], $_REQUEST['partialRefundProduct'])
-            || !is_array($_REQUEST['partialRefundProduct'])
+//            || !isset($_REQUEST['partialRefund'], $_REQUEST['partialRefundProduct'])
+            || !isset($_REQUEST['partialRefund'])
+//            || !is_array($_REQUEST['partialRefundProduct'])
+            || !is_array(Tools::getValue('partialRefundProduct'))
         ) {
-            SC_CLASS::create_log('hookActionOrderSlipAdd isPayment not true or missing request parameters.');
+            SC_CLASS::create_log(
+				[
+					'isPayment' => $this->isPayment(),
+					'partialRefund' => Tools::getValue('partialRefund'),
+					'partialRefundProduct' => Tools::getValue('partialRefundProduct'),
+				], 
+				'hookActionOrderSlipAdd isPayment not true or missing request parameters.'
+			);
             return false;
         }
         
         $request_amoutn = 0;
         
         try {
-            foreach ($_REQUEST['partialRefundProduct'] as $id => $am) {
+//            foreach ($_REQUEST['partialRefundProduct'] as $id => $am) {
+            foreach (Tools::getValue('partialRefundProduct') as $id => $am) {
                 $request_amoutn += floatval($am);
             }
 
@@ -406,7 +423,8 @@ class SafeCharge extends PaymentModule
             }
 
             $request_amoutn = number_format($request_amoutn, 2, '.', '');
-            $order_id = intval($_REQUEST['id_order']);
+//            $order_id = intval($_REQUEST['id_order']);
+            $order_id = intval(Tools::getValue('id_order'));
             
             // save order message
             $message = new MessageCore();
@@ -926,7 +944,7 @@ class SafeCharge extends PaymentModule
 			copy($source, $destination);
 
 			// set status in the config
-//			Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $order_state->id);
+			Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $order_state->id);
 		}
 		// update if need to
 		elseif(intval($res['logable']) != 1) {
@@ -937,22 +955,57 @@ class SafeCharge extends PaymentModule
 
 			$db->execute($sql);
 			
-			// update icon just in case
-			$source = _PS_MODULE_DIR_ . 'safecharge/views/img/nuvei.png';
-			$destination = _PS_ROOT_DIR_ . '/img/os/' . (int)$order_state->id . '.gif';
-			copy($source, $destination);
+			Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $res['id_order_state']);
 		}
-		
-		// replace the state name
-//		$res = $db->execute('SELECT * '
-//			. 'FROM ' . _DB_PREFIX_ . "order_state_lang "
-//			. "WHERE name LIKE '%SafeCharge%' ");
-//		
-//		SC_CLASS::create_log($res, 'order_state_lang');
-//		
-//		var_dump($res);
-		
-		Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $res['id_order_state']);
+		else {
+			try {
+				// search for the old name
+				$search = $db->getRow('SELECT * '
+					. 'FROM ' . _DB_PREFIX_ . "order_state_lang "
+					. "WHERE name LIKE '%Nuvei%' ");
+
+				// add the new state
+				if(empty($search)) {
+					// create new order state
+					$order_state = new OrderState();
+
+					$order_state->invoice		= false;
+					$order_state->send_email	= false;
+					$order_state->module_name	= 'SafeCharge';
+					$order_state->color			= '#4169E1';
+					$order_state->hidden		= false;
+					$order_state->logable		= true;
+					$order_state->delivery		= false;
+
+					$order_state->name	= array();
+					$languages			= Language::getLanguages(false);
+
+					// set the name for all lanugaes
+					foreach ($languages as $language) {
+						$order_state->name[ $language['id_lang'] ] = 'Awaiting Nuvei payment';
+					}
+
+					if(!$order_state->add()) {
+						return false;
+					}
+
+					// on success add icon
+					$source = _PS_MODULE_DIR_ . 'safecharge/views/img/nuvei.png';
+					$destination = _PS_ROOT_DIR_ . '/img/os/' . (int)$order_state->id . '.gif';
+					copy($source, $destination);
+
+					// set status in the config
+					Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $order_state->id);
+				}
+				else {
+					Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $res['id_order_state']);
+				}
+			}
+			catch(Exception $e) {
+				SC_CLASS::create_log($e->getMessage(), 'exception');
+				SC_CLASS::create_log($e->getTrace(), 'exception');
+			}
+		}
 		
 		return true;
 	}
