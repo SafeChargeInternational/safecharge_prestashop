@@ -492,16 +492,16 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				$tries		= 0;
 				$order_id	= false;
 				
-//                do {
+                do {
                     $tries++;
                     $order_id = Order::getIdByCartId(Tools::getValue('merchant_unique_id', 0));
 
                     if(!$order_id) {
 						SC_CLASS::create_log($tries, 'DMN Report - the DMN wait for the order.');
-//                        sleep(3);
+                        sleep(3);
                     }
-//                }
-//				while($tries <= 5 and !$order_id);
+                }
+				while($tries <= 5 and !$order_id);
                 
                 if(!$order_id) {
 					// do not create order for Declined transaction
