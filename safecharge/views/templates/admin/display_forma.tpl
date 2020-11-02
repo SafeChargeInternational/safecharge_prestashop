@@ -138,7 +138,7 @@
             </div>
 					
 			<div class="form-group">
-                <label class="control-label col-lg-3">{l s='Show help message over each Paymen method' mod='safecharge'}</label>
+                <label class="control-label col-lg-3">{l s='Show help message over each Payment method' mod='safecharge'}</label>
                 <div class="col-lg-9">
                     <input type="text" name="NUVEI_APMS_NOTE" value="{Configuration::get('NUVEI_APMS_NOTE')}" />
                 </div>
