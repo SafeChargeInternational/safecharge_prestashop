@@ -26,10 +26,6 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
             $this->order_void_settle();
         }
         
-		if(Tools::getValue('scAction') == 'saveOrder') {
-			$this->save_order();
-		}
-            
         exit;
     }
     
@@ -110,37 +106,4 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
         exit;
     }
 	
-	/**
-	 * TODO Do we use this function ?
-	 * @deprecated
-	 */
-	private function save_order()
-	{
-		SC_CLASS::create_log('save_order()');
-		
-//		if(
-//			empty($_POST['cart_id'])
-//			|| empty($_POST['orderStatus'])
-//			|| empty($_POST['amount'])
-//			|| empty($_POST['moduleName'])
-//			|| empty($_POST['customerKey'])
-//		) {
-//			echo json_encode(array('status' => 0, 'msg' => 'Missing mandatory data'));
-//			exit;
-//		}
-//		
-//		$this->module->validateOrder(
-//			(int)$cart->id
-////			,Configuration::get('PS_OS_PREPARATION') // the status
-////			,Configuration::get('SC_OS_PENDING') // the status
-//			,$sc_params['amount']
-//			,$this->module->displayName
-//		//    ,null
-//		//    ,null // for the mail
-//		//    ,(int)$currency->id
-//		//    ,false
-//		//    ,$customer->secure_key
-//		);
-		
-	}
 }
