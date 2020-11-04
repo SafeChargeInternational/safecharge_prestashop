@@ -1,5 +1,12 @@
 # SafeCharge Prestashop Changelog
 
+#1.7.5
+```
+	* Fix for the new Netteler APM behavior.
+	* Added log after Order is saved.
+	* Change in the new Nuvei status install logic.
+```
+
 #1.7.4
 ```
 	* Plugin rebranded. Replaced SafeCharge with Nuvei.

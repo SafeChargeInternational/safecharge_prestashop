@@ -186,6 +186,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					Tools::redirect(Tools::redirect($error_url));
 				}
 				
+				SC_CLASS::create_log('processOreder() - the webSDK Order was saved.');
+				
 				$this->updateCustomPaymentFields($this->module->currentOrder);
 				
 				Tools::redirect($success_url);
@@ -330,6 +332,10 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			else {
 				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_URL : SC_TEST_PAYMENT_URL;
 				$params['paymentMethod'] = $sc_payment_method;
+				
+				if(isset($_POST[$sc_payment_method])) {
+					$params['userAccountDetails'] = $_POST[$sc_payment_method];
+				}
 			}
 			
 			$resp = SC_CLASS::call_rest_api($endpoint_url, $params);
@@ -363,7 +369,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			!$resp
 			|| $req_status == 'ERROR'
 			|| @$resp['message'] == 'ERROR'
-			|| @$resp['transactionStatus'] == 'DECLINED'
+			|| in_array(@$resp['transactionStatus'], array('DECLINED', 'ERROR'))
 		) {
 			Tools::redirect($error_url);
 		}
@@ -387,6 +393,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				SC_CLASS::create_log('Order was not validated');
 				Tools::redirect($error_url);
 			}
+			
+			SC_CLASS::create_log('processOreder() - the APM/UPO Order was saved.');
 		}
 
 		if($req_status == 'SUCCESS') {
@@ -541,6 +549,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 							echo 'DMN Error - Order was not validated';
 							exit;
 						}
+						
+						SC_CLASS::create_log('scGetDMN() - the Order was saved.');
 					}
 					catch(Exception $e) {
 						SC_CLASS::create_log($e->getMessage(), 'DMN Exception');
@@ -1214,6 +1224,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 		if(!$res) {
 			Tools::redirect($error_url);
 		}
+		
+		SC_CLASS::create_log('beforeSuccess() - the Order was saved.');
 		
 		$success_url = $this->context->link->getPageLink(
 			'order-confirmation',

@@ -22,7 +22,7 @@ class SafeCharge extends PaymentModule
     {
         $this->name						= 'safecharge';
         $this->tab						= SafeChargeVersionResolver::set_tab();
-        $this->version					= '1.7.4';
+        $this->version					= '1.7.5';
         $this->author					= 'Nuvei';
         $this->need_instance			= 1;
         $this->ps_versions_compliancy	= array('min' => '1.7', 'max' => _PS_VERSION_);
@@ -577,18 +577,18 @@ class SafeCharge extends PaymentModule
         }
         
         if (!Configuration::get('SC_MERCHANT_SITE_ID')) {
-            SC_CLASS::create_log('Error: (invalid or undefined site id)');
-            return $this->displayName . $this->l(' Error: (invalid or undefined site id)');
+            SC_CLASS::create_log('Error: (invalid or undefined Merchant Site ID)');
+            return $this->displayName . $this->l(' Error: (invalid or undefined Merchant Site ID)');
         }
           
         if (!Configuration::get('SC_MERCHANT_ID')) {
-            SC_CLASS::create_log('Error: (invalid or undefined merchant id)');
-            return $this->displayName . $this->l(' Error: (invalid or undefined merchant id)');
+            SC_CLASS::create_log('Error: (invalid or undefined Merchant ID)');
+            return $this->displayName . $this->l(' Error: (invalid or undefined Merchant ID)');
         }
         
         if (!Configuration::get('SC_SECRET_KEY')) {
             SC_CLASS::create_log('Error: (invalid or undefined secure key)');
-            return $this->displayName . $this->l(' Error: (invalid or undefined secure key)');
+            return $this->displayName . $this->l(' Error: (invalid or undefined Secure Key)');
         }
           
         return true;
@@ -947,18 +947,20 @@ class SafeCharge extends PaymentModule
 			Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $order_state->id);
 		}
 		// update if need to
-		elseif(intval($res['logable']) != 1) {
-			$sql = "UPDATE " . _DB_PREFIX_  . "order_state "
-				. "SET logable = '1' "
-				. "WHERE module_name = 'SafeCharge' "
-					. "AND id_order_state = " . $res['id_order_state'];
-
-			$db->execute($sql);
-			
-			Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $res['id_order_state']);
-		}
 		else {
 			try {
+				if(intval($res['logable']) != 1) {
+					$sql = "UPDATE " . _DB_PREFIX_  . "order_state "
+						. "SET logable = '1' "
+						. "WHERE module_name = 'SafeCharge' "
+							. "AND id_order_state = " . $res['id_order_state'];
+
+					$db->execute($sql);
+
+					Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $res['id_order_state']);
+				}
+				
+				// try to add the Nuvei Status
 				// search for the old name
 				$search = $db->getRow('SELECT * '
 					. 'FROM ' . _DB_PREFIX_ . "order_state_lang "
