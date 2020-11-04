@@ -5,6 +5,8 @@
 	* Fix for the new Netteler APM behavior.
 	* Added log after Order is saved.
 	* Change in the new Nuvei status install logic.
+	* Fix for the APM/UPO Order with transactionStatus ERROR. Now the user is redirected to Error Page and do not create Order.
+	* Added check in scGetDMN method for the owner module of the Order.
 ```
 
 #1.7.4

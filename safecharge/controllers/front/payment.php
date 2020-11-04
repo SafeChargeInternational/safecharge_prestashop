@@ -563,6 +563,14 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 }
 				
                 $order_info		= new Order($order_id);
+				
+				if($this->module->name != $order_info->module) {
+					SC_CLASS::create_log('DMN Error - the order do not belongs to the ' . $this->module->name);
+					
+					echo 'DMN Error - the order do not belongs to the ' . $this->module->name;
+					exit;
+				}
+				
 				// check for transaction Id after sdk Order
 				$payment		= new OrderPaymentCore();
 				$order_payments	= $payment->getByOrderReference($order_info->reference);
@@ -662,35 +670,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         ) {
             SC_CLASS::create_log('PrestaShop Refund DMN.');
             
+			$order_info	= $this->getOrder();
+			
             try {
-				// PS Refund
-				if(is_numeric(Tools::getValue('prestaShopOrderID'))) {
-					$order_id = Tools::getValue('prestaShopOrderID');
-				}
-				// CPanel Refund
-				else {
-					$sc_data = Db::getInstance()->getRow(
-						'SELECT * FROM safecharge_order_data '
-						. 'WHERE related_transaction_id = "' . Tools::getValue('relatedTransactionId') .'"'
-					);
-					
-					if(empty($sc_data)) {
-						echo 'DMN Error: we can not find Order connected with incoming relatedTransactionId.';
-						exit;
-					}
-					
-					$order_id = @$sc_data['order_id'];
-				}
-				
-                $order_info = new Order($order_id);
-                
-                if(!$order_info) {
-                    SC_CLASS::create_log($order_info, 'There is no order info: ');
-                    
-                    echo 'DMN received, but there is no Order.';
-                    exit;
-                }
-                
                 $currency = new Currency((int)$order_info->id_currency);
                 
                 $this->changeOrderStatus(array(
@@ -713,32 +695,13 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         }
         
         # Void, Settle
-        if(in_array($_REQUEST['transactionType'], array('Void', 'Settle'))) {
-            SC_CLASS::create_log($_REQUEST['transactionType'], 'Void/Settle transactionType: ');
+        if(in_array(Tools::getValue('transactionType'), array('Void', 'Settle'))) {
+            SC_CLASS::create_log(Tools::getValue('transactionType'), 'Void/Settle transactionType: ');
             
-			// PS Void/Settle
-			if(!empty($_REQUEST['prestaShopOrderID']) and is_numeric($_REQUEST['prestaShopOrderID'])) {
-				$order_id = $_REQUEST['prestaShopOrderID'];
-			}
-			// CPanel Void/Settle
-			else {
-				$sc_data = Db::getInstance()->getRow(
-					'SELECT * FROM safecharge_order_data '
-					. 'WHERE related_transaction_id = "' . @$_REQUEST['relatedTransactionId'] . '"'
-				);
-				
-				if(!empty($sc_data)) {
-					$order_id = @$sc_data['order_id'];
-				}
-				else {
-					$order_id = null;
-				}
-			}
+			$order_info = $this->getOrder();
 			
             try {
-                $order_info = new Order($order_id);
-                
-                if($_REQUEST['transactionType'] == 'Settle') {
+                if(Tools::getValue('transactionType') == 'Settle') {
                     $this->updateCustomPaymentFields($order_id, false);
                 }
                 
@@ -762,6 +725,56 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         echo 'DMN received, but not recognized.';
         exit;
     }
+	
+	/**
+	 * Function getOrder
+	 * Get the Order by prestaShopOrderID parameter
+	 * 
+	 * @return \Order
+	 */
+	private function getOrder() {
+		try {
+			if(is_numeric(Tools::getValue('prestaShopOrderID'))) {
+				$order_id = Tools::getValue('prestaShopOrderID');
+			}
+			else {
+				$sc_data = Db::getInstance()->getRow(
+					'SELECT * FROM safecharge_order_data '
+					. 'WHERE related_transaction_id = "' . Tools::getValue('relatedTransactionId') .'"'
+				);
+
+				if(empty($sc_data) || empty($sc_data['order_id'])) {
+					echo 'DMN Error: we can not find Order connected with incoming relatedTransactionId.';
+					exit;
+				}
+
+				$order_id = $sc_data['order_id'];
+			}
+
+			$order_info = new Order($order_id);
+			
+			if(empty($order_info)) {
+				SC_CLASS::create_log('DMN Refund Error - There is no Order for Order ID ' . $order_id);
+
+				echo 'DMN Refund Error - There is no Order for Order ID ' . $order_id;
+				exit;
+			}
+
+			if($this->module->name != $order_info['module']) {
+				SC_CLASS::create_log('DMN Error - the order do not belongs to the ' . $this->module->name);
+
+				echo 'DMN Error - the order do not belongs to the ' . $this->module->name;
+				exit;
+			}
+			
+			return $order_info;
+		}
+		catch (Excception $e) {
+			SC_CLASS::create_log($e->getMessage(), 'getOrder() exception: ');
+			echo 'getOrder() Exception: ' . $ex->getMessage();
+			exit;
+		}
+	}
     
     /**
      * Function changeOrderStatus
