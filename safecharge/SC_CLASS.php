@@ -124,15 +124,16 @@ class SC_CLASS
      * 
      * @param type $url - API URL
      * @param array $params - parameters
+	 * @param string $plugin_version
      * 
      * @return mixed
      */
-    public static function call_rest_api($url, $params)
+    public static function call_rest_api($url, $params, $plugin_version = '')
     {
-		self::create_log($url, 'REST API URL:');
+		self::create_log($url, 'REST API URL:', $plugin_version);
 		
 		if (empty($url)) {
-			self::create_log('SC_REST_API, the URL is empty!');
+			self::create_log('SC_REST_API, the URL is empty!', '', $plugin_version);
 			return false;
 		}
 		
@@ -140,14 +141,14 @@ class SC_CLASS
 		
 		// get them only if we pass them empty
 		if (empty($params['deviceDetails'])) {
-			$params['deviceDetails'] = self::get_device_details();
+			$params['deviceDetails'] = self::get_device_details($plugin_version);
 		}
 		
 		# validate parameters
 		// directly check the mails
 		if(isset($params['billingAddress']['email'])) {
 			if(!filter_var($params['billingAddress']['email'], self::$params_validation_email['flag'])) {
-				self::create_log($params, 'ERROR - The parameter Billing Address Email is not valid.');
+				self::create_log($params, 'ERROR - The parameter Billing Address Email is not valid.', $plugin_version);
 				
 				return array(
 					'status' => 'ERROR',
@@ -156,8 +157,12 @@ class SC_CLASS
 			}
 			
 			if(strlen($params['billingAddress']['email']) > self::$params_validation_email['length']) {
-				self::create_log($params, 'ERROR - The parameter Billing Address Email must be maximum '
-					. self::$params_validation_email['length'] . ' symbols.');
+				self::create_log(
+					$params, 
+					'ERROR - The parameter Billing Address Email must be maximum ' 
+						. self::$params_validation_email['length'] . ' symbols.',
+					$plugin_version
+				);
 				
 				return array(
 					'status' => 'ERROR',
@@ -169,7 +174,7 @@ class SC_CLASS
 		
 		if(isset($params['shippingAddress']['email'])) {
 			if(!filter_var($params['shippingAddress']['email'], self::$params_validation_email['flag'])) {
-				self::create_log($params, 'ERROR - The parameter Shipping Address Email is not valid.');
+				self::create_log($params, 'ERROR - The parameter Shipping Address Email is not valid.', $plugin_version);
 				
 				return array(
 					'status' => 'ERROR',
@@ -178,8 +183,12 @@ class SC_CLASS
 			}
 			
 			if(strlen($params['shippingAddress']['email']) > self::$params_validation_email['length']) {
-				self::create_log($params, 'ERROR - The parameter Shipping Address Email must be maximum '
-					. self::$params_validation_email['length'] . ' symbols.');
+				self::create_log(
+					$params, 
+					'ERROR - The parameter Shipping Address Email must be maximum '
+						. self::$params_validation_email['length'] . ' symbols.',
+					$plugin_version
+				);
 				
 				return array(
 					'status' => 'ERROR',
@@ -198,7 +207,7 @@ class SC_CLASS
 					if (mb_strlen($val1) > self::$params_validation[$key1]['length']) {
 						$new_val = mb_substr($val1, 0, self::$params_validation[$key1]['length']);
 
-						self::create_log($key1, 'Limit');
+						self::create_log($key1, 'Limit', $plugin_version);
 					}
 
 					$params[$key1] = filter_var($new_val, self::$params_validation[$key1]['flag']);
@@ -211,7 +220,7 @@ class SC_CLASS
 							if (mb_strlen($val2) > self::$params_validation[$key2]['length']) {
 								$new_val = mb_substr($val2, 0, self::$params_validation[$key2]['length']);
 
-								self::create_log($key2, 'Limit');
+								self::create_log($key2, 'Limit', $plugin_version);
 							}
 
 							$params[$key1][$key2] = filter_var($new_val, self::$params_validation[$key2]['flag']);
@@ -221,11 +230,11 @@ class SC_CLASS
 			}
 		}
 		catch(Exception $e) {
-			self::create_log($e->getMessage(), 'Request validation exception ');
+			self::create_log($e->getMessage(), 'Request validation exception', $plugin_version);
 		}
 		# validate parameters END
 		
-		self::create_log($params, 'SC_REST_API, parameters for the REST API call:');
+		self::create_log($params, 'SC_REST_API, parameters for the REST API call:', $plugin_version);
         
         $json_post = json_encode($params);
         
@@ -254,12 +263,12 @@ class SC_CLASS
 			}
 
 			$resp_arr = json_decode($resp, true);
-			self::create_log($resp_arr, 'REST API response: ');
+			self::create_log($resp_arr, 'REST API response:', $plugin_version);
 
 			return $resp_arr;
         }
         catch(Exception $e) {
-            self::create_log($e->getMessage(), 'Exception ERROR when call REST API: ');
+            self::create_log($e->getMessage(), 'Exception ERROR when call REST API:', $plugin_version);
             return false;
         }
     }
@@ -270,9 +279,10 @@ class SC_CLASS
      * Get browser and device based on HTTP_USER_AGENT.
      * The method is based on D3D payment needs.
      * 
+	 * @param string $plugin_version
      * @return array $device_details
      */
-    public static function get_device_details()
+    public static function get_device_details($plugin_version = '')
     {
         $device_details = array(
 			'deviceType'    => 'UNKNOWN', // DESKTOP, SMARTPHONE, TABLET, TV, and UNKNOWN
@@ -285,7 +295,7 @@ class SC_CLASS
 		if(empty($_SERVER['HTTP_USER_AGENT'])) {
 			$device_details['Warning'] = 'User Agent is empty.';
 			
-			self::create_log($device_details['Warning'], 'Error');
+			self::create_log($device_details['Warning'], 'Error', $plugin_version);
 			return $device_details;
 		}
 		
@@ -294,7 +304,7 @@ class SC_CLASS
 		if (empty($user_agent)) {
 			$device_details['Warning'] = 'Probably the merchant Server has problems with PHP filter_var function!';
 			
-			self::create_log($device_details['Warning'], 'Error');
+			self::create_log($device_details['Warning'], 'Error', $plugin_version);
 			return $device_details;
 		}
 		
@@ -370,8 +380,9 @@ class SC_CLASS
      * 
      * @param mixed $data
      * @param string $title - title for the printed log
+	 * @param string $plugin_version - version of the plugin
      */
-    public static function create_log($data, $title = '')
+    public static function create_log($data, $title = '', $plugin_version = '')
     {
         // path is different fore each plugin
         $logs_path = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'var'
@@ -386,49 +397,48 @@ class SC_CLASS
             || @$_SESSION['sc_create_logs'] == 'yes' || @$_SESSION['sc_create_logs'] == 1
         ) {
             // same for all plugins
-            $d = $data;
+            $d		= $data;
+			$string	= '';
 
             if(is_array($data)) {
                 if(!empty($data['userAccountDetails']) && is_array($data['userAccountDetails'])) {
-					$data['userAccountDetails'] = 'userAccountDetails array';
+					$data['userAccountDetails'] = 'userAccountDetails details';
                 }
                 if(!empty($data['userPaymentOption']) && is_array($data['userPaymentOption'])) {
-                    $data['userPaymentOption'] = 'userPaymentOption array';
+                    $data['userPaymentOption'] = 'userPaymentOption details';
                 }
                 if(!empty($data['paymentOption']) && is_array($data['paymentOption'])) {
-					$data['paymentOption'] = 'paymentOption array';
+					$data['paymentOption'] = 'paymentOption details';
                 }
 				
-//				array_walk_recursive($data, function (&$value, $key) {
-//					if($key == 'ccCardNumber' && !empty($value)) {
-//						$value = '****';
-//					}
-//				});
-				
-				if(!empty($data['paymentMethods']) && is_array($data['paymentMethods'])) {
-					$data['paymentMethods'] = json_encode($data['paymentMethods']);
-                }
+//				if(!empty($data['paymentMethods']) && is_array($data['paymentMethods'])) {
+//					$data['paymentMethods'] = json_encode($data['paymentMethods']);
+//                }
                 
-                $d = print_r($data, true);
+                $d = print_r(json_encode($data), true);
             }
             elseif(is_object($data)) {
-                $d = print_r($data, true);
+                $d = print_r(json_encode($data), true);
             }
             elseif(is_bool($data)) {
                 $d = $data ? 'true' : 'false';
             }
+			
+			if(!empty($plugin_version)) {
+				$string .= '[v.' . $plugin_version . '] | ';
+			}
 
             if(!empty($title)) {
-                $d = $title . "\r\n" . $d;
+                $string .= $title . "\r\n";
             }
             
-            $d .= "\r\n\r\n";
+            $string .= $d . "\r\n\r\n";
             // same for all plugins
 
             try {
                 file_put_contents(
                     $logs_path . 'Nuvei-' . date('Y-m-d', time()) . '.txt',
-                    date('H:i:s', time()) . ': ' . $d, FILE_APPEND
+                    date('H:i:s', time()) . ': ' . $string, FILE_APPEND
                 );
             }
             catch (Exception $exc) {}

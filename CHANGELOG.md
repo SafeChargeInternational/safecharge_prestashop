@@ -7,6 +7,8 @@
 	* Change in the new Nuvei status install logic.
 	* Fix for the APM/UPO Order with transactionStatus ERROR. Now the user is redirected to Error Page and do not create Order.
 	* Added check in scGetDMN method for the owner module of the Order.
+	* Pass the Plugin version in merchantDetails and all log records.
+	* In the log all arrays are present as json-s.
 ```
 
 #1.7.4

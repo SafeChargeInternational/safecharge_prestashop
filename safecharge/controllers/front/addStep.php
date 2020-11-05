@@ -33,19 +33,19 @@ class SafeChargeAddStepModuleFrontController extends ModuleFrontController
 		
 		// check parameters
 		if($cart->secure_key != Tools::getValue('key')) {
-			SC_CLASS::create_log('SafeChargeAddStepModuleFrontController Error - secure key not mutch!');
+			SC_CLASS::create_log('SafeChargeAddStepModuleFrontController Error - secure key not mutch!', '', $this->module->version);
 			
 			Tools::redirect($error_url);
 		}
 		
 		if($cart->id != Tools::getValue('cartId')) {
-			SC_CLASS::create_log('SafeChargeAddStepModuleFrontController Error - Cart ID not mutch!');
+			SC_CLASS::create_log('SafeChargeAddStepModuleFrontController Error - Cart ID not mutch!', '', $this->module->version);
 			
 			Tools::redirect($error_url);
 		}
 		
 		if(number_format($cart->getOrderTotal(), 2, '.', '') != Tools::getValue('amount')) {
-			SC_CLASS::create_log('SafeChargeAddStepModuleFrontController Error - Order amount not mutch!');
+			SC_CLASS::create_log('SafeChargeAddStepModuleFrontController Error - Order amount not mutch!', '', $this->module->version);
 			
 			Tools::redirect($error_url);
 		}

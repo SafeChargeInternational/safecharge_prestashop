@@ -36,7 +36,7 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
      */
     private function order_void_settle()
     {
-        SC_CLASS::create_log('Void/Settle');
+        SC_CLASS::create_log('Void/Settle', '', $this->module->version);
         
         if(empty(Tools::getValue('scAction', ''))) {
             echo json_encode(array('status' => 0, 'msg' => 'There is no action.'));
@@ -91,7 +91,7 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
             $url = $test_mode == 'no' ? SC_LIVE_VOID_URL : SC_TEST_VOID_URL;
         }
         
-        $resp = SC_CLASS::call_rest_api($url, $params);
+        $resp = SC_CLASS::call_rest_api($url, $params, $this->module->version);
         
         if(
             !$resp || !is_array($resp)
