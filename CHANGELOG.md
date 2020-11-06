@@ -1,5 +1,10 @@
 # SafeCharge Prestashop Changelog
 
+#1.7.6
+```
+	* Added additional check for Order State, because of the slow method validatePaymen().
+```
+
 #1.7.5
 ```
 	* Fix for the new Netteler APM behavior.
