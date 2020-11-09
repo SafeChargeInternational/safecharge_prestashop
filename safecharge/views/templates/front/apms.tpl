@@ -241,6 +241,39 @@
 	#scAddStepPayBtn {
 		
 	}
+	
+	/* payment processing popup */
+	#sc_loading_window {
+		position: fixed;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		z-index: 1000;
+		background: rgba(0,0,0,0.5);
+	}
+	
+	#sc_loading_window .sc_modal {
+		position: relative;
+		width: 100%;
+		background: white;
+		max-width: 1000px;
+		margin: 60px auto;
+		font-size: 1rem;
+		padding: 30px;
+		
+	}
+	
+	#sc_loading_window .sc_header {
+		text-align: right;
+		font-size: 1.375rem;
+	}
+	
+	#sc_loading_window .sc_header span {
+		font-weight: bolder;
+		cursor: pointer;
+	}
+	
     
     /* for the 3DS popup */
     .sfcModal-dialog {
@@ -252,7 +285,7 @@
 		padding-top: 10px;
 	}
 	
-	#scForm .cc_load_spinner img {
+	#scForm .cc_load_spinner img, #sc_loading_window img {
 		-webkit-animation: sc_spin 1s infinite linear;
         animation: sc_spin 1s infinite linear;
 	}
@@ -306,6 +339,18 @@
 <div id="sc_remove_upo_success" class="alert alert-success sc_hide">
     <span class="sc_error_msg">{l s='UPO remove done.' mod='safecharge'}</span>
     <span class="close" onclick="$('#sc_remove_upo_success').hide();">&times;</span>
+</div>
+	
+<div id="sc_loading_window" class="sc_hide">
+	<div class="sc_modal">
+		<div class="sc_header"><span onclick="closeScLoadingModal()">&times;</span></div>
+		<hr/>
+		
+		<div class="sc_content">
+			<h3><img src="/modules/safecharge/views/img/loading.png" class="fast-right-spinner" alt="sync...">
+			{l s='Processing your Payment...' mod='safecharge'}</h3>
+		</div>
+	</div>
 </div>
 
 </br>
@@ -440,7 +485,7 @@
 	{if $scAddStep}
 		<div id="payment-confirmation">
 			<div class="ps-shown-by-js">
-				<button type="button" class="btn btn-primary center-block" onclick="scValidateAPMFields()">
+				<button type="button" class="btn btn-primary center-block" onclick="scValidateAPMFields()" id="sc_checkout_btn">
 					{l s='Order with an obligation to pay' d='Shop.Theme.Checkout'}
 				</button>
 			</div>
@@ -505,12 +550,12 @@
     // for the fields END
 	
 	var scDefaultErrorMsg	= "{l s='Please, select a payment method, and fill all of its fileds!' mod='safecharge'}";
-	var scPayButton			= '#payment-confirmation button[type="submit"]';
-	var scPayButtonOriginId = '';
+	var scPayButton			= '#payment-confirmation button[type="button"]';
+{*	var scPayButtonOriginId = '';*}
 
     function scValidateAPMFields() {
         $(scPayButton).prop('disabled', true);
-        $(scPayButton + ' .fast-right-spinner').removeClass('sc_hide');
+        $('#sc_loading_window').removeClass('sc_hide');
 
 		if('' != scAPMsErrorMsg) {
 			scFormFalse(scAPMsErrorMsg);
@@ -725,14 +770,14 @@
 		}
 		else {
 			$(scPayButton).prop('disabled', false);
-			$(scPayButton + ' .fast-right-spinner').addClass('sc_hide');
+			$('#sc_loading_window').addClass('sc_hide');
 		}
 	}
 	
 	// show error message
     function scFormFalse(_text) {
         $(scPayButton).prop('disabled', false);
-        $(scPayButton + ' .fast-right-spinner').addClass('sc_hide');
+        $('#sc_loading_window').addClass('sc_hide');
 		
 		var selectedCheckbox = $('input[name="sc_payment_method"]:checked');
 			
@@ -776,10 +821,6 @@
         scFields = sfc.fields({
             locale: "{$languageCode}"
         });
-		
-		if($(scPayButton + ' .fast-right-spinner').length == 0) {
-			$(scPayButton).prepend('<img src="/modules/safecharge/views/img/loading.png" class="fast-right-spinner sc_hide" alt="sync..." />');
-		}
     }
 	
 	function createSCFields() {
@@ -848,6 +889,10 @@
 		}
 	}
 	
+	function closeScLoadingModal() {
+		$('#sc_loading_window').addClass('sc_hide');
+	}
+	
 	/**
 	 * Function reCreateSCFields
 	 * use it after DECLINED payment try
@@ -879,7 +924,7 @@
 				$('#sc_apms_list').removeClass('sc_hide');
 				
 				$(scPayButton).prop('disabled', false);
-				$(scPayButton + ' .fast-right-spinner').addClass('sc_hide');
+				$('#sc_loading_window').removeClass('sc_hide');
 			}
 			else {
 				window.location.reload();
@@ -925,17 +970,12 @@
 		}
 	}
 	
-	function scFindPaymentButton() {
+	{*function scFindPaymentButton() {
 		// One Page Checkout PS
 		if(typeof OnePageCheckoutPS != 'undefined' && $('#btn_place_orders').length == 1) {
 			scPayButton = '#btn_place_orders';
-			
-			{*scPayButtonOriginId = '#btn_place_orders';
-			scPayButton = '#sc_pay_button';*}
-			
-{*			$('#btn_place_orders').attr('id', scPayButton);*}
 		}
-	}
+	}*}
 
 	document.addEventListener('DOMContentLoaded', function(event) {
         prepareSCFields();
@@ -948,27 +988,39 @@
 		$('input[name=payment-option]').on('change', function() {
 			console.log('payment-option', $('input[name=payment-option]:checked').attr('data-module-name'));
 			
-			if ($('input[name=payment-option]:checked').attr('data-module-name') == 'safecharge') {
-				if($('#scForm').closest('#payment-confirmation').length == 0) {
+			if (
+				$('input[name=payment-option]:checked').attr('data-module-name') == 'safecharge'
+				&& $('#payment-confirmation button[type="submit"]').length > 0
+			) {
+				{*if($('#scForm').closest('#payment-confirmation').length == 0) {
 					scFindPaymentButton();
-				}
+				}*}
+								
+				$('#payment-confirmation button[type="submit"]')
+					.attr('type', 'button')
+					.attr('onclick', 'scValidateAPMFields()');
 			}
-			else if (scPayButtonOriginId != scPayButton && '' != scPayButtonOriginId) {
-				$(scPayButton).attr('id', scPayButtonOriginId);
+		//	else if (scPayButtonOriginId != scPayButton && '' != scPayButtonOriginId) {
+				{*$(scPayButton).attr('id', scPayButtonOriginId);*}
+		//	}
+			else {
+				$('#payment-confirmation button[type="button"]')
+					.attr('type', 'submit')
+					.attr('onclick', '');
 			}
 		});
 		// find payment button END
 
-		$(scPayButton)
+		{*$(scPayButton)
 			.on('click', function(e) {
 				if($('input[name=payment-option]:checked').attr('data-module-name') == 'safecharge') {
-{*					e.preventDefault();*}
+					e.preventDefault();
 					e.stopPropagation();
 			
 					scValidateAPMFields();
 					return false;
 				}
-            });
+            });*}
 
 		{if $customAPMsNote}
 			$('#scForm').find('p.help-block b').text("{$customAPMsNote}"

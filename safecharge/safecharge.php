@@ -22,7 +22,7 @@ class SafeCharge extends PaymentModule
     {
         $this->name						= 'safecharge';
         $this->tab						= SafeChargeVersionResolver::set_tab();
-        $this->version					= '1.7.6';
+        $this->version					= '1.7.9';
         $this->author					= 'Nuvei';
         $this->need_instance			= 1;
         $this->ps_versions_compliancy	= array('min' => '1.7', 'max' => _PS_VERSION_);
@@ -49,6 +49,14 @@ class SafeCharge extends PaymentModule
         $smarty->assign('ajaxUrl', $this->context->link->getAdminLink("AdminSafeChargeAjax"));
         $_SESSION['sc_create_logs'] = Configuration::get('SC_CREATE_LOGS');
     }
+	
+	public function update() {
+		SC_CLASS::create_log('Update function');
+	}
+	
+	public function upgrade() {
+		SC_CLASS::create_log('upgrade function');
+	}
 	
     public function install()
     {
@@ -900,11 +908,9 @@ class SafeCharge extends PaymentModule
 			$this->context->smarty->assign('upos',				'');
 			$this->context->smarty->assign('icons',				'');
 			$this->context->smarty->assign('isTestEnv',			'');
-			
-//			$this->prepareOrderData();
 		}
 	}
-    
+	
 	private function addOrderState()
 	{
 		$db = Db::getInstance();
@@ -993,6 +999,7 @@ class SafeCharge extends PaymentModule
 					}
 
 					if(!$order_state->add()) {
+						SC_CLASS::create_log('addOrderState() Error - The new Nuvei State was not added.', '', $this->version);
 						return false;
 					}
 

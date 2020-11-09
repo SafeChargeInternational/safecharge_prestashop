@@ -471,8 +471,13 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 		}
         
         if(!$this->checkAdvancedCheckSum()) {
-            SC_CLASS::create_log('DMN report: You receive DMN from not trusted source. The process ends here.', '', $this->module->version);
-            echo 'DMN Error: You receive DMN from not trusted source. The process ends here.';
+            SC_CLASS::create_log(
+				Tools::getValue('TransactionID'),
+				'DMN report: You receive DMN from not trusted source. The process ends here.', 
+				$this->module->version
+			);
+            
+			echo 'DMN Error: You receive DMN from not trusted source. The process ends here.';
             exit;
         }
 		
@@ -494,10 +499,18 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             && in_array(Tools::getValue('transactionType'), array('Sale', 'Auth'))
         ) {
 			// REST and WebSDK
-			SC_CLASS::create_log('DMN Report - REST sale.', '', $this->module->version);
+			SC_CLASS::create_log(
+				Tools::getValue('TransactionID'),
+				'DMN Report - REST sale.',
+				$this->module->version
+			);
 			
 			if(!Tools::getValue('merchant_unique_id', false)) {
-				SC_CLASS::create_log('Sale/Auth Error - merchant_unique_id is empty!', '', $this->module->version);
+				SC_CLASS::create_log(Tools::getValue('TransactionID'),
+					'Sale/Auth Error - merchant_unique_id is empty!',
+					$this->module->version
+				);
+				
 				echo 'Sale/Auth Error - merchant_unique_id is empty!';
 				exit;
 			}
@@ -511,7 +524,12 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                     $order_id = Order::getIdByCartId(Tools::getValue('merchant_unique_id', 0));
 
                     if(!$order_id) {
-						SC_CLASS::create_log($tries, 'DMN Report - the DMN wait for the order.', $this->module->version);
+						SC_CLASS::create_log(
+							Tools::getValue('TransactionID'),
+							'DMN Report - the DMN wait for the order.',
+							$this->module->version
+						);
+						
                         sleep(10);
                     }
 					else {
@@ -519,7 +537,12 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 						
 						// check for slow Prestashop slow saving process
 						if(empty($order_info->current_state)) {
-							SC_CLASS::create_log(@$_REQUEST, 'DMN Error - current order state is 0. Stop process and waith for the next DMN.');
+							SC_CLASS::create_log(
+								Tools::getValue('TransactionID'),
+								'DMN Error - current order state is 0. Wait for 10 seconds.',
+								$this->module->version
+							);
+							
 							sleep(10);
 						}
 					}
@@ -530,7 +553,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					// do not create order for Declined transaction
 					if(strtolower($this->getRequestStatus()) != 'approved') {
 						SC_CLASS::create_log(
-							@$_REQUEST,
+							Tools::getValue('TransactionID'),
 							'DMN Error - Not Approved DMN for not existing order - stop process.',
 							$this->module->version
 						);
@@ -545,7 +568,11 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 						$payment_method = str_replace('apmgw_', '', Tools::getValue('sc_upo_name', ''));
 					}
 					
-                    SC_CLASS::create_log('The DMN didn\'t wait for the Order creation. Try to save order by the DMN.', '', $this->module->version);
+                    SC_CLASS::create_log(
+						Tools::getValue('TransactionID'),
+						'The DMN didn\'t wait for the Order creation. Try to save order by the DMN.',
+						$this->module->version
+					);
 					
 					// try to create Order here
 					try {
@@ -564,31 +591,50 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 						);
 						
 						if(!$res) {
-							SC_CLASS::create_log('DMN Error - Order was not validated', '', $this->module->version);
+							SC_CLASS::create_log(
+								Tools::getValue('TransactionID'),
+								'DMN Error - Order was not validated',
+								$this->module->version
+							);
 							echo 'DMN Error - Order was not validated';
 							exit;
 						}
 						
-						SC_CLASS::create_log('scGetDMN() - the Order was saved.', '', $this->module->version);
+						SC_CLASS::create_log(
+							Tools::getValue('TransactionID'),
+							'scGetDMN() - the Order was saved.', 
+							$this->module->version
+						);
 					}
 					catch(Exception $e) {
-						SC_CLASS::create_log($e->getMessage(), 'DMN Exception', $this->module->version);
+						SC_CLASS::create_log(
+							[Tools::getValue('TransactionID'), $e->getMessage()],
+							'DMN Exception',
+							$this->module->version
+						);
 						echo 'DMN Exception when try to create an Order by DMN data.';
 						exit;
 					}
 					
-					SC_CLASS::create_log('DMN Report - An Order was made.', '', $this->module->version);
+					SC_CLASS::create_log(
+						Tools::getValue('TransactionID'),
+						'DMN Report - An Order was made.',
+						$this->module->version
+					);
 					$order_id = $this->module->currentOrder;
                 }
 				
 				if($this->module->name != $order_info->module) {
 					SC_CLASS::create_log(
-						@$_REQUEST,
-						'DMN Error - the order do not belongs to the ' . $this->module->name,
+						[
+							'TransactionID' => Tools::getValue('TransactionID'),
+							'order module' => $order_info->module
+						],
+						'DMN Error - the Order do not belongs to the ' . $this->module->name,
 						$this->module->version
 					);
 					
-					echo 'DMN Error - the order do not belongs to the ' . $this->module->name;
+					echo 'DMN Error - the Order do not belongs to the ' . $this->module->name;
 					exit;
 				}
 				
@@ -1037,7 +1083,11 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			$message->add();
 		}
 		
-		SC_CLASS::create_log('changeOrderStatus() END.', '', $this->module->version);
+		SC_CLASS::create_log(
+			['order id' => $order_info['id'], 'status id ' => $status_id],
+			'changeOrderStatus() END.',
+			$this->module->version
+		);
     }
     
     /**

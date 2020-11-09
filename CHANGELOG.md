@@ -1,5 +1,11 @@
 # SafeCharge Prestashop Changelog
 
+#1.7.7
+```
+	* Button Spinner in the "Order with obligation to pay" was replaced from Loading popup.
+	* Fix for default checkout flow.
+```
+
 #1.7.6
 ```
 	* Added additional check for Order State, because of the slow method validatePaymen().
