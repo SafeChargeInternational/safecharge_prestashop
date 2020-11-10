@@ -249,7 +249,7 @@
 		bottom: 0;
 		left: 0;
 		right: 0;
-		z-index: 1000;
+		z-index: 800;
 		background: rgba(0,0,0,0.5);
 	}
 	
@@ -257,16 +257,22 @@
 		position: relative;
 		width: 100%;
 		background: white;
-		max-width: 1000px;
+		max-width: 600px;
 		margin: 60px auto;
 		font-size: 1rem;
 		padding: 30px;
+		text-align: center;
+		
 		
 	}
 	
 	#sc_loading_window .sc_header {
 		text-align: right;
 		font-size: 1.375rem;
+	}
+	
+	#sc_loading_window .sc_content {
+		margin-top: 40px;
 	}
 	
 	#sc_loading_window .sc_header span {
@@ -770,14 +776,14 @@
 		}
 		else {
 			$(scPayButton).prop('disabled', false);
-			$('#sc_loading_window').addClass('sc_hide');
+			closeScLoadingModal();
 		}
 	}
 	
 	// show error message
     function scFormFalse(_text) {
         $(scPayButton).prop('disabled', false);
-        $('#sc_loading_window').addClass('sc_hide');
+		closeScLoadingModal();
 		
 		var selectedCheckbox = $('input[name="sc_payment_method"]:checked');
 			
@@ -924,7 +930,7 @@
 				$('#sc_apms_list').removeClass('sc_hide');
 				
 				$(scPayButton).prop('disabled', false);
-				$('#sc_loading_window').removeClass('sc_hide');
+{*				$('#sc_loading_window').removeClass('sc_hide');*}
 			}
 			else {
 				window.location.reload();

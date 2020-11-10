@@ -36,7 +36,7 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
      */
     private function order_void_settle()
     {
-        SC_CLASS::create_log('Void/Settle', '', $this->module->version);
+        $this->module->createLog('Void/Settle');
         
         if(empty(Tools::getValue('scAction', ''))) {
             echo json_encode(array('status' => 0, 'msg' => 'There is no action.'));

@@ -61,17 +61,12 @@
     </button>
 {/if}
 
-{if !empty($scData.payment_method) and $scData.payment_method eq 'cc_card'}
-	{if 
-		($scData.order_state eq $state_completed and !empty($scData.resp_transaction_type) and $scData.resp_transaction_type|in_array:array('Sale', 'Settle'))
-		or ($scData.order_state eq $state_sc_await_paiment and !empty($scData.resp_transaction_type) and $scData.resp_transaction_type eq 'Auth')
-	}
-		<button type="button" id="sc_void_btn" class="btn btn-default" onclick="scOrderAction('void', {$orderId})">
-			<i class="icon-retweet"></i>
-			<i class="icon-repeat fast-right-spinner hidden"></i>
-			{l s='Void' mod='safecharge'}
-		</button>
-	{/if}
+{if $enableVoid}
+	<button type="button" id="sc_void_btn" class="btn btn-default" onclick="scOrderAction('void', {$orderId})">
+		<i class="icon-retweet"></i>
+		<i class="icon-repeat fast-right-spinner hidden"></i>
+		{l s='Void' mod='safecharge'}
+	</button>
 {/if}
     
 <script type="text/javascript">
@@ -152,10 +147,6 @@
     // remove PS refund buttons
     $('#desc-order-standard_refund').hide();
     
-    {* if
-        $scData.order_state neq $state_completed
-        or !in_array($scData.payment_method, array('cc_card', 'dc_card', 'apmgw_expresscheckout'))
-    *}
 	{if
 		!in_array($scData.order_state, array($state_completed, $state_refunded))
         or (isset($scData.payment_method) and !in_array($scData.payment_method, array('cc_card', 'dc_card', 'apmgw_expresscheckout')))

@@ -26,7 +26,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             || !Configuration::get('SC_SECRET_KEY')
             || !Configuration::get('SC_CREATE_LOGS')
         ) {
-            SC_CLASS::create_log('Plugin is not active or missing Merchant mandatory data!', '', $this->module->version);
+            $this->module->createLog('Plugin is not active or missing Merchant mandatory data!');
             Tools::redirect($this->context->link->getPageLink('order'));
         }
         
@@ -62,7 +62,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
     
     private function processOrder()
     {
-		SC_CLASS::create_log(@$_REQUEST, 'processOrder() params', $this->module->version);
+		$this->module->createLog(@$_REQUEST, 'processOrder() params');
 		
         try {
 			$sc_payment_method	= Tools::getValue('sc_payment_method', '');
@@ -80,8 +80,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					
 					$order_data = Db::getInstance()->getRow($query);
 					
-					SC_CLASS::create_log($query, 'processOrder() $query', $this->module->version);
-					SC_CLASS::create_log($order_data, 'processOrder() $order_data', $this->module->version);
+					$this->module->createLog($query, 'processOrder() $query');
+					$this->module->createLog($order_data, 'processOrder() $order_data');
 					
 					// redirect to success
 					if(!empty($order_data)) {
@@ -100,7 +100,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					}
 				}
 				
-				SC_CLASS::create_log(@$_REQUEST, 'processOrder() Error - Cart ID is empty.', $this->module->version);
+				$this->module->createLog(@$_REQUEST, 'processOrder() Error - Cart ID is empty.');
 				Tools::redirect($this->context->link->getModuleLink(
 					'safecharge',
 					'payment',
@@ -134,7 +134,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				);
 
 			if(empty($sc_payment_method)) {
-				SC_CLASS::create_log(@$_REQUEST, 'REST API Order, but parameter sc_payment_method is empty.', $this->module->version);
+				$this->module->createLog(@$_REQUEST, 'REST API Order, but parameter sc_payment_method is empty.');
 				Tools::redirect($error_url);
 			}
 			
@@ -164,7 +164,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			
 			# 1. when use WebSDK
 			if(Tools::getValue('sc_transaction_id', false)) {
-				SC_CLASS::create_log(@$_REQUEST, 'processOrder() WebSDK Order', $this->module->version);
+				$this->module->createLog(@$_REQUEST, 'processOrder() WebSDK Order');
 				
 				// save order
 				$res = $this->module->validateOrder(
@@ -182,11 +182,11 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				);
 
 				if(!$res) {
-					SC_CLASS::create_log(@$_REQUEST, 'processOrder() Order was not validated', $this->module->version);
+					$this->module->createLog(@$_REQUEST, 'processOrder() Order was not validated');
 					Tools::redirect(Tools::redirect($error_url));
 				}
 				
-				SC_CLASS::create_log(@$_REQUEST, 'processOreder() - the webSDK Order was saved.', $this->module->version);
+				$this->module->createLog(@$_REQUEST, 'processOreder() - the webSDK Order was saved.');
 				
 				$this->updateCustomPaymentFields($this->module->currentOrder);
 				
@@ -198,10 +198,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			
 			// in case there is no sc_transaction_id, but the order is CC, redirect to error page
 			if(Tools::getValue('sc_payment_method', false) == 'cc_card') {
-				SC_CLASS::create_log(
+				$this->module->createLog(
 					@$_REQUEST,
-					'processOrder() Error - this is payment with CC, but there is no transaction ID.',
-					$this->module->version
+					'processOrder() Error - this is payment with CC, but there is no transaction ID.'
 				);
 				Tools::redirect(Tools::redirect($error_url));
 			}
@@ -347,19 +346,18 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			$req_status = $this->getRequestStatus($resp);
 		}
 		catch(Exception $e) {
-			SC_CLASS::create_log($e->getMessage(), 'processOrder() Exception:', $this->module->version);
+			$this->module->createLog($e->getMessage(), 'processOrder() Exception:');
 			
-			SC_CLASS::create_log(
+			$this->module->createLog(
 				$this->context->link->getModuleLink(
 					'safecharge', 
 					'payment', 
 					array('prestaShopAction' => 'showError')
 				),
-				'Exception URL:',
-				$this->module->version
+				'Exception URL:'
 			);
 			
-			SC_CLASS::create_log($this->context->cart, 'processOrder() Exception cart:', $this->module->version);
+			$this->module->createLog($this->context->cart, 'processOrder() Exception cart:');
 			
 			Tools::redirect(
 				$this->context->link->getModuleLink(
@@ -395,22 +393,22 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			);
 
 			if(!$res) {
-				SC_CLASS::create_log(@$_REQUEST, 'Order was not validated', $this->module->version);
+				$this->module->createLog(@$_REQUEST, 'Order was not validated');
 				Tools::redirect($error_url);
 			}
 			
-			SC_CLASS::create_log(@$_REQUEST, 'processOreder() - the APM/UPO Order was saved.', $this->module->version);
+			$this->module->createLog(@$_REQUEST, 'processOreder() - the APM/UPO Order was saved.');
 		}
 
 		if($req_status == 'SUCCESS') {
 			// APM
 			if(!empty($resp['redirectURL'])) {
-				SC_CLASS::create_log($resp['redirectURL'], 'processOrder() redirectURL:', $this->module->version);
+				$this->module->createLog($resp['redirectURL'], 'processOrder() redirectURL:');
 				$final_url = $resp['redirectURL'];
 			}
 			// UPO
 			elseif(!empty($resp['paymentOption']['redirectUrl'])) {
-				SC_CLASS::create_log($resp['paymentOption']['redirectUrl'], 'redirectURL:', $this->module->version);
+				$this->module->createLog($resp['paymentOption']['redirectUrl'], 'redirectURL:');
 				$final_url = $resp['paymentOption']['redirectUrl'];
 			}
 		}
@@ -457,13 +455,12 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
      */
     private function scGetDMN()
     {
-        SC_CLASS::create_log(@$_REQUEST, 'DMN request:', $this->module->version);
+        $this->module->createLog(@$_REQUEST, 'DMN request:');
 		
 		if(Tools::getValue('sc_stop_dmn', 0) == 1) {
-			SC_CLASS::create_log(
+			$this->module->createLog(
 				http_build_query(@$_REQUEST),
-				'DMN report: Manually stopped process.',
-				$this->module->version
+				'DMN report: Manually stopped process.'
 			);
             
 			echo 'DMN report: Manually stopped process.';
@@ -471,22 +468,25 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 		}
         
         if(!$this->checkAdvancedCheckSum()) {
-            SC_CLASS::create_log(
+            $this->module->createLog(
 				Tools::getValue('TransactionID'),
-				'DMN report: You receive DMN from not trusted source. The process ends here.', 
-				$this->module->version
+				'DMN Error: Advanced checsum error. The process ends here.'
 			);
             
-			echo 'DMN Error: You receive DMN from not trusted source. The process ends here.';
+			echo 'DMN Error: Advanced checsum error. The process ends here.';
             exit;
         }
 		
 		if(empty(Tools::getValue('transactionType', ''))) {
+			$this->module->createLog('DMN Error: transactionType is empty.');
+			
 			echo 'DMN Error: transactionType is empty.';
             exit;
 		}
 		
-		if(empty(Tools::getValue('TransactionID', '')) or ! is_numeric(Tools::getValue('TransactionID', ''))) {
+		if(empty(Tools::getValue('TransactionID', '')) || ! is_numeric(Tools::getValue('TransactionID', ''))) {
+			$this->module->createLog('DMN Error: TransactionID is empty or not numeric.');
+			
 			echo 'DMN Error: TransactionID is empty or not numeric.';
             exit;
 		}
@@ -499,19 +499,15 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             && in_array(Tools::getValue('transactionType'), array('Sale', 'Auth'))
         ) {
 			// REST and WebSDK
-			SC_CLASS::create_log(
-				Tools::getValue('TransactionID'),
-				'DMN Report - REST sale.',
-				$this->module->version
-			);
+			$this->module->createLog(Tools::getValue('TransactionID'), 'DMN Report - REST sale.');
 			
 			if(!Tools::getValue('merchant_unique_id', false)) {
-				SC_CLASS::create_log(Tools::getValue('TransactionID'),
-					'Sale/Auth Error - merchant_unique_id is empty!',
-					$this->module->version
+				$this->module->createLog(
+					Tools::getValue('TransactionID'),
+					'DMN Error - merchant_unique_id is empty!'
 				);
 				
-				echo 'Sale/Auth Error - merchant_unique_id is empty!';
+				echo 'DMN Error - merchant_unique_id is empty!';
 				exit;
 			}
                 
@@ -524,10 +520,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                     $order_id = Order::getIdByCartId(Tools::getValue('merchant_unique_id', 0));
 
                     if(!$order_id) {
-						SC_CLASS::create_log(
+						$this->module->createLog(
 							Tools::getValue('TransactionID'),
-							'DMN Report - the DMN wait for the order.',
-							$this->module->version
+							'DMN Report - the DMN wait for the order.'
 						);
 						
                         sleep(10);
@@ -537,10 +532,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 						
 						// check for slow Prestashop slow saving process
 						if(empty($order_info->current_state)) {
-							SC_CLASS::create_log(
+							$this->module->createLog(
 								Tools::getValue('TransactionID'),
-								'DMN Error - current order state is 0. Wait for 10 seconds.',
-								$this->module->version
+								'DMN Error - current order state is 0. Wait for 10 seconds.'
 							);
 							
 							sleep(10);
@@ -552,10 +546,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 if(!$order_id) {
 					// do not create order for Declined transaction
 					if(strtolower($this->getRequestStatus()) != 'approved') {
-						SC_CLASS::create_log(
+						$this->module->createLog(
 							Tools::getValue('TransactionID'),
-							'DMN Error - Not Approved DMN for not existing order - stop process.',
-							$this->module->version
+							'DMN Error - Not Approved DMN for not existing order - stop process.'
 						);
 						echo 'DMN Error - Not Approved DMN for not existing order - stop process.';
 						exit;
@@ -644,24 +637,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				$insert_data	= true; // false for update
 				
 				if(!empty($order_payments) && is_array($order_payments)) {
-					$last_payment	= end($order_payments);
-					
-					if(
-						'' != $last_payment->amount
-						&& round(floatval($last_payment->amount), 2) != round(Tools::getValue('totalAmount', 'float'), 2)
-					) {
-						SC_CLASS::create_log(
-							array(
-								'DMN totalAmount' => round(Tools::getValue('totalAmount', 'float')),
-								'Last Payment Amount' => round($last_payment->amount, 2)
-							),
-							'DMN Error - DMN totalAmount does not mutch Last Payment Amount',
-							$this->module->version
-						);
-						
-						echo 'DMN Error - DMN totalAmount does not mutch Last Payment Amount';
-						exit;
-					}
+					$last_payment = end($order_payments);
 					
 					if(
 						'' != $last_payment->transaction_id
@@ -683,6 +659,21 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					$insert_data = false;
 				}
 				// check for transaction Id after sdk Order END
+				
+				// wrong amount check
+				$order_amount	= round(floatval($order_info->total_paid), 2);
+				$dmn_amount		= round(Tools::getValue('totalAmount', 0), 2);
+				
+				if($order_amount != $dmn_amount) {
+					$this->module->createLog(
+						array(
+							'DMN totalAmount' => $dmn_amount,
+							'Order Amount' => $order_amount
+						),
+						'DMN Error - DMN totalAmount does not mutch Order Amount'
+					);
+				}
+				// wrong amount check
 				
 				// check for previous DMN data
 				$sc_data = Db::getInstance()->getRow(
@@ -1083,10 +1074,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			$message->add();
 		}
 		
-		SC_CLASS::create_log(
+		$this->module->createLog(
 			['order id' => $order_info['id'], 'status id ' => $status_id],
-			'changeOrderStatus() END.',
-			$this->module->version
+			'changeOrderStatus() END.'
 		);
     }
     

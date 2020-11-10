@@ -18,34 +18,24 @@ class SafeChargeAddStepModuleFrontController extends ModuleFrontController
     {
         parent::initContent();
 		
-//		$error_url = $this->context->link
-//			->getModuleLink(
-//				'safecharge',
-//				'payment',
-//				array(
-//					'prestaShopAction'	=> 'showError',
-//					'id_cart'			=> Tools::getValue('cartId'),
-//				)
-//			);
-		$error_url = $this->context->link->getPageLink('order');
-		
-		$cart = $this->context->cart;
+		$error_url	= $this->context->link->getPageLink('order');
+		$cart		= $this->context->cart;
 		
 		// check parameters
 		if($cart->secure_key != Tools::getValue('key')) {
-			SC_CLASS::create_log('SafeChargeAddStepModuleFrontController Error - secure key not mutch!', '', $this->module->version);
+			$this->module->createLog('SafeChargeAddStepModuleFrontController Error - secure key not mutch!');
 			
 			Tools::redirect($error_url);
 		}
 		
 		if($cart->id != Tools::getValue('cartId')) {
-			SC_CLASS::create_log('SafeChargeAddStepModuleFrontController Error - Cart ID not mutch!', '', $this->module->version);
+			$this->module->createLog('SafeChargeAddStepModuleFrontController Error - Cart ID not mutch!');
 			
 			Tools::redirect($error_url);
 		}
 		
 		if(number_format($cart->getOrderTotal(), 2, '.', '') != Tools::getValue('amount')) {
-			SC_CLASS::create_log('SafeChargeAddStepModuleFrontController Error - Order amount not mutch!', '', $this->module->version);
+			$this->module->createLog('SafeChargeAddStepModuleFrontController Error - Order amount not mutch!');
 			
 			Tools::redirect($error_url);
 		}

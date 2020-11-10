@@ -4,6 +4,12 @@
 ```
 	* Button Spinner in the "Order with obligation to pay" was replaced from Loading popup.
 	* Fix for default checkout flow.
+	* Added module method createLog() and start using it.
+	* When come DMN with different amount than the Order amount, save all SafeCharge data and let PrestaShope put status Error.
+	* Enabled Void button for Orders with status Error, because of the above case.
+	* Removed commented code fragments.
+	* Move Order-DMN Amount check outside of Order Payment logic.
+	* Save Items ID, quantity and price (total_wt parameter) in OpenOrder request - merchantDetails -> customField3
 ```
 
 #1.7.6
