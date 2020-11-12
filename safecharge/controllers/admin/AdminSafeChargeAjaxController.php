@@ -91,7 +91,7 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
             $url = $test_mode == 'no' ? SC_LIVE_VOID_URL : SC_TEST_VOID_URL;
         }
         
-        $resp = SC_CLASS::call_rest_api($url, $params, $this->module->version);
+        $resp = $this->module->callRestApi($url, $params);
         
         if(
             !$resp || !is_array($resp)

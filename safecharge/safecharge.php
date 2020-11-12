@@ -22,10 +22,11 @@ class SafeCharge extends PaymentModule
     {
         $this->name						= 'safecharge';
         $this->tab						= SafeChargeVersionResolver::set_tab();
-        $this->version					= '1.7.7';
+        $this->version					= '1.7.8';
         $this->author					= 'Nuvei';
         $this->need_instance			= 1;
-        $this->ps_versions_compliancy	= array('min' => '1.7', 'max' => _PS_VERSION_);
+//        $this->ps_versions_compliancy	= array('min' => '1.7', 'max' => _PS_VERSION_);
+        $this->ps_versions_compliancy	= array('min' => '1.7', 'max' => '1.7.6.4');
         $this->bootstrap				= true;
         $this->controllers				= array('payment', 'validation');
         $this->is_eu_compatible			= 1;
@@ -495,7 +496,7 @@ class SafeCharge extends PaymentModule
             
             $refund_url = $test_mode == 'yes' ? SC_TEST_REFUND_URL : SC_LIVE_REFUND_URL;
             
-            $json_arr = SC_CLASS::call_rest_api($refund_url, $ref_parameters, $this->version);
+            $json_arr = $this->callRestApi($refund_url, $ref_parameters);
         }
         catch(Exception $e) {
             $this->createLog($e->getMessage(), 'hookActionOrderSlipAdd Exception: ');
@@ -781,18 +782,8 @@ class SafeCharge extends PaymentModule
 						. $oo_params['amount'] . $oo_params['currency'] . $time . $secret
 				);
 
-//				$this->createLog(
-//					array(
-//						'REST API URL'	=> $oo_endpoint_url,
-//						'params'		=> $oo_params
-//					),
-//					'REST API call (before validation)'
-//				);
-				
-				$resp = SC_CLASS::call_rest_api($oo_endpoint_url, $oo_params, $this->version);
+				$resp = $this->callRestApi($oo_endpoint_url, $oo_params);
 			
-//				$this->createLog($resp, 'REST API response');
-				
 				if(
 					empty($resp['sessionToken'])
 					|| empty($resp['status'])
@@ -839,10 +830,9 @@ class SafeCharge extends PaymentModule
 				$apms_params['countryCode']     = $country_inv->iso_code;
 				$apms_params['languageCode']    = substr($this->context->language->locale, 0, 2);
 
-				$endpoint_url = $test_mode == 'yes' ? SC_TEST_REST_PAYMENT_METHODS_URL : SC_LIVE_REST_PAYMENT_METHODS_URL;
-
-				$res = SC_CLASS::call_rest_api($endpoint_url, $apms_params, $this->version);
-
+				$endpoint_url	= $test_mode == 'yes' ? SC_TEST_REST_PAYMENT_METHODS_URL : SC_LIVE_REST_PAYMENT_METHODS_URL;
+				$res			= $this->callRestApi($endpoint_url, $apms_params);
+				
 				if(!is_array($res) || !isset($res['paymentMethods']) || empty($res['paymentMethods'])) {
 					$this->createLog($res, 'No APMs, response is:');
 					return false;
@@ -867,12 +857,9 @@ class SafeCharge extends PaymentModule
 					);
 
 					$upo_params['checksum'] = hash($hash, implode('', $upo_params) . $secret);
-
-					$upo_res = SC_CLASS::call_rest_api(
-						$test_mode == 'yes' ? SC_TEST_USER_UPOS_URL : SC_LIVE_USER_UPOS_URL,
-						$upo_params,
-						$this->version
-					);
+					$url					= $test_mode == 'yes' ? SC_TEST_USER_UPOS_URL : SC_LIVE_USER_UPOS_URL;
+					$upo_res				= $this->callRestApi($url, $upo_params);
+					
 
 					if(!empty($upo_res['paymentMethods']) && is_array($upo_res['paymentMethods'])) {
 						foreach($upo_res['paymentMethods'] as $data) {
@@ -946,14 +933,22 @@ class SafeCharge extends PaymentModule
 		$string	= '';
 
 		if(is_array($data)) {
-			if(!empty($data['userAccountDetails']) && is_array($data['userAccountDetails'])) {
-				$data['userAccountDetails'] = 'userAccountDetails details';
+			// do not log accounts if on prod
+			if(Configuration::get('SC_TEST_MODE') == 'no') {
+				if(!empty($data['userAccountDetails']) && is_array($data['userAccountDetails'])) {
+					$data['userAccountDetails'] = 'userAccountDetails details';
+				}
+				if(!empty($data['userPaymentOption']) && is_array($data['userPaymentOption'])) {
+					$data['userPaymentOption'] = 'userPaymentOption details';
+				}
+				if(!empty($data['paymentOption']) && is_array($data['paymentOption'])) {
+					$data['paymentOption'] = 'paymentOption details';
+				}
 			}
-			if(!empty($data['userPaymentOption']) && is_array($data['userPaymentOption'])) {
-				$data['userPaymentOption'] = 'userPaymentOption details';
-			}
-			if(!empty($data['paymentOption']) && is_array($data['paymentOption'])) {
-				$data['paymentOption'] = 'paymentOption details';
+			// do not log accounts if on prod
+			
+			if(!empty($data['paymentMethods']) && is_array($data['paymentMethods'])) {
+				$data['paymentMethods'] = json_encode($data['paymentMethods']);
 			}
 
 			$d = Configuration::get('SC_TEST_MODE') == 'yes' ? print_r($data, true) : json_encode($data);
@@ -988,6 +983,43 @@ class SafeCharge extends PaymentModule
 			);
 		}
 		catch (Exception $exc) {}
+	}
+	
+	/**
+	 * Function callRestApi
+	 * Create a Rest Api call and log input and output parameters
+	 * 
+	 * @param string $url
+	 * @param array $params
+	 * 
+	 * @return mixed $resp
+	 */
+	public function callRestApi($url, $params) {
+		$resp = '';
+		
+		if(!filter_var($url, FILTER_VALIDATE_URL)) {
+			$this->createLog($url, 'callRestApi() Error - the passed url is not valid.');
+			return false;
+		}
+		
+		if(!is_array($params) && !is_object($params)) {
+			$this->createLog($params, 'callRestApi() Error - the passed params parameter is not array ot object.');
+			return false;
+		}
+		
+		$this->createLog(
+			array(
+				'REST API URL'	=> $url,
+				'params'		=> $params
+			),
+			'REST API call (before validation)'
+		);
+
+		$resp = SC_CLASS::call_rest_api($url, $params);
+
+		$this->createLog($resp, 'Rest API response');
+		
+		return $resp;
 	}
 	
 	private function addOrderState()

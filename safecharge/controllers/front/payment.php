@@ -341,9 +341,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				}
 			}
 			
-			$resp = SC_CLASS::call_rest_api($endpoint_url, $params, $this->module->version);
-
-			$req_status = $this->getRequestStatus($resp);
+			$resp		= $this->module->callRestApi($endpoint_url, $params);
+			$req_status	= $this->getRequestStatus($resp);
 		}
 		catch(Exception $e) {
 			$this->module->createLog($e->getMessage(), 'processOrder() Exception:');
@@ -1249,10 +1248,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			implode('', $params) . Configuration::get('SC_SECRET_KEY')
 		);
 		
-		$resp = SC_CLASS::call_rest_api(
+		$resp = $this->module->callRestApi(
 			Configuration::get('SC_TEST_MODE') == 'no' ? SC_LIVE_DELETE_UPO_URL : SC_TEST_DELETE_UPO_URL,
-			$params,
-			$this->module->version
+			$params
 		);
 		
 		if(empty($resp['status']) || $resp['status'] != 'SUCCESS') {

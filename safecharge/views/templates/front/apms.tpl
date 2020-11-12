@@ -503,8 +503,8 @@
 <script type="text/javascript">
 	var scAPMsErrorMsg	= "{if !empty($scAPMsErrorMsg)}{l s=$scAPMsErrorMsg mod='safecharge'}{/if}";
 	
-    var selectedPM  = "";
-    var payloadURL  = "";
+    var selectedPM		= "";
+    var payloadURL		= "";
 
     // for the fields
     var sfc             = null;
@@ -557,7 +557,6 @@
 	
 	var scDefaultErrorMsg	= "{l s='Please, select a payment method, and fill all of its fileds!' mod='safecharge'}";
 	var scPayButton			= '#payment-confirmation button[type="button"]';
-{*	var scPayButtonOriginId = '';*}
 
     function scValidateAPMFields() {
         $(scPayButton).prop('disabled', true);
@@ -930,7 +929,6 @@
 				$('#sc_apms_list').removeClass('sc_hide');
 				
 				$(scPayButton).prop('disabled', false);
-{*				$('#sc_loading_window').removeClass('sc_hide');*}
 			}
 			else {
 				window.location.reload();
@@ -976,13 +974,6 @@
 		}
 	}
 	
-	{*function scFindPaymentButton() {
-		// One Page Checkout PS
-		if(typeof OnePageCheckoutPS != 'undefined' && $('#btn_place_orders').length == 1) {
-			scPayButton = '#btn_place_orders';
-		}
-	}*}
-
 	document.addEventListener('DOMContentLoaded', function(event) {
         prepareSCFields();
 
@@ -998,17 +989,10 @@
 				$('input[name=payment-option]:checked').attr('data-module-name') == 'safecharge'
 				&& $('#payment-confirmation button[type="submit"]').length > 0
 			) {
-				{*if($('#scForm').closest('#payment-confirmation').length == 0) {
-					scFindPaymentButton();
-				}*}
-								
 				$('#payment-confirmation button[type="submit"]')
 					.attr('type', 'button')
 					.attr('onclick', 'scValidateAPMFields()');
 			}
-		//	else if (scPayButtonOriginId != scPayButton && '' != scPayButtonOriginId) {
-				{*$(scPayButton).attr('id', scPayButtonOriginId);*}
-		//	}
 			else {
 				$('#payment-confirmation button[type="button"]')
 					.attr('type', 'submit')
@@ -1016,17 +1000,6 @@
 			}
 		});
 		// find payment button END
-
-		{*$(scPayButton)
-			.on('click', function(e) {
-				if($('input[name=payment-option]:checked').attr('data-module-name') == 'safecharge') {
-					e.preventDefault();
-					e.stopPropagation();
-			
-					scValidateAPMFields();
-					return false;
-				}
-            });*}
 
 		{if $customAPMsNote}
 			$('#scForm').find('p.help-block b').text("{$customAPMsNote}"

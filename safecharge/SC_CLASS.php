@@ -130,14 +130,8 @@ class SC_CLASS
      */
     public static function call_rest_api($url, $params, $plugin_version = '')
     {
-		self::create_log($url, 'REST API URL:', $plugin_version);
-		
-		if (empty($url)) {
-			self::create_log('SC_REST_API, the URL is empty!', '', $plugin_version);
-			return false;
-		}
-		
-        $resp = false;
+        $resp				= false;
+		$plugin_messages	= array();
 		
 		// get them only if we pass them empty
 		if (empty($params['deviceDetails'])) {
@@ -148,8 +142,6 @@ class SC_CLASS
 		// directly check the mails
 		if(isset($params['billingAddress']['email'])) {
 			if(!filter_var($params['billingAddress']['email'], self::$params_validation_email['flag'])) {
-				self::create_log($params, 'ERROR - The parameter Billing Address Email is not valid.', $plugin_version);
-				
 				return array(
 					'status' => 'ERROR',
 					'message' => 'The parameter Billing Address Email is not valid.'
@@ -157,13 +149,6 @@ class SC_CLASS
 			}
 			
 			if(strlen($params['billingAddress']['email']) > self::$params_validation_email['length']) {
-				self::create_log(
-					$params, 
-					'ERROR - The parameter Billing Address Email must be maximum ' 
-						. self::$params_validation_email['length'] . ' symbols.',
-					$plugin_version
-				);
-				
 				return array(
 					'status' => 'ERROR',
 					'message' => 'The parameter Billing Address Email must be maximum '
@@ -174,8 +159,6 @@ class SC_CLASS
 		
 		if(isset($params['shippingAddress']['email'])) {
 			if(!filter_var($params['shippingAddress']['email'], self::$params_validation_email['flag'])) {
-				self::create_log($params, 'ERROR - The parameter Shipping Address Email is not valid.', $plugin_version);
-				
 				return array(
 					'status' => 'ERROR',
 					'message' => 'The parameter Shipping Address Email is not valid.'
@@ -183,13 +166,6 @@ class SC_CLASS
 			}
 			
 			if(strlen($params['shippingAddress']['email']) > self::$params_validation_email['length']) {
-				self::create_log(
-					$params, 
-					'ERROR - The parameter Shipping Address Email must be maximum '
-						. self::$params_validation_email['length'] . ' symbols.',
-					$plugin_version
-				);
-				
 				return array(
 					'status' => 'ERROR',
 					'message' => 'The parameter Shipping Address Email must be maximum '
@@ -205,9 +181,8 @@ class SC_CLASS
 					$new_val = $val1;
 
 					if (mb_strlen($val1) > self::$params_validation[$key1]['length']) {
-						$new_val = mb_substr($val1, 0, self::$params_validation[$key1]['length']);
-
-						self::create_log($key1, 'Limit', $plugin_version);
+						$new_val			= mb_substr($val1, 0, self::$params_validation[$key1]['length']);
+						$plugin_messages[]	= 'Limit ' . $key1;
 					}
 
 					$params[$key1] = filter_var($new_val, self::$params_validation[$key1]['flag']);
@@ -218,9 +193,8 @@ class SC_CLASS
 							$new_val = $val2;
 
 							if (mb_strlen($val2) > self::$params_validation[$key2]['length']) {
-								$new_val = mb_substr($val2, 0, self::$params_validation[$key2]['length']);
-
-								self::create_log($key2, 'Limit', $plugin_version);
+								$new_val			= mb_substr($val2, 0, self::$params_validation[$key2]['length']);
+								$plugin_messages[]	= 'Limit ' . $key2;
 							}
 
 							$params[$key1][$key2] = filter_var($new_val, self::$params_validation[$key2]['flag']);
@@ -230,12 +204,10 @@ class SC_CLASS
 			}
 		}
 		catch(Exception $e) {
-			self::create_log($e->getMessage(), 'Request validation exception', $plugin_version);
+			$plugin_messages[] = 'Request validation exception: ' . $e->getMessage();
 		}
 		# validate parameters END
 		
-		self::create_log($params, 'SC_REST_API, parameters for the REST API call:', $plugin_version);
-        
         $json_post = json_encode($params);
         
         try {
@@ -263,13 +235,16 @@ class SC_CLASS
 			}
 
 			$resp_arr = json_decode($resp, true);
-			self::create_log($resp_arr, 'REST API response:', $plugin_version);
-
+			// add the plugin messages
+			$resp_arr['plugin messages'] = $plugin_messages;
+			
 			return $resp_arr;
         }
         catch(Exception $e) {
-            self::create_log($e->getMessage(), 'Exception ERROR when call REST API:', $plugin_version);
-            return false;
+			return array(
+				'status' => 'ERROR',
+				'message' => 'Exception ERROR when call REST API: ' . $e->getMessage()
+			);
         }
     }
     
@@ -381,6 +356,8 @@ class SC_CLASS
      * @param mixed $data
      * @param string $title - title for the printed log
 	 * @param string $plugin_version - version of the plugin
+	 * 
+	 * @deprecated
      */
     public static function create_log($data, $title = '', $plugin_version = '')
     {

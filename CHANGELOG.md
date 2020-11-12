@@ -1,5 +1,11 @@
 # SafeCharge Prestashop Changelog
 
+#1.7.8
+```
+	* When site is in Test Mode log account details.
+	* SC_CLASS create_log method was deprecated.
+```
+
 #1.7.7
 ```
 	* Button Spinner in the "Order with obligation to pay" was replaced from Loading popup.
