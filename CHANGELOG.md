@@ -2,6 +2,8 @@
 
 #1.7.8
 ```
+	* Small template fixes.
+	* Fix for the Settle and Refund actions from the site.
 	* When site is in Test Mode log account details.
 	* SC_CLASS create_log method was deprecated.
 ```

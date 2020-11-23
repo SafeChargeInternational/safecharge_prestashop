@@ -488,7 +488,7 @@
     <input type="hidden" name="lst" id="sc_lst" value="{if !empty($sessionToken)}{$sessionToken}{/if}" />
     <input type="hidden" name="sc_transaction_id" id="sc_transaction_id" value="" />
 	
-	{if $scAddStep}
+	{if isset($scAddStep)}
 		<div id="payment-confirmation">
 			<div class="ps-shown-by-js">
 				<button type="button" class="btn btn-primary center-block" onclick="scValidateAPMFields()" id="sc_checkout_btn">
@@ -625,7 +625,7 @@
 				return;
 			}
 			
-			scPaymentParams.cardHolderName	= document.getElementById('sc_card_holder_name').value;
+			scPaymentParams.cardHolderName	= jQuery('#sc_card_holder_name').val();
 			scPaymentParams.paymentOption	= sfcFirstField;
 
 			// create payment with WebSDK

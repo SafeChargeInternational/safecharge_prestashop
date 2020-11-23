@@ -164,8 +164,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			
 			# 1. when use WebSDK
 			if(Tools::getValue('sc_transaction_id', false)) {
-				$this->module->createLog(@$_REQUEST, 'processOrder() WebSDK Order');
-				
 				// save order
 				$res = $this->module->validateOrder(
 					(int)$cart->id
@@ -186,7 +184,10 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					Tools::redirect(Tools::redirect($error_url));
 				}
 				
-				$this->module->createLog(@$_REQUEST, 'processOreder() - the webSDK Order was saved.');
+				$this->module->createLog(
+					Tools::getValue('sc_transaction_id'),
+					'processOreder() - the webSDK Order was saved.'
+				);
 				
 				$this->updateCustomPaymentFields($this->module->currentOrder);
 				
@@ -735,7 +736,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 $currency = new Currency((int)$order_info->id_currency);
                 
                 $this->changeOrderStatus(array(
-                        'id'            => $order_id,
+                        'id'            => $order_info->id,
                         'current_state' => $order_info->current_state,
 						'has_invoice'	=> $order_info->hasInvoice(),
                         'currency'      => $currency->iso_code,
@@ -761,12 +762,12 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			
             try {
                 if(Tools::getValue('transactionType') == 'Settle') {
-                    $this->updateCustomPaymentFields($order_id, false);
+                    $this->updateCustomPaymentFields($order_info->id, false);
                 }
                 
                 $this->changeOrderStatus(
                     array(
-                        'id'            => $order_id,
+                        'id'            => $order_info->id,
                         'current_state' => $order_info->current_state,
 						'has_invoice'	=> $order_info->hasInvoice(),
                     )
@@ -819,7 +820,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				exit;
 			}
 
-			if($this->module->name != $order_info['module']) {
+			if($this->module->name != $order_info->module) {
 				SC_CLASS::create_log('DMN Error - the order do not belongs to the ' . $this->module->name, '', $this->module->version);
 
 				echo 'DMN Error - the order do not belongs to the ' . $this->module->name;
