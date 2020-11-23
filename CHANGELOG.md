@@ -1,5 +1,10 @@
 # SafeCharge Prestashop Changelog
 
+#1.8
+```
+	* Do not request openOrder when webSDK payment was Declined.
+```
+
 #1.7.8
 ```
 	* Small template fixes.

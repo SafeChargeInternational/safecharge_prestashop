@@ -724,7 +724,6 @@
 				return;
 			}
 			else if(resp.result == 'DECLINED') {
-				reloadForm = true;
 				scFormFalse("{l s='Your Payment was DECLINED. Please try another payment method!' mod='safecharge'}");
 			}
 			else {
