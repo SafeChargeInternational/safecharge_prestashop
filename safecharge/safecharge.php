@@ -22,7 +22,7 @@ class SafeCharge extends PaymentModule
     {
         $this->name						= 'safecharge';
         $this->tab						= SafeChargeVersionResolver::set_tab();
-        $this->version					= '1.7.8';
+        $this->version					= '1.8';
         $this->author					= 'Nuvei';
         $this->need_instance			= 1;
 //        $this->ps_versions_compliancy	= array('min' => '1.7', 'max' => _PS_VERSION_);
@@ -258,7 +258,7 @@ class SafeCharge extends PaymentModule
 			$newOption->setAction($this->context->link->getModuleLink($this->name, 'addStep', array(
 				'cartId' => $params['cart']->id,
 				'key' => $params['cart']->secure_key,
-				'amount' => number_format($params['cart']->getOrderTotal(), 2, '.', ''),
+//				'amount' => number_format($params['cart']->getOrderTotal(), 2, '.', ''),
 			)));
 		}
         
@@ -792,8 +792,6 @@ class SafeCharge extends PaymentModule
 					if(!empty($resp['message'])) {
 						$this->context->smarty->assign('scAPMsErrorMsg',	$resp['message']);
 						$this->context->smarty->assign('sessionToken',		'');
-						$this->context->smarty->assign('amount',			'');
-						$this->context->smarty->assign('currency',			'');
 						$this->context->smarty->assign('languageCode',		'');
 						$this->context->smarty->assign('paymentMethods',	'');
 						$this->context->smarty->assign('icons',				'');
@@ -891,8 +889,6 @@ class SafeCharge extends PaymentModule
 
 			$this->context->smarty->assign('scAPMsErrorMsg',	'');
 			$this->context->smarty->assign('sessionToken',		$session_token);
-			$this->context->smarty->assign('amount',			$amount);
-			$this->context->smarty->assign('currency',			$currency->iso_code);
 			$this->context->smarty->assign('languageCode',		substr($this->context->language->locale, 0, 2));
 			$this->context->smarty->assign('paymentMethods',	$payment_methods);
 			$this->context->smarty->assign('userTokenId',		$customer->email);
@@ -904,8 +900,6 @@ class SafeCharge extends PaymentModule
 			
 			$this->context->smarty->assign('scAPMsErrorMsg',	'Exception ' . $e->getMessage());
 			$this->context->smarty->assign('sessionToken',		'');
-			$this->context->smarty->assign('amount',			'');
-			$this->context->smarty->assign('currency',			'');
 			$this->context->smarty->assign('languageCode',		'');
 			$this->context->smarty->assign('paymentMethods',	'');
 			$this->context->smarty->assign('userTokenId',		'');

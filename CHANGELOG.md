@@ -2,6 +2,7 @@
 
 #1.8
 ```
+	* Fixed the JS APMs error, when "Preselect CC payment method" options is set to Yes.
 	* Do not request openOrder when webSDK payment was Declined.
 ```
 

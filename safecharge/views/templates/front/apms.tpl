@@ -583,8 +583,6 @@
 			sessionToken    : scData.sessionToken,
 			merchantId      : "{$merchantId}",
 			merchantSiteId  : "{$merchantSiteId}",
-			currency        : "{$currency}",
-			amount          : "{$amount}",
 			webMasterId		: "{$webMasterId}",
 			userTokenId		: "{$userTokenId}"
 		};
@@ -984,6 +982,10 @@
 		$('input[name=payment-option]').on('change', function() {
 			console.log('payment-option', $('input[name=payment-option]:checked').attr('data-module-name'));
 			
+			{if $preselectCC eq 1}
+				$('#sc_apm_cc_card').trigger('click');
+			{/if}
+			
 			if (
 				$('input[name=payment-option]:checked').attr('data-module-name') == 'safecharge'
 				&& $('#payment-confirmation button[type="submit"]').length > 0
@@ -1005,10 +1007,6 @@
 				+ ' "' + $(scPayButton).text().trim() + '".');
 		{/if}
 		
-		{if $preselectCC eq 1}
-			$('#sc_apm_cc_card').trigger('click');
-		{/if}
-			
 		$('.cc_load_spinner').addClass('sc_hide');
 	});
 </script>
