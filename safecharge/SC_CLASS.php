@@ -269,8 +269,6 @@ class SC_CLASS
 		
 		if(empty($_SERVER['HTTP_USER_AGENT'])) {
 			$device_details['Warning'] = 'User Agent is empty.';
-			
-			self::create_log($device_details['Warning'], 'Error', $plugin_version);
 			return $device_details;
 		}
 		
@@ -278,8 +276,6 @@ class SC_CLASS
 		
 		if (empty($user_agent)) {
 			$device_details['Warning'] = 'Probably the merchant Server has problems with PHP filter_var function!';
-			
-			self::create_log($device_details['Warning'], 'Error', $plugin_version);
 			return $device_details;
 		}
 		
@@ -350,76 +346,4 @@ class SC_CLASS
         return $device_details;
     }
     
-    /**
-     * Function create_log
-     * 
-     * @param mixed $data
-     * @param string $title - title for the printed log
-	 * @param string $plugin_version - version of the plugin
-	 * 
-	 * @deprecated
-     */
-    public static function create_log($data, $title = '', $plugin_version = '')
-    {
-        // path is different fore each plugin
-        $logs_path = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'var'
-			.DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR;
-		
-		if(!is_dir($logs_path)) {
-			return;
-		}
-        
-        if(
-            @$_REQUEST['sc_create_logs'] == 'yes' || @$_REQUEST['sc_create_logs'] == 1
-            || @$_SESSION['sc_create_logs'] == 'yes' || @$_SESSION['sc_create_logs'] == 1
-        ) {
-            // same for all plugins
-            $d		= $data;
-			$string	= '';
-
-            if(is_array($data)) {
-                if(!empty($data['userAccountDetails']) && is_array($data['userAccountDetails'])) {
-					$data['userAccountDetails'] = 'userAccountDetails details';
-                }
-                if(!empty($data['userPaymentOption']) && is_array($data['userPaymentOption'])) {
-                    $data['userPaymentOption'] = 'userPaymentOption details';
-                }
-                if(!empty($data['paymentOption']) && is_array($data['paymentOption'])) {
-					$data['paymentOption'] = 'paymentOption details';
-                }
-				
-//				if(!empty($data['paymentMethods']) && is_array($data['paymentMethods'])) {
-//					$data['paymentMethods'] = json_encode($data['paymentMethods']);
-//                }
-                
-                $d = print_r(json_encode($data), true);
-            }
-            elseif(is_object($data)) {
-                $d = print_r(json_encode($data), true);
-            }
-            elseif(is_bool($data)) {
-                $d = $data ? 'true' : 'false';
-            }
-			
-			if(!empty($plugin_version)) {
-				$string .= '[v.' . $plugin_version . '] | ';
-			}
-
-            if(!empty($title)) {
-                $string .= $title . "\r\n";
-            }
-            
-            $string .= $d . "\r\n\r\n";
-            // same for all plugins
-
-            try {
-                file_put_contents(
-                    $logs_path . 'Nuvei-' . date('Y-m-d', time()) . '.txt',
-                    date('H:i:s', time()) . ': ' . $string, FILE_APPEND
-                );
-            }
-            catch (Exception $exc) {}
-        }
-    }
-
 }

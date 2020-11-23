@@ -2,6 +2,8 @@
 
 #1.8
 ```
+	* SC_Class create_log() was removed.
+	* Do not pass the Order amount and currency to the webSDK anymore.
 	* Fixed the JS APMs error, when "Preselect CC payment method" options is set to Yes.
 	* Do not request openOrder when webSDK payment was Declined.
 ```

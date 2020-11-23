@@ -561,10 +561,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 						$payment_method = str_replace('apmgw_', '', Tools::getValue('sc_upo_name', ''));
 					}
 					
-                    SC_CLASS::create_log(
+                    $this->module->createLog(
 						Tools::getValue('TransactionID'),
-						'The DMN didn\'t wait for the Order creation. Try to save order by the DMN.',
-						$this->module->version
+						'The DMN didn\'t wait for the Order creation. Try to save order by the DMN.'
 					);
 					
 					// try to create Order here
@@ -584,47 +583,45 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 						);
 						
 						if(!$res) {
-							SC_CLASS::create_log(
+							$this->module->createLog(
 								Tools::getValue('TransactionID'),
-								'DMN Error - Order was not validated',
-								$this->module->version
+								'DMN Error - Order was not validated'
 							);
+							
 							echo 'DMN Error - Order was not validated';
 							exit;
 						}
 						
-						SC_CLASS::create_log(
+						$this->module->createLog(
 							Tools::getValue('TransactionID'),
-							'scGetDMN() - the Order was saved.', 
-							$this->module->version
+							'scGetDMN() - the Order was saved.'
 						);
 					}
 					catch(Exception $e) {
-						SC_CLASS::create_log(
+						$this->module->createLog(
 							[Tools::getValue('TransactionID'), $e->getMessage()],
-							'DMN Exception',
-							$this->module->version
+							'DMN Exception'
+							
 						);
 						echo 'DMN Exception when try to create an Order by DMN data.';
 						exit;
 					}
 					
-					SC_CLASS::create_log(
+					$this->module->createLog(
 						Tools::getValue('TransactionID'),
-						'DMN Report - An Order was made.',
-						$this->module->version
+						'DMN Report - An Order was made.'
 					);
+					
 					$order_id = $this->module->currentOrder;
                 }
 				
 				if($this->module->name != $order_info->module) {
-					SC_CLASS::create_log(
+					$this->module->createLog(
 						[
 							'TransactionID' => Tools::getValue('TransactionID'),
 							'order module' => $order_info->module
 						],
-						'DMN Error - the Order do not belongs to the ' . $this->module->name,
-						$this->module->version
+						'DMN Error - the Order do not belongs to the ' . $this->module->name
 					);
 					
 					echo 'DMN Error - the Order do not belongs to the ' . $this->module->name;
@@ -643,13 +640,12 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 						'' != $last_payment->transaction_id
 						&& $last_payment->transaction_id != Tools::getValue('TransactionID', 'int')
 					) {
-						SC_CLASS::create_log(
+						$this->module->createLog(
 							array(
 								'DMN TransactionID' => Tools::getValue('TransactionID', 'int'),
 								'Last Payment transaction_id' => $last_payment->transaction_id
 							),
-							'DMN Error - DMN TransactionID does not mutch Last Payment transaction_id',
-							$this->module->version
+							'DMN Error - DMN TransactionID does not mutch Last Payment transaction_id'
 						);
 						
 						echo 'DMN Error - DMN TransactionID does not mutch Last Payment transaction_id';
@@ -681,11 +677,11 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					. 'WHERE order_id = ' . $order_id
 				);
 				
-				SC_CLASS::create_log($sc_data, 'DMN Report - previous sc_data', $this->module->version);
+				$this->module->createLog($sc_data, 'DMN Report - previous sc_data');
 				
 				// there is prevous DMN data
 				if(!empty($sc_data) && 'declined' == strtolower($req_status)) {
-					SC_CLASS::create_log('DMN Error - Declined DMN for already Approved Order. Stop process here.', '', $this->module->version);
+					$this->module->createLog('DMN Error - Declined DMN for already Approved Order. Stop process here.');
 					
 					echo 'DMN Error - Declined DMN for already Approved Order. Process Stops here.';
                     exit;
@@ -711,8 +707,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 }
             }
             catch (Exception $ex) {
-                SC_CLASS::create_log($ex->getMessage(), 'Sale DMN Exception:', $this->module->version);
-                SC_CLASS::create_log($ex->getTrace(), '', $this->module->version);
+                $this->module->createLog($ex->getMessage(), 'Sale DMN Exception:');
+                $this->module->createLog($ex->getTrace());
                 
 				echo 'DMN Exception: ' . $ex->getMessage();
                 exit;
@@ -728,7 +724,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             && !empty($req_status)
             && !empty(Tools::getValue('relatedTransactionId'))
         ) {
-            SC_CLASS::create_log('PrestaShop Refund DMN.', '', $this->module->version);
+            $this->module->createLog('PrestaShop Refund DMN.');
             
 			$order_info	= $this->getOrder();
 			
@@ -748,7 +744,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 exit;
             }
             catch (Excception $e) {
-                SC_CLASS::create_log($e->getMessage(), 'Refund DMN exception:', $this->module->version);
+                $this->module->createLog($e->getMessage(), 'Refund DMN exception:');
                 echo 'DMN Exception: ' . $ex->getMessage();
                 exit;
             }
@@ -756,7 +752,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         
         # Void, Settle
         if(in_array(Tools::getValue('transactionType'), array('Void', 'Settle'))) {
-            SC_CLASS::create_log(Tools::getValue('transactionType'), 'Void/Settle transactionType:', $this->module->version);
+            $this->module->createLog(Tools::getValue('transactionType'), 'Void/Settle transactionType:');
             
 			$order_info = $this->getOrder();
 			
@@ -775,7 +771,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 );
             }
             catch (Exception $ex) {
-                SC_CLASS::create_log($ex->getMessage(), 'scGetDMN() Void/Settle Exception:', $this->module->version);
+                $this->module->createLog($ex->getMessage(), 'scGetDMN() Void/Settle Exception:');
             }
             
             echo 'DMN received.';
@@ -814,14 +810,14 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			$order_info = new Order($order_id);
 			
 			if(empty($order_info)) {
-				SC_CLASS::create_log('DMN Refund Error - There is no Order for Order ID ' . $order_id, '', $this->module->version);
+				$this->module->createLog('DMN Refund Error - There is no Order for Order ID ' . $order_id);
 
 				echo 'DMN Refund Error - There is no Order for Order ID ' . $order_id;
 				exit;
 			}
 
 			if($this->module->name != $order_info->module) {
-				SC_CLASS::create_log('DMN Error - the order do not belongs to the ' . $this->module->name, '', $this->module->version);
+				$this->module->createLog('DMN Error - the order do not belongs to the ' . $this->module->name);
 
 				echo 'DMN Error - the order do not belongs to the ' . $this->module->name;
 				exit;
@@ -830,7 +826,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			return $order_info;
 		}
 		catch (Excception $e) {
-			SC_CLASS::create_log($e->getMessage(), 'getOrder() exception:', $this->module->version);
+			$this->module->createLog($e->getMessage(), 'getOrder() exception:');
+			
 			echo 'getOrder() Exception: ' . $ex->getMessage();
 			exit;
 		}
@@ -846,10 +843,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
      */
     private function changeOrderStatus($order_info, $status, $res_args = array())
     {
-        SC_CLASS::create_log(
+        $this->module->createLog(
             'Order ' . $order_info['id'] .' has Status: ' . $status,
-            'changeOrderStatus()',
-			$this->module->version
+            'changeOrderStatus()'
         );
 		
         $request = @$_REQUEST;
@@ -1030,12 +1026,12 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 break;
                 
             default:
-                SC_CLASS::create_log($status, 'Unexisting status:', $this->module->version);
+                $this->module->createLog($status, 'Unexisting status:');
         }
         
         // save order history
         if(!empty($status_id)) {
-			SC_CLASS::create_log('changeOrderStatus() - Order status will be set to ' . $status_id, '', $this->module->version);
+			$this->module->createLog('changeOrderStatus() - Order status will be set to ' . $status_id);
 			
             $history = new OrderHistory();
             $history->id_order = (int)$order_info['id'];
@@ -1117,8 +1113,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             );
         }
         catch(Exception $e) {
-            SC_CLASS::create_log($e->getMessage(), 'checkAdvancedCheckSum Exception: ', $this->module->version);
-            return false;
+            $this->module->createLog($e->getMessage(), 'checkAdvancedCheckSum Exception: ');
+            
+			return false;
         }
 
         if ($str == @$_REQUEST['advanceResponseChecksum']) {
@@ -1174,14 +1171,14 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			$res = Db::getInstance()->execute($query);
 		}
 		catch (Exception $e) {
-			SC_CLASS::create_log($e->getMessage(), 'updateCustomPaymentFields Exception', $this->module->version);
-			SC_CLASS::create_log($query, '$query', $this->module->version);
+			$this->module->createLog($e->getMessage(), 'updateCustomPaymentFields Exception');
+			$this->module->createLog($query, '$query');
 			return false;
 		}
 		
 		if(!$res) {
-			SC_CLASS::create_log(Db::getInstance()->getMsgError(), 'updateCustomPaymentFields response error', $this->module->version);
-			SC_CLASS::create_log($query, '$query', $this->module->version);
+			$this->module->createLog(Db::getInstance()->getMsgError(), 'updateCustomPaymentFields response error');
+			$this->module->createLog($query, '$query');
 		}
 		
 		return $res;
@@ -1201,7 +1198,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 		}
 		
 		if(!(bool)$this->context->customer->isLogged()) {
-			SC_CLASS::create_log('Delete UPO Error - the user is not logged.', '', $this->module->version);
+			$this->module->createLog('Delete UPO Error - the user is not logged.', '', $this->module->version);
 			
             echo json_encode(array(
 				'status' => 'error',
@@ -1212,7 +1209,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 		}
 		
         if (!Validate::isLoadedObject($this->context->customer)) {
-            SC_CLASS::create_log('Delete UPO Error - we cannot validate the Customer.', '', $this->module->version);
+            $this->module->createLog('Delete UPO Error - we cannot validate the Customer.');
 			
             echo json_encode(array(
 				'status' => 'error',
@@ -1223,7 +1220,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         }
 		
 		if(empty($this->context->customer->email)) {
-			SC_CLASS::create_log('Delete UPO Error - Customer email is empty.', '', $this->module->version);
+			$this->module->createLog('Delete UPO Error - Customer email is empty.', '', $this->module->version);
 			
             echo json_encode(array(
 				'status' => 'error',
@@ -1302,7 +1299,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			Tools::redirect($error_url);
 		}
 		
-		SC_CLASS::create_log('beforeSuccess() - the Order was saved.', '', $this->module->version);
+		$this->module->createLog('beforeSuccess() - the Order was saved.');
 		
 		$success_url = $this->context->link->getPageLink(
 			'order-confirmation',
@@ -1334,7 +1331,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             || $cart->id_address_invoice == 0 
             || !$this->module->active
         ) {
-            SC_CLASS::create_log(
+            $this->module->createLog(
 				array(
 					'$cart->id_customer' => $cart->id_customer,
 					'$cart->id_address_delivery' => $cart->id_address_delivery,
@@ -1357,7 +1354,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         }
         
         if (!$authorized) {
-            SC_CLASS::create_log(Module::getPaymentModules(), 'This payment method is not available:', $this->module->version);
+            $this->module->createLog(Module::getPaymentModules(), 'This payment method is not available:');
             
 			Tools::redirect($this->context->link->getModuleLink(
 				'safecharge',
@@ -1369,7 +1366,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         $customer = new Customer($cart->id_customer);
         
         if (!Validate::isLoadedObject($customer)) {
-            SC_CLASS::create_log($customer, '$customer:', $this->module->version);
+            $this->module->createLog($customer, '$customer:', $this->module->version);
             Tools::redirect($this->context->link->getPageLink('order'));
         }
         
