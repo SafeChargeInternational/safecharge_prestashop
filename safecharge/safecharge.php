@@ -48,7 +48,7 @@ class SafeCharge extends PaymentModule
         global $smarty;
         
         $smarty->assign('ajaxUrl', $this->context->link->getAdminLink("AdminSafeChargeAjax"));
-        $_SESSION['sc_create_logs'] = Configuration::get('SC_CREATE_LOGS');
+//        $_SESSION['sc_create_logs'] = Configuration::get('SC_CREATE_LOGS');
     }
 	
     public function install()
@@ -64,6 +64,7 @@ class SafeCharge extends PaymentModule
             || !$this->registerHook('displayAdminOrderLeft')
             || !$this->registerHook('actionOrderSlipAdd')
             || !$this->registerHook('actionModuleInstallBefore')
+//            || !$this->registerHook('displayFooter')
             || !$this->installTab('AdminCatalog', 'AdminSafeChargeAjax', 'SafeChargeAjax')
             || !$this->addOrderState()
         ) {
@@ -213,7 +214,7 @@ class SafeCharge extends PaymentModule
 			$url = $this->context->link
 				->getModuleLink('safecharge', 'payment', array(
 					'prestaShopAction'  => 'getDMN',
-					'sc_create_logs'    => $_SESSION['sc_create_logs'],
+//					'sc_create_logs'    => $_SESSION['sc_create_logs'],
 					'sc_stop_dmn'       => SC_STOP_DMN,
 				));
 		}
@@ -227,6 +228,18 @@ class SafeCharge extends PaymentModule
 		
 		return $url;
 	}
+	
+//	public function hookDisplayFooter($params)
+//	{
+////		var_dump(@$params);
+////		var_dump(Tools::getValue('configure'));
+//		
+//		$this->createLog(@$params, '@$params');
+//		$this->createLog(Tools::getValue('configure'), 'configure');
+//		
+//		
+//		$this->context->controller->addJS(_MODULE_DIR_ . 'safecharge/views/js/sc_public.js');
+//	}
     
     public function hookPaymentOptions($params)
     {
@@ -239,7 +252,9 @@ class SafeCharge extends PaymentModule
 			return array();
 		}
 		
-		$this->prepareOrderData();
+		$this->createLog('hookPaymentOptions');
+		$this->getPaymentMethods();
+//		$this->prepareOrderData();
 		
 		global $smarty;
 		
@@ -258,7 +273,7 @@ class SafeCharge extends PaymentModule
 			$newOption->setAction($this->context->link->getModuleLink($this->name, 'addStep', array(
 				'cartId' => $params['cart']->id,
 				'key' => $params['cart']->secure_key,
-//				'amount' => number_format($params['cart']->getOrderTotal(), 2, '.', ''),
+				'amount' => number_format($params['cart']->getOrderTotal(), 2, '.', ''),
 			)));
 		}
         
@@ -494,9 +509,9 @@ class SafeCharge extends PaymentModule
             $ref_parameters['urlDetails']   = array('notificationUrl' => $notify_url);
             $ref_parameters['webMasterId']  = 'PreastaShop ' . _PS_VERSION_;
             
-            $refund_url = $test_mode == 'yes' ? SC_TEST_REFUND_URL : SC_LIVE_REFUND_URL;
+//            $refund_url = $test_mode == 'yes' ? SC_TEST_REFUND_URL : SC_LIVE_REFUND_URL;
             
-            $json_arr = $this->callRestApi($refund_url, $ref_parameters);
+            $json_arr = $this->callRestApi('refundTransaction', $ref_parameters);
         }
         catch(Exception $e) {
             $this->createLog($e->getMessage(), 'hookActionOrderSlipAdd Exception: ');
@@ -623,292 +638,100 @@ class SafeCharge extends PaymentModule
 	}
 	
 	/**
-	 * Function prepareOrderData
-	 * We call this function with Ajax call in some cases
 	 * 
-	 * @global type $smarty
-	 * 
-	 * @param boolean $return
-	 * @param boolean $force
-	 * 
-	 * @return boolean
+	 * Here we only set template variables
 	 */
-	public function prepareOrderData($return = false, $force = false)
-	{
-		global $smarty;
+	public function getPaymentMethods() {
+		$this->createLog('getPaymentMethods()');
 		
-		$session_token = '';
-        
-		try {
-			$cart               = $this->context->cart;
-			$products			= $cart->getProducts();
-			$currency           = new Currency((int)($cart->id_currency));
-			$customer           = new Customer($cart->id_customer);
-			$address_invoice    = new Address((int)($cart->id_address_invoice));
-			$country_inv        = new Country((int)($address_invoice->id_country), Configuration::get('PS_LANG_DEFAULT'));
-			$time               = date('YmdHis', time());
-			$test_mode          = Configuration::get('SC_TEST_MODE');
-			$hash               = Configuration::get('SC_HASH_TYPE');
-			$secret             = Configuration::get('SC_SECRET_KEY');
-			$amount				= (string) number_format($cart->getOrderTotal(), 2, '.', '');
-			$payment_methods	= array();
-			$upos				= array();
-			$user_token_id		= $customer->email;
+		$params = $this->openOrder();
+		
+		$this->createLog($params, 'getPaymentMethods() $params');
+		
+		# get APMs
+		$payment_methods	= array();
+		$upos				= array();
+		$time				= date('YmdHis', time());
+		$hash				= Configuration::get('SC_HASH_TYPE');
+		$secret				= Configuration::get('SC_SECRET_KEY');
 			
-			$address_delivery	= $address_invoice;
-			$country_delivery	= $country_inv;
-            
-			if(!empty($cart->id_address_delivery) && $cart->id_address_delivery != $cart->id_address_invoice) {
-                $address_delivery	= new Address((int)($cart->id_address_delivery));
-				$country_delivery   = new Country((int)($address_delivery->id_country), Configuration::get('PS_LANG_DEFAULT'));
-            }
-			
-			// set some parameters
-			$this->context->smarty->assign('merchantId',		Configuration::get('SC_MERCHANT_ID'));
-			$this->context->smarty->assign('merchantSiteId',	Configuration::get('SC_MERCHANT_SITE_ID'));
-			$this->context->smarty->assign('preselectCC',		Configuration::get('NUVEI_PRESELECT_CC'));
-			$this->context->smarty->assign('showAPMsName',		Configuration::get('NUVEI_SHOW_APMS_NAMES'));
-			$this->context->smarty->assign('customAPMsNote',	Configuration::get('NUVEI_APMS_NOTE'));
-			$this->context->smarty->assign('customStyle',		Configuration::get('NUVEI_PMS_STYLE'));
-			$this->context->smarty->assign('formAction',		$this->context->link->getModuleLink('safecharge', 'payment'));
-			
-			$this->context->smarty->assign('webMasterId',		SC_PRESTA_SHOP . _PS_VERSION_);
-			$this->context->smarty->assign('sourceApplication',	SC_SOURCE_APPLICATION);
-			$this->context->smarty->assign('ooAjaxUrl',			$this->context->link->getModuleLink(
-				'safecharge',
-				'payment',
-				array('prestaShopAction' => 'createOpenOrder')
-			));
-			
-			$this->context->smarty->assign('scDeleteUpoUrl',	$this->context->link->getModuleLink(
-				'safecharge',
-				'payment',
-				array('prestaShopAction' => 'deleteUpo')
-			));
-			
-			$notify_url     = $this->getNotifyUrl();
-			
-			$error_url		= $this->context->link->getModuleLink(
-				'safecharge',
-				'payment',
-				array('prestaShopAction' => 'showError')
+		$apms_params		= array(
+			'merchantId'        => $params['merchantId'],
+			'merchantSiteId'    => $params['merchantSiteId'],
+			'clientRequestId'   => $time. '_' .uniqid(),
+			'timeStamp'         => $time,
+		);
+
+		$apms_params['checksum']        = hash($hash, implode('', $apms_params) . $secret);
+		$apms_params['sessionToken']    = $params['sessionToken'];
+		$apms_params['currencyCode']    = $params['currency'];
+		$apms_params['countryCode']     = $params['billingAddress']['country'];
+		$apms_params['languageCode']    = substr($this->context->language->locale, 0, 2);
+
+		$res							= $this->callRestApi('getMerchantPaymentMethods', $apms_params);
+
+//		if(!is_array($res) || empty($res['paymentMethods'])) {
+//			$this->createLog($res, 'No APMs, response is:');
+//			
+//			return false;
+//		}
+//
+		if(!empty($res['paymentMethods']) && is_array($res['paymentMethods'])) {
+			$payment_methods = $res['paymentMethods'];
+		}
+		# get APMs END
+		
+		# get UPOs
+		// get them only for registred users when there are APMs
+		if(
+			Configuration::get('SC_USE_UPOS') == 1
+			&& $this->context->customer->isLogged()
+			&& !empty($payment_methods)
+		) {
+			$upo_params = array(
+				'merchantId'		=> $apms_params['merchantId'],
+				'merchantSiteId'	=> $apms_params['merchantSiteId'],
+				'userTokenId'		=> $params['userTokenId'],
+				'clientRequestId'	=> $apms_params['clientRequestId'],
+				'timeStamp'			=> $time,
 			);
 
-			$success_url	= $this->context->link->getModuleLink(
-				'safecharge',
-				'payment',
-				array(
-					'prestaShopAction'	=> 'showCompleted',
-					'id_cart'			=> (int)$cart->id,
-					'id_module'			=> $this->id,
-					'status'			=> Configuration::get('PS_OS_PREPARATION'),
-					'amount'			=> $amount,
-					'module'			=> $this->displayName,
-					'key'				=> $customer->secure_key,
-				)
-			);
-
-			if(Configuration::get('NUVEI_ADD_CHECKOUT_STEP') == 0 || $force) {
-				# Open Order
-				$oo_endpoint_url = 'yes' == $test_mode
-					? SC_TEST_OPEN_ORDER_URL : SC_LIVE_OPEN_ORDER_URL;
-
-				$oo_params = array(
-					'merchantId'        => Configuration::get('SC_MERCHANT_ID'),
-					'merchantSiteId'    => Configuration::get('SC_MERCHANT_SITE_ID'),
-					'clientRequestId'   => $time . '_' . uniqid(),
-					'clientUniqueId'	=> (int)$cart->id,
-					'amount'            => $amount,
-					'currency'          => $currency->iso_code,
-					'timeStamp'         => $time,
-
-					'urlDetails'        => array(
-						'notificationUrl'   => $notify_url,
-						'successUrl'		=> $success_url,
-						'failureUrl'		=> $error_url,
-						'pendingUrl'		=> $success_url,
-					),
-
-					'deviceDetails'     => SC_CLASS::get_device_details($this->version),
-					'userTokenId'       => $user_token_id,
-
-					'billingAddress'    => array(
-						"firstName"	=> $address_invoice->firstname,
-						"lastName"	=> $address_invoice->lastname,
-						"address"   => $address_invoice->address1,
-						"phone"     => $address_invoice->phone,
-						"zip"       => $address_invoice->postcode,
-						"city"      => $address_invoice->city,
-						'country'	=> $country_inv->iso_code,
-						'email'		=> $customer->email,
-					),
-
-					'shippingAddress'    => array(
-						"firstName"	=> $address_delivery->firstname,
-						"lastName"	=> $address_delivery->lastname,
-						"address"   => $address_delivery->address1,
-						"phone"     => $address_delivery->phone,
-						"zip"       => $address_delivery->postcode,
-						"city"      => $address_delivery->city,
-						'country'	=> $country_delivery->iso_code,
-						'email'		=> $customer->email,
-					),
-
-					'webMasterId'       => SC_PRESTA_SHOP . _PS_VERSION_,
-					'paymentOption'		=> ['card' => ['threeD' => ['isDynamic3D' => 1]]],
-					'transactionType'	=> Configuration::get('SC_PAYMENT_ACTION'),
-					'merchantDetails'	=> array(
-						'customField1' => $cart->secure_key,
-						'customField2' => 'PrestaShop Plugin v' . $this->version,
-						'customField3' => '', // items info
-					),
-				);
-				
-				$products_data = array();
-				foreach ($products as $product) {
-					$products_data[$product['id_product']] = array(
-//						'name'		=> $product['name'],
-						'quantity'	=> $product['quantity'],
-						'total_wt'	=> (string)round(floatval($product['total_wt']), 2)
-					);
-				}
-				
-				$oo_params['merchantDetails']['customField3']	= json_encode($products_data);
-				$oo_params['userDetails']						= $oo_params['billingAddress'];
-
-				$oo_params['checksum'] = hash(
-					$hash,
-					$oo_params['merchantId'] . $oo_params['merchantSiteId'] . $oo_params['clientRequestId']
-						. $oo_params['amount'] . $oo_params['currency'] . $time . $secret
-				);
-
-				$resp = $this->callRestApi($oo_endpoint_url, $oo_params);
+			$upo_params['checksum'] = hash($hash, implode('', $upo_params) . $secret);
 			
-				if(
-					empty($resp['sessionToken'])
-					|| empty($resp['status'])
-					|| 'SUCCESS' != $resp['status']
-				) {
-					if(!empty($resp['message'])) {
-						$this->context->smarty->assign('scAPMsErrorMsg',	$resp['message']);
-						$this->context->smarty->assign('sessionToken',		'');
-						$this->context->smarty->assign('languageCode',		'');
-						$this->context->smarty->assign('paymentMethods',	'');
-						$this->context->smarty->assign('icons',				'');
-						$this->context->smarty->assign('isTestEnv',			'');
+			$upo_res				= $this->callRestApi('getUserUPOs', $upo_params);
+
+			if(!empty($upo_res['paymentMethods']) && is_array($upo_res['paymentMethods'])) {
+				foreach($upo_res['paymentMethods'] as $data) {
+					// chech if it is not expired
+					if(!empty($data['expiryDate']) && date('Ymd') > $data['expiryDate']) {
+						continue;
 					}
 
-					return false;
-				}
+					if(empty($data['upoStatus']) || $data['upoStatus'] !== 'enabled') {
+						continue;
+					}
 
-				$session_token = $resp['sessionToken'];
+					// search for same method in APMs, use this UPO only if it is available there
+					foreach($payment_methods as $pm_data) {
+						// found it
+						if($pm_data['paymentMethod'] === $data['paymentMethodName']) {
+							$data['logoURL']	= @$pm_data['logoURL'];
+							$data['name']		= @$pm_data['paymentMethodDisplayName'][0]['message'];
 
-				// when need session token only
-				if($return) {
-					$this->createLog($session_token, 'Session token for Ajax call');
-
-					echo json_encode(array(
-						'session_token' => $session_token
-					));
-					exit;
-				}
-				# Open Order END
-
-				 # get APMs
-				$apms_params = array(
-					'merchantId'        => $oo_params['merchantId'],
-					'merchantSiteId'    => $oo_params['merchantSiteId'],
-					'clientRequestId'   => $time. '_' .uniqid(),
-					'timeStamp'         => $time,
-				);
-
-				$apms_params['checksum']        = hash($hash, implode('', $apms_params) . $secret);
-				$apms_params['sessionToken']    = $session_token;
-				$apms_params['currencyCode']    = $currency->iso_code;
-				$apms_params['countryCode']     = $country_inv->iso_code;
-				$apms_params['languageCode']    = substr($this->context->language->locale, 0, 2);
-
-				$endpoint_url	= $test_mode == 'yes' ? SC_TEST_REST_PAYMENT_METHODS_URL : SC_LIVE_REST_PAYMENT_METHODS_URL;
-				$res			= $this->callRestApi($endpoint_url, $apms_params);
-				
-				if(!is_array($res) || !isset($res['paymentMethods']) || empty($res['paymentMethods'])) {
-					$this->createLog($res, 'No APMs, response is:');
-					return false;
-				}
-
-				$payment_methods = $res['paymentMethods'];
-				# get APMs END
-
-				# get UPOs
-				// get them only for registred users when there are APMs
-				if(
-					Configuration::get('SC_USE_UPOS') == 1
-					&& $this->context->customer->isLogged()
-					&& !empty($payment_methods)
-				) {
-					$upo_params = array(
-						'merchantId'		=> $apms_params['merchantId'],
-						'merchantSiteId'	=> $apms_params['merchantSiteId'],
-						'userTokenId'		=> $oo_params['userTokenId'],
-						'clientRequestId'	=> $apms_params['clientRequestId'],
-						'timeStamp'			=> $time,
-					);
-
-					$upo_params['checksum'] = hash($hash, implode('', $upo_params) . $secret);
-					$url					= $test_mode == 'yes' ? SC_TEST_USER_UPOS_URL : SC_LIVE_USER_UPOS_URL;
-					$upo_res				= $this->callRestApi($url, $upo_params);
-					
-
-					if(!empty($upo_res['paymentMethods']) && is_array($upo_res['paymentMethods'])) {
-						foreach($upo_res['paymentMethods'] as $data) {
-							// chech if it is not expired
-							if(!empty($data['expiryDate']) && date('Ymd') > $data['expiryDate']) {
-								continue;
-							}
-
-							if(empty($data['upoStatus']) || $data['upoStatus'] !== 'enabled') {
-								continue;
-							}
-
-							// search for same method in APMs, use this UPO only if it is available there
-							foreach($payment_methods as $pm_data) {
-								// found it
-								if($pm_data['paymentMethod'] === $data['paymentMethodName']) {
-									$data['logoURL']	= @$pm_data['logoURL'];
-									$data['name']		= @$pm_data['paymentMethodDisplayName'][0]['message'];
-
-									$upos[] = $data;
-									break;
-								}
-							}
+							$upos[] = $data;
+							break;
 						}
 					}
 				}
-				# get UPOs END
 			}
-
-			$this->context->smarty->assign('scAPMsErrorMsg',	'');
-			$this->context->smarty->assign('sessionToken',		$session_token);
-			$this->context->smarty->assign('languageCode',		substr($this->context->language->locale, 0, 2));
-			$this->context->smarty->assign('paymentMethods',	$payment_methods);
-			$this->context->smarty->assign('userTokenId',		$customer->email);
-			$this->context->smarty->assign('upos',				$upos);
-			$this->context->smarty->assign('isTestEnv',			$test_mode);
 		}
-		catch(Exception $e) {
-			$this->createLog($e->getMessage(), 'hookPaymentOptions Exception');
-			
-			$this->context->smarty->assign('scAPMsErrorMsg',	'Exception ' . $e->getMessage());
-			$this->context->smarty->assign('sessionToken',		'');
-			$this->context->smarty->assign('languageCode',		'');
-			$this->context->smarty->assign('paymentMethods',	'');
-			$this->context->smarty->assign('userTokenId',		'');
-			$this->context->smarty->assign('upos',				'');
-			$this->context->smarty->assign('icons',				'');
-			$this->context->smarty->assign('isTestEnv',			'');
-		}
+		# get UPOs END
+		
+		$this->context->smarty->assign('sessionToken',		$params['sessionToken']);
+		$this->context->smarty->assign('paymentMethods',	$payment_methods);
+		$this->context->smarty->assign('upos',				$upos);
 	}
-	
+
 	/**
 	 * Function createLog
 	 * @param mixed $data
@@ -983,20 +806,26 @@ class SafeCharge extends PaymentModule
 	 * Function callRestApi
 	 * Create a Rest Api call and log input and output parameters
 	 * 
-	 * @param string $url
+	 * @param string $method
 	 * @param array $params
 	 * 
 	 * @return mixed $resp
 	 */
-	public function callRestApi($url, $params) {
-		$resp = '';
+	public function callRestApi($method, $params) {
+		$resp	= '';
+		$url	= $this->getEndPointBase() . $method . '.do';
+		
+		if(empty($method)) {
+			$this->createLog($url, 'callRestApi() Error - the passed method can not be empty.');
+			return false;
+		}
 		
 		if(!filter_var($url, FILTER_VALIDATE_URL)) {
 			$this->createLog($url, 'callRestApi() Error - the passed url is not valid.');
 			return false;
 		}
 		
-		if(!is_array($params) && !is_object($params)) {
+		if(!is_array($params)) {
 			$this->createLog($params, 'callRestApi() Error - the passed params parameter is not array ot object.');
 			return false;
 		}
@@ -1014,6 +843,338 @@ class SafeCharge extends PaymentModule
 		$this->createLog($resp, 'Rest API response');
 		
 		return $resp;
+	}
+	
+	/**
+	 * Function openOrder
+	 * 
+	 * @global type $smarty
+	 * @param bool $is_ajax
+	 * 
+	 * @return boolean
+	 */
+	public function openOrder($is_ajax = false) {
+		$this->createLog('openOrder()');
+		
+		global $smarty;
+		
+		$session_token		= '';
+		$payment_methods	= array();
+		$upos				= array();
+		$time               = date('YmdHis', time());
+		$test_mode			= Configuration::get('SC_TEST_MODE');
+		$hash				= Configuration::get('SC_HASH_TYPE');
+		$secret				= Configuration::get('SC_SECRET_KEY');
+		$call_open_order	= true;
+		
+		# set some parameters
+		$this->context->smarty->assign('merchantId',		Configuration::get('SC_MERCHANT_ID'));
+		$this->context->smarty->assign('merchantSiteId',	Configuration::get('SC_MERCHANT_SITE_ID'));
+		$this->context->smarty->assign('preselectCC',		Configuration::get('NUVEI_PRESELECT_CC'));
+		$this->context->smarty->assign('showAPMsName',		Configuration::get('NUVEI_SHOW_APMS_NAMES'));
+		$this->context->smarty->assign('customAPMsNote',	Configuration::get('NUVEI_APMS_NOTE'));
+		$this->context->smarty->assign('customStyle',		Configuration::get('NUVEI_PMS_STYLE'));
+		$this->context->smarty->assign('formAction',		$this->context->link->getModuleLink('safecharge', 'payment'));
+		$this->context->smarty->assign('webMasterId',		SC_PRESTA_SHOP . _PS_VERSION_);
+		$this->context->smarty->assign('sourceApplication',	SC_SOURCE_APPLICATION);
+		$this->context->smarty->assign('languageCode',		substr($this->context->language->locale, 0, 2));
+		$this->context->smarty->assign('isTestEnv',			$test_mode);
+		$this->context->smarty->assign('scAPMsErrorMsg',	'');
+		
+		$this->context->smarty->assign('ooAjaxUrl',			$this->context->link->getModuleLink(
+			'safecharge',
+			'payment',
+			array('prestaShopAction' => 'createOpenOrder')
+		));
+
+		$this->context->smarty->assign('scDeleteUpoUrl',	$this->context->link->getModuleLink(
+			'safecharge',
+			'payment',
+			array('prestaShopAction' => 'deleteUpo')
+		));
+		
+		try {
+			$cart               = $this->context->cart;
+			$products			= $cart->getProducts();
+			$currency           = new Currency((int)($cart->id_currency));
+			$customer           = new Customer($cart->id_customer);
+			$address_invoice    = new Address((int)($cart->id_address_invoice));
+			$country_inv        = new Country((int)($address_invoice->id_country), Configuration::get('PS_LANG_DEFAULT'));
+			$amount				= (string) number_format($cart->getOrderTotal(), 2, '.', '');
+			
+			$this->context->smarty->assign('userTokenId', $customer->email);
+			
+			$address_delivery	= $address_invoice;
+			$country_delivery	= $country_inv;
+            
+			if(!empty($cart->id_address_delivery) && $cart->id_address_delivery != $cart->id_address_invoice) {
+                $address_delivery	= new Address((int)($cart->id_address_delivery));
+				$country_delivery   = new Country((int)($address_delivery->id_country), Configuration::get('PS_LANG_DEFAULT'));
+            }
+			
+			# try updateOrder
+			$resp = $this->updateOrder(); // this is merged array of response and the session
+
+			if (!empty($resp['status']) && 'SUCCESS' == $resp['status']) {
+				if ($is_ajax) {
+					echo json_encode(array(
+						'status'        => 1,
+						'sessionToken'	=> $resp['sessionToken']
+					));
+
+					exit;
+				}
+
+				$this->context->smarty->assign('sessionToken', $resp['sessionToken']);
+				$this->context->smarty->assign('userTokenId', $resp['userTokenId']);
+
+				// pass billing country
+				$resp['billingAddress']['country'] = $country_inv->iso_code;
+				
+				return $resp;
+			}
+			# try updateOrder END
+			
+			$notify_url     = $this->getNotifyUrl();
+			
+			$error_url		= $this->context->link->getModuleLink(
+				'safecharge',
+				'payment',
+				array('prestaShopAction' => 'showError')
+			);
+
+			$success_url	= $this->context->link->getModuleLink(
+				'safecharge',
+				'payment',
+				array(
+					'prestaShopAction'	=> 'showCompleted',
+					'id_cart'			=> (int)$cart->id,
+					'id_module'			=> $this->id,
+					'status'			=> Configuration::get('PS_OS_PREPARATION'),
+					'amount'			=> $amount,
+					'module'			=> $this->displayName,
+					'key'				=> $customer->secure_key,
+				)
+			);
+			
+			# Open Order
+			$oo_params = array(
+				'merchantId'        => Configuration::get('SC_MERCHANT_ID'),
+				'merchantSiteId'    => Configuration::get('SC_MERCHANT_SITE_ID'),
+				'clientRequestId'   => $time . '_' . uniqid(),
+				'clientUniqueId'	=> (int)$cart->id,
+				'amount'            => $amount,
+				'currency'          => $currency->iso_code,
+				'timeStamp'         => $time,
+
+				'urlDetails'        => array(
+					'notificationUrl'   => $notify_url,
+					'successUrl'		=> $success_url,
+					'failureUrl'		=> $error_url,
+					'pendingUrl'		=> $success_url,
+				),
+
+				'deviceDetails'     => SC_CLASS::get_device_details($this->version),
+				'userTokenId'       => $customer->email,
+
+				'billingAddress'    => array(
+					"firstName"	=> $address_invoice->firstname,
+					"lastName"	=> $address_invoice->lastname,
+					"address"   => $address_invoice->address1,
+					"phone"     => $address_invoice->phone,
+					"zip"       => $address_invoice->postcode,
+					"city"      => $address_invoice->city,
+					'country'	=> $country_inv->iso_code,
+					'email'		=> $customer->email,
+				),
+
+				'shippingAddress'    => array(
+					"firstName"	=> $address_delivery->firstname,
+					"lastName"	=> $address_delivery->lastname,
+					"address"   => $address_delivery->address1,
+					"phone"     => $address_delivery->phone,
+					"zip"       => $address_delivery->postcode,
+					"city"      => $address_delivery->city,
+					'country'	=> $country_delivery->iso_code,
+					'email'		=> $customer->email,
+				),
+
+				'webMasterId'       => SC_PRESTA_SHOP . _PS_VERSION_,
+				'paymentOption'		=> ['card' => ['threeD' => ['isDynamic3D' => 1]]],
+				'transactionType'	=> Configuration::get('SC_PAYMENT_ACTION'),
+				'merchantDetails'	=> array(
+					'customField1' => $cart->secure_key,
+					'customField2' => 'PrestaShop Plugin v' . $this->version,
+					'customField3' => '', // items info
+					'customField4' => time(), // time when we create request
+				),
+			);
+
+			$products_data = array();
+			foreach ($products as $product) {
+				$products_data[$product['id_product']] = array(
+//						'name'		=> $product['name'],
+					'quantity'	=> $product['quantity'],
+					'total_wt'	=> (string)round(floatval($product['total_wt']), 2)
+				);
+			}
+
+			$oo_params['merchantDetails']['customField3']	= json_encode($products_data);
+			$oo_params['userDetails']						= $oo_params['billingAddress'];
+
+			$oo_params['checksum'] = hash(
+				$hash,
+				$oo_params['merchantId'] . $oo_params['merchantSiteId'] . $oo_params['clientRequestId']
+					. $oo_params['amount'] . $oo_params['currency'] . $time . $secret
+			);
+
+			$resp = $this->callRestApi('openOrder', $oo_params);
+			
+			if(
+				empty($resp['sessionToken'])
+				|| empty($resp['status'])
+				|| 'SUCCESS' != $resp['status']
+			) {
+				if(!empty($resp['message'])) {
+					$this->context->smarty->assign('scAPMsErrorMsg',	$resp['message']);
+				}
+
+				return false;
+			}
+
+			$session_token = $resp['sessionToken'];
+
+			$_SESSION['nuvei_last_open_order_details'] = array(
+				'amount'			=> $oo_params['amount'],
+				'items'				=> $oo_params['merchantDetails']['customField2'],
+				'sessionToken'		=> $resp['sessionToken'],
+				'userTokenId'		=> $oo_params['userTokenId'],
+				'clientRequestId'	=> $oo_params['clientRequestId'],
+				'orderId'			=> $resp['orderId'],
+				'billingAddress'	=> array('country' => $oo_params['billingAddress']['country']),
+			);
+			
+			// when need session token only
+			if($is_ajax) {
+				$this->createLog($session_token, 'Session token for Ajax call');
+
+				echo json_encode(array(
+					'status'        => 1,
+					'sessionToken' => $session_token
+				));
+				exit;
+			}
+			
+			// pass billing country
+//			$resp['billingAddress']['country'] = $country_inv->iso_code;
+			
+			return array_merge($oo_params, $resp);
+		}
+		catch (Exception $ex) {
+			$this->createLog($e->getMessage(), 'hookPaymentOptions Exception');
+			$this->context->smarty->assign('scAPMsErrorMsg',	'Exception ' . $e->getMessage());
+			
+			return false;
+		}
+		# create openOrder END
+	}
+	
+	/**
+	 * Function getEndPointBase
+	 * Get the URL to the endpoint, without the method name, based on the site mode.
+	 * 
+	 * @return string
+	 */
+	private function getEndPointBase() {
+		if (Configuration::get('SC_TEST_MODE') == 'yes') {
+			return 'https://ppp-test.safecharge.com/ppp/api/v1/';
+		}
+		
+		return 'https://secure.safecharge.com/ppp/api/v1/';
+	}
+	
+	/**
+	 * Function update_order
+	 * 
+	 * @return array
+	 */
+	private function updateOrder() {
+		$this->createLog(
+			isset($_SESSION['nuvei_last_open_order_details']) ? $_SESSION['nuvei_last_open_order_details'] : '',
+			'updateOrder() - session[nuvei_last_open_order_details]'
+		);
+		
+		if (
+			empty($_SESSION['nuvei_last_open_order_details'])
+			|| empty($_SESSION['nuvei_last_open_order_details']['sessionToken'])
+			|| empty($_SESSION['nuvei_last_open_order_details']['orderId'])
+			|| empty($_SESSION['nuvei_last_open_order_details']['userTokenId'])
+			|| empty($_SESSION['nuvei_last_open_order_details']['clientRequestId'])
+		) {
+			$this->createLog('update_order() - Missing last Order session data.');
+			
+			return array('status' => 'ERROR');
+		}
+		
+		$time			= date('YmdHis');
+		$cart_amount	= (string) round($this->context->cart->getOrderTotal(), 2);
+		$cart_items		= array();
+		$currency		= new Currency((int)($this->context->cart->id_currency));
+
+		// get items
+		foreach ($this->context->cart->getProducts() as $product) {
+			$cart_items[$product['id_product']] = array(
+//				'name'		=> $product['name'],
+				'quantity'	=> $product['quantity'],
+				'total_wt'	=> (string)round(floatval($product['total_wt']), 2)
+			);
+		}
+		
+		// create Order upgrade
+		$params = array(
+			'sessionToken'		=> $_SESSION['nuvei_last_open_order_details']['sessionToken'],
+			'orderId'			=> $_SESSION['nuvei_last_open_order_details']['orderId'],
+			'merchantId'		=> Configuration::get('SC_MERCHANT_ID'),
+			'merchantSiteId'	=> Configuration::get('SC_MERCHANT_SITE_ID'),
+			'userTokenId'		=> $_SESSION['nuvei_last_open_order_details']['userTokenId'],
+			'clientRequestId'	=> $_SESSION['nuvei_last_open_order_details']['clientRequestId'],
+			'currency'			=> $currency->iso_code,
+			'amount'			=> $cart_amount,
+			'items'				=> array(
+				array(
+					'name'		=> 'wc_order',
+					'price'		=> $cart_amount,
+					'quantity'	=> 1
+				)
+			),
+			'merchantDetails'   => array(
+				'customField1' => $this->context->cart->secure_key,
+				'customField2' => 'PrestaShop Plugin v' . $this->version,
+				'customField3' => json_encode($cart_items),
+				'customField4' => time(), // time when we create request
+			),
+			'timeStamp'			=> $time,
+		);
+		
+		$params['checksum'] = hash(
+			Configuration::get('SC_HASH_TYPE'),
+			$params['merchantId'] . $params['merchantSiteId'] . $params['clientRequestId']
+				. $params['amount'] . $params['currency'] . $time . Configuration::get('SC_SECRET_KEY')
+		);
+		
+		$resp = $this->callRestApi('updateOrder', $params);
+		
+		# Success
+		if (!empty($resp['status']) && 'SUCCESS' == $resp['status']) {
+			$_SESSION['nuvei_last_open_order_details']['amount'] = $cart_amount;
+			$_SESSION['nuvei_last_open_order_details']['items']  = $params['merchantDetails']['customField3'];
+			
+			return array_merge($resp, $params);
+		}
+		
+		$this->createLog('update_order() - Order update was not successful.');
+
+		return array('status' => 'ERROR');
 	}
 	
 	private function addOrderState()

@@ -15,11 +15,12 @@ require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'SC_CLASS.ph
 class SafeChargePaymentModuleFrontController extends ModuleFrontController
 {
 //    public $ssl = true;
+	private $cuid_postfix	= '_sandbox_apm'; // postfix for Sandbox APM payments
     
     public function initContent()
     {
         parent::initContent();
-        
+		
         if(
             !Configuration::get('SC_MERCHANT_ID')
             || !Configuration::get('SC_MERCHANT_SITE_ID')
@@ -30,7 +31,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             Tools::redirect($this->context->link->getPageLink('order'));
         }
         
-        $_SESSION['sc_create_logs'] = Configuration::get('SC_CREATE_LOGS');
+//        $_SESSION['sc_create_logs'] = Configuration::get('SC_CREATE_LOGS');
 
         if(Tools::getValue('prestaShopAction', false) == 'showError') {
             $this->scOrderError();
@@ -43,7 +44,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         }
 		
 		if(Tools::getValue('prestaShopAction', false) == 'createOpenOrder') {
-            $this->module->prepareOrderData(true, true);
+//            $this->module->prepareOrderData(true, true);
+            $this->module->openOrder(true);
             return;
         }
 		
@@ -101,6 +103,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				}
 				
 				$this->module->createLog(@$_REQUEST, 'processOrder() Error - Cart ID is empty.');
+				
 				Tools::redirect($this->context->link->getModuleLink(
 					'safecharge',
 					'payment',
@@ -254,12 +257,12 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             // get order data END
 		
 			#########
-		
+			
 			$params = array(
 				'merchantId'        => Configuration::get('SC_MERCHANT_ID'),
 				'merchantSiteId'    => Configuration::get('SC_MERCHANT_SITE_ID'),
 				'userTokenId'       => $is_user_logged ? $customer->email : '',
-				'clientUniqueId'    => $cart->id,
+				'clientUniqueId'    => $this->setCuid($cart->id),
 				'clientRequestId'   => date('YmdHis', time()) .'_'. uniqid(),
 				'currency'          => $currency->iso_code,
 				'amount'            => (string) $total_amount,
@@ -329,12 +332,14 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			
 			// UPO
 			if(is_numeric($sc_payment_method)) {
-				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_NEW_URL : SC_TEST_PAYMENT_NEW_URL;
+//				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_NEW_URL : SC_TEST_PAYMENT_NEW_URL;
+				$endpoint_method = 'payment';
 				$params['paymentOption']['userPaymentOptionId'] = $sc_payment_method;
 			}
 			// APM
 			else {
-				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_URL : SC_TEST_PAYMENT_URL;
+//				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_URL : SC_TEST_PAYMENT_URL;
+				$endpoint_method = 'paymentAPM';
 				$params['paymentMethod'] = $sc_payment_method;
 				
 				if(isset($_POST[$sc_payment_method])) {
@@ -342,7 +347,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				}
 			}
 			
-			$resp		= $this->module->callRestApi($endpoint_url, $params);
+			$resp		= $this->module->callRestApi($endpoint_method, $params);
 			$req_status	= $this->getRequestStatus($resp);
 		}
 		catch(Exception $e) {
@@ -491,7 +496,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             exit;
 		}
 		
-        $req_status = $this->getRequestStatus();
+		$order_info;
+        $req_status			= $this->getRequestStatus();
+		$merchant_unique_id	= $this->getCuid();
         
         # Sale and Auth
         if(
@@ -512,12 +519,21 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			}
                 
 			try {
-				$tries		= 0;
-				$order_id	= false;
+				$tries				= 0;
+				$order_id			= false;
+				$max_tries			= 10;
+				$order_request_time	= Tools::getValue('customField4'); // time of create/update order
+				
+				// do not search more than once for Auth and Sale, if the DMN response time is more than 24 hours before now
+				if($order_request_time && (time() - $order_request_time > 3600 ) ) {
+					$max_tries = 0;
+				}
 				
                 do {
                     $tries++;
-                    $order_id = Order::getIdByCartId(Tools::getValue('merchant_unique_id', 0));
+                    $order_id = Order::getIdByCartId($merchant_unique_id);
+					
+					$this->module->createLog($order_id, 'order_id');
 
                     if(!$order_id) {
 						$this->module->createLog(
@@ -541,7 +557,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 						}
 					}
                 }
-				while($tries <= 6 and (!$order_id || empty($order_info->current_state)));
+				while($tries <= $max_tries and (!$order_id || empty($order_info->current_state)));
                 
                 if(!$order_id) {
 					// do not create order for Declined transaction
@@ -566,10 +582,27 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 						'The DMN didn\'t wait for the Order creation. Try to save order by the DMN.'
 					);
 					
+					$this->module->createLog(
+						array(
+							$merchant_unique_id
+							,Configuration::get('SC_OS_AWAITING_PAIMENT') // the status
+							,floatval(Tools::getValue('totalAmount', 0))
+							,$this->module->displayName . ' - ' . $payment_method // payment_method
+							,'' // message
+							,array(
+								'transaction_id' => Tools::getValue('TransactionID', false)
+							) // extra_vars
+							,null // currency_special
+							,false // dont_touch_amount
+							,Tools::getValue('customField1', '')
+						),
+						'validateOrder params'
+					);
+					
 					// try to create Order here
 					try {
 						$res = $this->module->validateOrder(
-							(int) Tools::getValue('merchant_unique_id')
+							(int) $merchant_unique_id
 							,Configuration::get('SC_OS_AWAITING_PAIMENT') // the status
 							,floatval(Tools::getValue('totalAmount', 0))
 							,$this->module->displayName . ' - ' . $payment_method // payment_method
@@ -591,15 +624,14 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 							echo 'DMN Error - Order was not validated';
 							exit;
 						}
-						
-						$this->module->createLog(
-							Tools::getValue('TransactionID'),
-							'scGetDMN() - the Order was saved.'
-						);
 					}
 					catch(Exception $e) {
 						$this->module->createLog(
-							[Tools::getValue('TransactionID'), $e->getMessage()],
+							[
+								Tools::getValue('TransactionID'),
+								$e->getMessage(),
+								$e->getTrace(),
+							],
 							'DMN Exception'
 							
 						);
@@ -612,7 +644,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 						'DMN Report - An Order was made.'
 					);
 					
-					$order_id = $this->module->currentOrder;
+					$order_id	= $this->module->currentOrder;
+					$order_info	= new Order($order_id);
                 }
 				
 				if($this->module->name != $order_info->module) {
@@ -731,7 +764,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             try {
                 $currency = new Currency((int)$order_info->id_currency);
                 
-                $this->changeOrderStatus(array(
+                $this->changeOrderStatus(
+					array(
                         'id'            => $order_info->id,
                         'current_state' => $order_info->current_state,
 						'has_invoice'	=> $order_info->hasInvoice(),
@@ -1247,7 +1281,8 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 		);
 		
 		$resp = $this->module->callRestApi(
-			Configuration::get('SC_TEST_MODE') == 'no' ? SC_LIVE_DELETE_UPO_URL : SC_TEST_DELETE_UPO_URL,
+//			Configuration::get('SC_TEST_MODE') == 'no' ? SC_LIVE_DELETE_UPO_URL : SC_TEST_DELETE_UPO_URL,
+			'deleteUPO',
 			$params
 		);
 		
@@ -1372,5 +1407,44 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         
         return $customer;
     }
+	
+	/**
+	 * Function setCuid
+	 * 
+	 * Set client unique id.
+	 * We change it only for Sandbox (test) mode.
+	 * 
+	 * @param int $order_id - cart or order id
+	 * @return int|string
+	 */
+	private function setCuid($order_id) {
+		if('yes' != Configuration::get('SC_TEST_MODE')) {
+			return (int)$order_id;
+		}
+		
+		return $order_id . '_' . time() . $this->cuid_postfix;
+	}
+	
+	/**
+	 * Function getCuid
+	 * 
+	 * Get client unique id.
+	 * We change it only for Sandbox (test) mode.
+	 * 
+	 * @return int|string
+	 */
+	private function getCuid() {
+		$merchant_unique_id = Tools::getValue('merchant_unique_id');
+		
+		if('yes' != Configuration::get('SC_TEST_MODE')) {
+			return $merchant_unique_id;
+		}
+		
+		if(strpos($merchant_unique_id, $this->cuid_postfix) !== false) {
+			return current(explode('_', $merchant_unique_id));
+		}
+		
+		return $merchant_unique_id;
+	}
     
 }

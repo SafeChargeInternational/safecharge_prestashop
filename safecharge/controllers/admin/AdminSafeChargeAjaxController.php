@@ -50,7 +50,7 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
         $time       = date('YmdHis', time());
         $status     = 1; // default status of the response
         
-        $_SESSION['sc_create_logs'] = Configuration::get('SC_CREATE_LOGS');
+//        $_SESSION['sc_create_logs'] = Configuration::get('SC_CREATE_LOGS');
         
         $notify_url = $this->module->getNotifyUrl();
         $test_mode	= Configuration::get('SC_TEST_MODE');
@@ -85,13 +85,15 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
         $params['checksum'] = $checksum;
         
         if($_POST['scAction'] == 'settle') {
-            $url = $test_mode == 'no' ? SC_LIVE_SETTLE_URL : SC_TEST_SETTLE_URL;
+//            $url = $test_mode == 'no' ? SC_LIVE_SETTLE_URL : SC_TEST_SETTLE_URL;
+			$method = 'settleTransaction';
         }
         elseif($_POST['scAction'] == 'void') {
-            $url = $test_mode == 'no' ? SC_LIVE_VOID_URL : SC_TEST_VOID_URL;
+//            $url = $test_mode == 'no' ? SC_LIVE_VOID_URL : SC_TEST_VOID_URL;
+			$method = 'voidTransaction';
         }
         
-        $resp = $this->module->callRestApi($url, $params);
+        $resp = $this->module->callRestApi($method, $params);
         
         if(
             !$resp || !is_array($resp)

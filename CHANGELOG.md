@@ -2,6 +2,8 @@
 
 #1.8
 ```
+	* Do updateOrder request before each openOrder. Call it before APMs page, and after click on "Pay" button.
+	* Change in the callRestApi() method parameter.
 	* SC_Class create_log() was removed.
 	* Do not pass the Order amount and currency to the webSDK anymore.
 	* Fixed the JS APMs error, when "Preselect CC payment method" options is set to Yes.

@@ -162,6 +162,7 @@
 	}
 	
 	#scForm .alert-warning {
+		position: relative;
 		background-color: rgba(255,154,82,.3);
 		border-color: #ff9a52;
 		color: #232323;
@@ -169,7 +170,10 @@
 	}
 	
 	#scForm .close {
-		float: right;
+{*		float: right;*}
+		position: absolute;
+		top: 10px;
+		right: 10px;
 		font-size: 1.5rem;
 		font-weight: 700;
 		line-height: 0.5;
@@ -373,7 +377,9 @@
 			
 			{foreach $upos as $upo}
 				<div class="payment-option">
-					<p class="help-block sc_hide"><b></b></p>
+					{if $customAPMsNote}
+						<p class="help-block sc_hide"><b>{$customAPMsNote}</b></p>
+					{/if}
 					
 					<label>
 						<span class="custom-radio">
@@ -428,7 +434,9 @@
         <div id="sc_apms_list">
             {foreach $paymentMethods as $pm}
 				<div class="payment-option">
-					<p class="help-block sc_hide"><b></b></p>
+					{if $customAPMsNote}
+						<p class="help-block sc_hide"><b>{$customAPMsNote}</b></p>
+					{/if}
 					
 					<label>
 						<span class="custom-radio">
@@ -491,7 +499,7 @@
 	{if isset($scAddStep)}
 		<div id="payment-confirmation">
 			<div class="ps-shown-by-js">
-				<button type="button" class="btn btn-primary center-block" onclick="scValidateAPMFields()" id="sc_checkout_btn">
+				<button type="button" class="btn btn-primary center-block" onclick="scUpdateCart()" id="sc_checkout_btn">
 					{l s='Order with an obligation to pay' d='Shop.Theme.Checkout'}
 				</button>
 			</div>
@@ -546,7 +554,7 @@
     var scData          = {
         merchantSiteId		: "{$merchantSiteId}",
         merchantId			: "{$merchantId}",
-        sessionToken		: document.getElementById('sc_lst').value,
+        sessionToken		: "{if !empty($sessionToken)}{$sessionToken}{/if}",
         sourceApplication	: "{$sourceApplication}"
     };
 
@@ -556,24 +564,65 @@
     // for the fields END
 	
 	var scDefaultErrorMsg	= "{l s='Please, select a payment method, and fill all of its fileds!' mod='safecharge'}";
+	var scExpireSessionMsg	= "{l s='Your session expired, please try again!' mod='safecharge'}";
 	var scPayButton			= '#payment-confirmation button[type="button"]';
 
-    function scValidateAPMFields() {
-        $(scPayButton).prop('disabled', true);
-        $('#sc_loading_window').removeClass('sc_hide');
+	/**
+	 * Function scUpdateCart
+	 * The first step of the checkout validation
+	 */
+	function scUpdateCart() {
+		console.log('scUpdateCart()');
 
+		$(scPayButton).prop('disabled', true);
+        $('#sc_loading_window').removeClass('sc_hide');
+		
 		if('' != scAPMsErrorMsg) {
 			scFormFalse(scAPMsErrorMsg);
 			return;
 		}
-
-        selectedPM = $('input[name="sc_payment_method"]:checked').val();
+		
+		selectedPM = $('input[name="sc_payment_method"]:checked').val();
 
 		if(typeof selectedPM == 'undefined' || selectedPM == '') {
             scFormFalse();
             return;
         }
 		
+		jQuery.ajax({
+			type: "POST",
+			url: "{$ooAjaxUrl}",
+			data: {},
+			dataType: 'json'
+		})
+			.fail(function(){
+				console.error('Cart check failed.');
+				scValidateAPMFields();
+			})
+			.done(function(resp) {
+				console.log(resp);
+		
+				// prevent expired session token
+				if(
+					resp.hasOwnProperty('sessionToken')
+					&& '' != resp.sessionToken
+					&& resp.sessionToken != scData.sessionToken
+				) {
+					scData.sessionToken = resp.sessionToken;
+					jQuery('#sc_lst').val(resp.sessionToken);
+					
+					reCreateSCFields();
+					scFormFalse(scExpireSessionMsg);
+				}
+				else {
+					scValidateAPMFields();
+				}
+			});
+	}
+
+    function scValidateAPMFields() {
+		console.log('scValidateAPMFields()');
+	
 		var formValid		= true;
 		var pmFieldsHolder	= $('input[name="sc_payment_method"]:checked')
 				.closest('.payment-option')
@@ -584,7 +633,7 @@
 			merchantId      : "{$merchantId}",
 			merchantSiteId  : "{$merchantSiteId}",
 			webMasterId		: "{$webMasterId}",
-			userTokenId		: "{$userTokenId}"
+			userTokenId		: "{if !empty($userTokenId)}{$userTokenId}{/if}"
 		};
 
 		// use cards
@@ -712,7 +761,7 @@
 	// process after we get the response from the webSDK
 	function afterSdkResponse(resp) {
 		console.log(resp);
-		
+		debugger;
 		var reloadForm = false;
 
 		if(typeof resp.result != 'undefined') {
@@ -805,10 +854,8 @@
     }
 
     function prepareSCFields() {
-		console.log('createSCFields sessionToken', scData.sessionToken);
-		
 		if(!scData.hasOwnProperty('sessionToken') || '' == scData.sessionToken) {
-			console.error('createSCFields sessionToken is missing.');
+			console.error('prepareSCFields sessionToken is missing.');
 			
 			if('' != scAPMsErrorMsg) {
 				scFormFalse("{l s=$scAPMsErrorMsg mod='safecharge'}");
@@ -817,11 +864,13 @@
 			return;
 		}
 		
+		console.log('createSCFields sessionToken', scData.sessionToken);
+		
         sfc = SafeCharge(scData);
 
         // prepare fields
         scFields = sfc.fields({
-            locale: "{$languageCode}"
+            locale: "{if !empty($languageCode)}{$languageCode}{/if}"
         });
     }
 	
@@ -917,8 +966,8 @@
 		.done(function(res) {
 			console.log('reCreate response', res);
 			
-			if(res.hasOwnProperty('session_token') && '' != res.session_token) {
-				scData.sessionToken = res.session_token;
+			if(res.hasOwnProperty('sessionToken') && '' != res.sessionToken) {
+				scData.sessionToken = res.sessionToken;
 				prepareSCFields();
 				createSCFields();
 				
@@ -926,6 +975,8 @@
 				$('#sc_apms_list').removeClass('sc_hide');
 				
 				$(scPayButton).prop('disabled', false);
+				
+				$('#sc_loading_window').addClass('sc_hide');
 			}
 			else {
 				window.location.reload();
@@ -992,7 +1043,7 @@
 			) {
 				$('#payment-confirmation button[type="submit"]')
 					.attr('type', 'button')
-					.attr('onclick', 'scValidateAPMFields()');
+					.attr('onclick', 'scUpdateCart()');
 			}
 			else {
 				$('#payment-confirmation button[type="button"]')
@@ -1002,10 +1053,10 @@
 		});
 		// find payment button END
 
-		{if $customAPMsNote}
+		{* if $customAPMsNote}
 			$('#scForm').find('p.help-block b').text("{$customAPMsNote}"
 				+ ' "' + $(scPayButton).text().trim() + '".');
-		{/if}
+		{/if *}
 		
 		$('.cc_load_spinner').addClass('sc_hide');
 	});

@@ -18,6 +18,8 @@ class SafeChargeAddStepModuleFrontController extends ModuleFrontController
     {
         parent::initContent();
 		
+		$this->module->createLog('SafeChargeAddStepModuleFrontController initContent()');
+		
 		$error_url	= $this->context->link->getPageLink('order');
 		$cart		= $this->context->cart;
 		
@@ -41,7 +43,8 @@ class SafeChargeAddStepModuleFrontController extends ModuleFrontController
 		}
 		// check parameters END
 		
-		$this->module->prepareOrderData(false, true);
+//		$this->module->prepareOrderData(false, true);
+		$this->module->getPaymentMethods();
 		$this->context->smarty->assign('scAddStep', true);
 		
         $this->setTemplate('module:safecharge/views/templates/front/add_step.tpl');
