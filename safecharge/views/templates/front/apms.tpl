@@ -761,7 +761,7 @@
 	// process after we get the response from the webSDK
 	function afterSdkResponse(resp) {
 		console.log(resp);
-		debugger;
+		
 		var reloadForm = false;
 
 		if(typeof resp.result != 'undefined') {
@@ -1053,11 +1053,6 @@
 		});
 		// find payment button END
 
-		{* if $customAPMsNote}
-			$('#scForm').find('p.help-block b').text("{$customAPMsNote}"
-				+ ' "' + $(scPayButton).text().trim() + '".');
-		{/if *}
-		
 		$('.cc_load_spinner').addClass('sc_hide');
 	});
 </script>
