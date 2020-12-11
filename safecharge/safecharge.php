@@ -314,7 +314,7 @@ class SafeCharge extends PaymentModule
 		}
 		
 		global $smarty;
-//        $smarty->assign('orderId', $_GET['id_order']);
+		
         $smarty->assign('orderId', $order_id);
         
         $sc_data = Db::getInstance()->getRow('SELECT * FROM safecharge_order_data WHERE order_id = ' . $order_id);
@@ -360,6 +360,11 @@ class SafeCharge extends PaymentModule
         // check for refunds
         $rows = Db::getInstance()->getRow('SELECT id_order_slip FROM '. _DB_PREFIX_
             .'order_slip WHERE id_order = ' . $order_id . ' AND amount > 0');
+		
+//		$rows2 = Db::getInstance()->getRow('SELECT * FROM '. _DB_PREFIX_
+//            .'order_slip WHERE id_order = ' . $order_id . ' AND amount > 0');
+//		echo '<pre>'.print_r($rows2, true).'</pre>'; 
+		
         $smarty->assign('isRefunded', $rows ? 1 : 0);
         
         return $this->display(__FILE__, 'views/templates/admin/sc_order_actions.tpl');
@@ -448,7 +453,6 @@ class SafeCharge extends PaymentModule
         $request_amoutn = 0;
         
         try {
-//            foreach ($_REQUEST['partialRefundProduct'] as $id => $am) {
             foreach (Tools::getValue('partialRefundProduct') as $id => $am) {
                 $request_amoutn += floatval($am);
             }
@@ -459,7 +463,6 @@ class SafeCharge extends PaymentModule
             }
 
             $request_amoutn = number_format($request_amoutn, 2, '.', '');
-//            $order_id = intval($_REQUEST['id_order']);
             $order_id = intval(Tools::getValue('id_order'));
             
             // save order message
@@ -508,8 +511,6 @@ class SafeCharge extends PaymentModule
             $ref_parameters['checksum']     = $checksum;
             $ref_parameters['urlDetails']   = array('notificationUrl' => $notify_url);
             $ref_parameters['webMasterId']  = 'PreastaShop ' . _PS_VERSION_;
-            
-//            $refund_url = $test_mode == 'yes' ? SC_TEST_REFUND_URL : SC_LIVE_REFUND_URL;
             
             $json_arr = $this->callRestApi('refundTransaction', $ref_parameters);
         }

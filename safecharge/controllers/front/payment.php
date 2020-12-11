@@ -648,6 +648,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					$order_info	= new Order($order_id);
                 }
 				
+				// chack if the Order belongs to this module
 				if($this->module->name != $order_info->module) {
 					$this->module->createLog(
 						[
@@ -660,6 +661,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 					echo 'DMN Error - the Order do not belongs to the ' . $this->module->name;
 					exit;
 				}
+				
+				// is overriding status allowed
+				$this->canOverrideOrderStatus($order_info->current_state);
 				
 				// check for transaction Id after sdk Order
 				$payment		= new OrderPaymentCore();
@@ -761,6 +765,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             
 			$order_info	= $this->getOrder();
 			
+			// is overriding status allowed
+			$this->canOverrideOrderStatus($order_info->current_state);
+			
             try {
                 $currency = new Currency((int)$order_info->id_currency);
                 
@@ -790,6 +797,9 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             
 			$order_info = $this->getOrder();
 			
+			// is overriding status allowed
+			$this->canOverrideOrderStatus($order_info->current_state);
+			
             try {
                 if(Tools::getValue('transactionType') == 'Settle') {
                     $this->updateCustomPaymentFields($order_info->id, false);
@@ -816,6 +826,64 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         exit;
     }
 	
+	/**
+	 * Function canOverrideOrderStatus
+	 * 
+	 * Not all statuses allow override. In this case stop the process.
+	 * 
+	 * @param int $order_status
+	 */
+	private function canOverrideOrderStatus($order_status) {
+		// Void - can not be changed any more
+		if(Configuration::get('PS_OS_CANCELED') == $order_status) {
+			$this->module->createLog(
+				[
+					'TransactionID' => Tools::getValue('TransactionID'),
+					'order state' => $order_status
+				],
+				'DMN Error - can not change status of Voided (Canceld) Order.'
+			);
+
+			echo 'DMN Error - can not change status of Voided (Canceld) Order.';
+			exit;
+		}
+		
+		// Refund - can not be changed any more, but accept other Refund DMNs
+		if(
+			Configuration::get('PS_OS_REFUND') == $order_status
+			&& !in_array(strtolower(Tools::getValue('transactionType')), array('credit', 'refund'))
+		) {
+			$this->module->createLog(
+				[
+					'TransactionID' => Tools::getValue('TransactionID'),
+					'order state' => $order_status
+				],
+				'DMN Error - can not change status of Refunded Order.'
+			);
+
+			echo 'DMN Error - can not change status of Refunded Order.';
+			exit;
+		}
+		
+		// Settle and Sale
+		if(
+			intval($order_status) == intval(Configuration::get('PS_OS_PAYMENT'))
+			&& strtolower(Tools::getValue('transactionType')) == 'auth'
+		) {
+			$this->module->createLog(
+				[
+					'TransactionID' => Tools::getValue('TransactionID'),
+					'order state' => $order_status
+				],
+				'DMN Error - can not change compleated Order to Auth.'
+			);
+
+			echo 'DMN Error - can not change compleated Order to Auth.';
+			exit;
+		}
+	}
+
+
 	/**
 	 * Function getOrder
 	 * Get the Order by prestaShopOrderID parameter
@@ -892,6 +960,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
         $message			= new MessageCore();
         $message->id_order	= $order_info['id'];
 		$error_order_status	= '';
+		$status_id			= $order_info['current_state'];
         
         switch($status) {
             case 'CANCELED':
@@ -1027,35 +1096,11 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                 break;
 
             case 'PENDING':
-//                $status_id = (int)(Configuration::get('SC_OS_AWAITING_PAIMENT'));
-                $status_id = '';
-                
-//                if (
-//					$order_info['current_state'] == Configuration::get('PS_OS_PAYMENT')
-//					|| $order_info['current_state'] == Configuration::get('PS_OS_PREPARATION')
-//				) {
-//                    $status_id = $order_info['current_state'];
-//                    break;
-//                }
-                
-//                $msg = 'Payment is still pending, PPP_TransactionID '
-//                    . @$request['PPP_TransactionID'] . ", Status = " . $status;
-
                 if(Tools::getValue('transactionType')) {
 					$msg = Tools::getValue('transactionType') . ' is pending, '
 						. 'PPP_TransactionID ' . @$request['PPP_TransactionID']
 						. ', TransactionID = ' . @$request['TransactionID'];
-					
-//                    $msg .= ", TransactionType = " . Tools::getValue('transactionType');
                 }
-
-//                $msg .= ', TransactionID = ' . @$request['TransactionID'];
-                
-                // add one more message
-//                $message->private = true;
-//                $message->message = SC_GATEWAY_TITLE . $this->l(' payment status is pending Unique Id: ')
-//                        .@$request['PPP_TransactionID'];
-//                $message->add();
                 
                 break;
                 

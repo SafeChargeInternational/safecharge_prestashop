@@ -2,6 +2,8 @@
 
 #1.8
 ```
+	* Fix for missing Order state_id, when DMN is faild.
+	* Checks for not allowed change of the Order status - see canOverrideOrderStatus() method.
 	* Do updateOrder request before each openOrder. Call it before APMs page, and after click on "Pay" button.
 	* Change in the callRestApi() method parameter.
 	* SC_Class create_log() was removed.
