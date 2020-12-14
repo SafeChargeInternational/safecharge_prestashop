@@ -1,5 +1,10 @@
 # SafeCharge Prestashop Changelog
 
+#1.9
+```
+	* Changed the name of the plugin directory to "nuvei".
+```
+
 #1.8
 ```
 	* Fix for missing Order state_id, when DMN is faild.
