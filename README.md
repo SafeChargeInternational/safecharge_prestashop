@@ -1,8 +1,6 @@
 # SafeCharge Prestashop
 SafeCharge PlugIn for PrestaShop v 1.7 and above
 
-Note about version 2.0:
-
 If you have previously installed plugin (before v2.0)
 
 1. If you have translations for the plugin, copy or backup them;
