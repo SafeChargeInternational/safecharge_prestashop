@@ -1,5 +1,5 @@
-# SafeCharge Prestashop
-SafeCharge PlugIn for PrestaShop v 1.7 and above
+# Nuvei Prestashop
+Nuvei PlugIn for PrestaShop v 1.7 and above
 
 If you have previously installed plugin (before v2.0)
 
