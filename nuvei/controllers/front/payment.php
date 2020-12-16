@@ -9,10 +9,10 @@ if (!session_id()) {
     session_start();
 }
 
-require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'sc_config.php';
-require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'SC_CLASS.php';
+require_once _PS_MODULE_DIR_ . 'nuvei' . DIRECTORY_SEPARATOR . 'sc_config.php';
+require_once _PS_MODULE_DIR_ . 'nuvei' . DIRECTORY_SEPARATOR . 'SC_CLASS.php';
 
-class SafeChargePaymentModuleFrontController extends ModuleFrontController
+class NuveiPaymentModuleFrontController extends ModuleFrontController
 {
 //    public $ssl = true;
 	private $cuid_postfix	= '_sandbox_apm'; // postfix for Sandbox APM payments
@@ -105,7 +105,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 				$this->module->createLog(@$_REQUEST, 'processOrder() Error - Cart ID is empty.');
 				
 				Tools::redirect($this->context->link->getModuleLink(
-					'safecharge',
+					'nuvei',
 					'payment',
 					array(
 						'prestaShopAction' => 'showError',
@@ -116,7 +116,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			$customer			= $this->validate($cart);
 
 			$error_url			= $this->context->link->getModuleLink(
-					'safecharge',
+					'nuvei',
 					'payment',
 					array(
 						'prestaShopAction'	=> 'showError',
@@ -218,7 +218,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			if($save_order_after_apm == 1) {
 				$success_url = $this->context->link
 					->getModuleLink(
-						'safecharge',
+						'nuvei',
 						'payment',
 						array(
 							'prestaShopAction'	=> 'beforeSuccess',
@@ -332,13 +332,11 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			
 			// UPO
 			if(is_numeric($sc_payment_method)) {
-//				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_NEW_URL : SC_TEST_PAYMENT_NEW_URL;
 				$endpoint_method = 'payment';
 				$params['paymentOption']['userPaymentOptionId'] = $sc_payment_method;
 			}
 			// APM
 			else {
-//				$endpoint_url = $test_mode == 'no' ? SC_LIVE_PAYMENT_URL : SC_TEST_PAYMENT_URL;
 				$endpoint_method = 'paymentAPM';
 				$params['paymentMethod'] = $sc_payment_method;
 				
@@ -351,11 +349,14 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			$req_status	= $this->getRequestStatus($resp);
 		}
 		catch(Exception $e) {
-			$this->module->createLog($e->getMessage(), 'processOrder() Exception:');
+			$this->module->createLog(
+				array($e->getMessage(), $e->getTrace()),
+				'processOrder() Exception:'
+			);
 			
 			$this->module->createLog(
 				$this->context->link->getModuleLink(
-					'safecharge', 
+					'nuvei', 
 					'payment', 
 					array('prestaShopAction' => 'showError')
 				),
@@ -366,7 +367,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			
 			Tools::redirect(
 				$this->context->link->getModuleLink(
-					'safecharge', 
+					'nuvei', 
 					'payment', 
 					array('prestaShopAction' => 'showError')
 				)
@@ -450,7 +451,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 			Tools::redirect($url);
 		}
 		
-        $this->setTemplate('module:safecharge/views/templates/front/order_error.tpl');
+        $this->setTemplate('module:nuvei/views/templates/front/order_error.tpl');
     }
 	
     /**
@@ -462,7 +463,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
     {
         $this->module->createLog(@$_REQUEST, 'DMN request:');
 		
-		if(Tools::getValue('sc_stop_dmn', 0) == 1) {
+		if( Tools::getValue('sc_stop_dmn', 0) == 1 && Configuration::get('SC_TEST_MODE') == 'yes' ) {
 			$this->module->createLog(
 				http_build_query(@$_REQUEST),
 				'DMN report: Manually stopped process.'
@@ -996,14 +997,14 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
                     break;
                 }
                 
-                $msg = 'The amount has been authorized and captured by ' . SC_GATEWAY_TITLE . '. ';
+                $msg = 'The amount has been authorized and captured by Nuvei.';
                 
                 if($_REQUEST['transactionType'] == 'Auth') {
                     $msg = 'The amount has been authorized and wait to for Settle.';
 					$status_id = ''; // if we set the id we will have twice this status in the history
                 }
                 elseif($_REQUEST['transactionType'] == 'Settle') {
-                    $msg = 'The amount has been captured by ' . SC_GATEWAY_TITLE . '. ';
+                    $msg = 'The amount has been captured by Nuvei.';
                 }
 				// compare DMN amount and Order amount
 				elseif(Tools::getValue('transactionType', false) === 'Sale') {
@@ -1326,7 +1327,6 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 		);
 		
 		$resp = $this->module->callRestApi(
-//			Configuration::get('SC_TEST_MODE') == 'no' ? SC_LIVE_DELETE_UPO_URL : SC_TEST_DELETE_UPO_URL,
 			'deleteUPO',
 			$params
 		);
@@ -1348,7 +1348,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 	private function beforeSuccess()
 	{
 		$error_url = $this->context->link->getModuleLink(
-			'safecharge',
+			'nuvei',
 			'payment',
 			array(
 				'prestaShopAction'	=> 'showError',
@@ -1427,7 +1427,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
 
         $authorized = false;
         foreach (Module::getPaymentModules() as $module) {
-            if ($module['name'] == 'safecharge') {
+            if (in_array($module['name'], array('nuvei', 'safecharge'))) {
                 $authorized = true;
                 break;
             }
@@ -1437,7 +1437,7 @@ class SafeChargePaymentModuleFrontController extends ModuleFrontController
             $this->module->createLog(Module::getPaymentModules(), 'This payment method is not available:');
             
 			Tools::redirect($this->context->link->getModuleLink(
-				'safecharge',
+				'nuvei',
 				'payment',
 				array('prestaShopAction' => 'showError')
 			));

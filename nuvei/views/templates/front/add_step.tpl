@@ -32,14 +32,14 @@
 	</style>
 	
 	<div class="cc_load_spinner" style="margin: 0 auto; text-align: center;">
-		<img class="sc_rotate_img" src="/modules/safecharge/views/img/loading.png" alt="loading..." />
+		<img class="sc_rotate_img" src="/modules/nuvei/views/img/loading.png" alt="loading..." />
 	</div>
 	
 	{if !empty($paymentMethods)}
-		{include file="module:safecharge/views/templates/front/apms.tpl"}
+		{include file="module:nuvei/views/templates/front/apms.tpl"}
 	{else}
 		<div id="sc_pm_error" class="alert alert-warning">
-			<span class="sc_error_msg">{l s='ERROR - there are no any Payment Methods. Please, go back to the cart and try again!' mod='safecharge'}</span>
+			<span class="sc_error_msg">{l s='ERROR - there are no any Payment Methods. Please, go back to the cart and try again!' mod='nuvei'}</span>
 			<span class="close" onclick="$('#sc_pm_error').hide();">&times;</span>
 		</div>
 			

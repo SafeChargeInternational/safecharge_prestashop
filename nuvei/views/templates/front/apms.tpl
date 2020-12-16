@@ -337,17 +337,17 @@
 {/if}
 
 <div id="sc_pm_error" class="alert alert-warning sc_hide">
-    <span class="sc_error_msg">{l s='Please, select a payment method, and if there are fields, fill all of them!' mod='safecharge'}</span>
+    <span class="sc_error_msg">{l s='Please, select a payment method, and if there are fields, fill all of them!' mod='nuvei'}</span>
     <span class="close" onclick="$('#sc_pm_error').hide();">&times;</span>
 </div>
 	
 <div id="sc_remove_upo_error" class="alert alert-warning sc_hide">
-    <span class="sc_error_msg">{l s='UPO remove fails.' mod='safecharge'}</span>
+    <span class="sc_error_msg">{l s='UPO remove fails.' mod='nuvei'}</span>
     <span class="close" onclick="$('#sc_remove_upo_error').hide();">&times;</span>
 </div>
 	
 <div id="sc_remove_upo_success" class="alert alert-success sc_hide">
-    <span class="sc_error_msg">{l s='UPO remove done.' mod='safecharge'}</span>
+    <span class="sc_error_msg">{l s='UPO remove done.' mod='nuvei'}</span>
     <span class="close" onclick="$('#sc_remove_upo_success').hide();">&times;</span>
 </div>
 	
@@ -357,8 +357,8 @@
 		<hr/>
 		
 		<div class="sc_content">
-			<h3><img src="/modules/safecharge/views/img/loading.png" class="fast-right-spinner" alt="sync...">
-			{l s='Processing your Payment...' mod='safecharge'}</h3>
+			<h3><img src="/modules/nuvei/views/img/loading.png" class="fast-right-spinner" alt="sync...">
+			{l s='Processing your Payment...' mod='nuvei'}</h3>
 		</div>
 	</div>
 </div>
@@ -366,11 +366,11 @@
 </br>
 <form method="post" id="scForm" action="{$formAction}">
 	<div class="cc_load_spinner">
-		<img class="sc_rotate_img" src="/modules/safecharge/views/img/loading.png" alt="loading..." />
+		<img class="sc_rotate_img" src="/modules/nuvei/views/img/loading.png" alt="loading..." />
 	</div>
 	
 	{if !empty($upos)}
-		<h4 id="sc_upos_title">{l s='Choose from preferred payment methods:' mod='safecharge'}</h4>
+		<h4 id="sc_upos_title">{l s='Choose from preferred payment methods:' mod='nuvei'}</h4>
 		
 		<div id="sc_upos_list">
 			<input type="hidden" id="sc_upo_name" name="sc_upo_name" value="" />
@@ -388,7 +388,7 @@
 						</span>
 
 						{if $upo.paymentMethodName == 'cc_card'}
-							<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}"  class="sc_visa_mc_maestro_logo" />
+							<img src="/modules/nuvei/views/img/visa_mc_maestro.svg" alt="{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}"  class="sc_visa_mc_maestro_logo" />
 						{elseif !empty($upo.logoURL)}
 							<img src="{$upo.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{if isset($upo.paymentMethodDisplayName[0].message)}{$upo.paymentMethodDisplayName[0].message}{/if}" />
 						{/if}&nbsp;
@@ -401,10 +401,10 @@
 							{/if}
 
 							<a id="sc_remove_upo_{$upo.userPaymentOptionId}" rel="nofollow" href="javascript:deleteScUpo({$upo.userPaymentOptionId});">
-								<img src="/modules/safecharge/views/img/trash.png" alt="delete..." />
+								<img src="/modules/nuvei/views/img/trash.png" alt="delete..." />
 							</a>
 
-							<img src="/modules/safecharge/views/img/loading.png" class="fast-right-spinner sc_hide" alt="sync..." />
+							<img src="/modules/nuvei/views/img/loading.png" class="fast-right-spinner sc_hide" alt="sync..." />
 						</span>
 					</label>
 						
@@ -413,7 +413,7 @@
 							<div id="cvv_for_{$upo.userPaymentOptionId}" class="sc_upos_cvvs" data-upo-id="{$upo.userPaymentOptionId}"></div>
 								
 							<div class="alert alert-warning">
-								<span class="sc_error_msg">{l s='Please, fill the card CVC!' mod='safecharge'}</span>
+								<span class="sc_error_msg">{l s='Please, fill the card CVC!' mod='nuvei'}</span>
 								<span class="close" onclick="$(this).closest('.alert-warning').hide();">×</span>
 							</div>
 						</div>
@@ -425,10 +425,10 @@
 	{/if}
 	
     {if !empty($paymentMethods)}
-        <h4 id="sc_apms_title">{l s='Choose from available payment methods:' mod='safecharge'}</h4>
+        <h4 id="sc_apms_title">{l s='Choose from available payment methods:' mod='nuvei'}</h4>
 		
 		<div class="sc_hide cc_load_spinner">
-			<img src="/modules/safecharge/views/img/loading.png" class="fast-right-spinner sc_hide" alt="sync..." />
+			<img src="/modules/nuvei/views/img/loading.png" class="fast-right-spinner sc_hide" alt="sync..." />
 		</div>
 		
         <div id="sc_apms_list">
@@ -445,7 +445,7 @@
 						</span>
 							
 						{if $pm.paymentMethod == 'cc_card'}
-							<img src="/modules/safecharge/views/img/visa_mc_maestro.svg" alt="{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}"  class="sc_visa_mc_maestro_logo" />
+							<img src="/modules/nuvei/views/img/visa_mc_maestro.svg" alt="{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}"  class="sc_visa_mc_maestro_logo" />
 							<span></span>
 						{elseif !empty($pm.logoURL)}
 							<img src="{$pm.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}" />&nbsp;
@@ -457,7 +457,7 @@
 						
 					{if in_array($pm.paymentMethod, array('cc_card', 'dc_card'))}
 						<div class="sc_fields_holder" id="sc_{$pm.paymentMethod}">
-							<input class="" type="text" id="sc_card_holder_name" name="{$pm.paymentMethod}[cardHolderName]" placeholder="{l s='Card holder name' mod='safecharge'}" />
+							<input class="" type="text" id="sc_card_holder_name" name="{$pm.paymentMethod}[cardHolderName]" placeholder="{l s='Card holder name' mod='nuvei'}" />
 
 							<div id="sc_card_number" class=""></div>
 							<div id="sc_card_expiry" class=""></div>
@@ -509,7 +509,7 @@
 </form>
 
 <script type="text/javascript">
-	var scAPMsErrorMsg	= "{if !empty($scAPMsErrorMsg)}{l s=$scAPMsErrorMsg mod='safecharge'}{/if}";
+	var scAPMsErrorMsg	= "{if !empty($scAPMsErrorMsg)}{l s=$scAPMsErrorMsg mod='nuvei'}{/if}";
 	
     var selectedPM		= "";
     var payloadURL		= "";
@@ -563,8 +563,8 @@
     {/if}
     // for the fields END
 	
-	var scDefaultErrorMsg	= "{l s='Please, select a payment method, and fill all of its fileds!' mod='safecharge'}";
-	var scExpireSessionMsg	= "{l s='Your session expired, please try again!' mod='safecharge'}";
+	var scDefaultErrorMsg	= "{l s='Please, select a payment method, and fill all of its fileds!' mod='nuvei'}";
+	var scExpireSessionMsg	= "{l s='Your session expired, please try again!' mod='nuvei'}";
 	var scPayButton			= '#payment-confirmation button[type="button"]';
 
 	/**
@@ -641,34 +641,34 @@
 			console.log('card');
 			
 			if(jQuery('#sc_card_holder_name').val() === '') {
-				scFormFalse("{l s='Please, fill Card holder name!' mod='safecharge'}");
+				scFormFalse("{l s='Please, fill Card holder name!' mod='nuvei'}");
 				return;
 			}
 
 			if(jQuery('#sc_card_number').hasClass('empty')) {
-				scFormFalse("{l s='Please fill Card number field!' mod='safecharge'}");
+				scFormFalse("{l s='Please fill Card number field!' mod='nuvei'}");
 				return;
 			}
 			if(!jQuery('#sc_card_number').hasClass('empty') && !jQuery('#sc_card_number').hasClass('sfc-complete')) {
-				scFormFalse("{l s='Your card number is not correct, please check it!' mod='safecharge'}");
+				scFormFalse("{l s='Your card number is not correct, please check it!' mod='nuvei'}");
 				return;
 			}
 
 			if(jQuery('#sc_card_expiry').hasClass('empty')) {
-				scFormFalse("{l s='Please fill Card expiry date field!' mod='safecharge'}");
+				scFormFalse("{l s='Please fill Card expiry date field!' mod='nuvei'}");
 				return;
 			}
 			if(!jQuery('#sc_card_expiry').hasClass('empty') && !jQuery('#sc_card_expiry').hasClass('sfc-complete')) {
-				scFormFalse("{l s='Your card expiry date is not correct, please check it!' mod='safecharge'}");
+				scFormFalse("{l s='Your card expiry date is not correct, please check it!' mod='nuvei'}");
 				return;
 			}
 
 			if(jQuery('#sc_card_cvc').hasClass('empty')) {
-				scFormFalse("{l s='Please fill CVC field!' mod='safecharge'}");
+				scFormFalse("{l s='Please fill CVC field!' mod='nuvei'}");
 				return;
 			}
 			if(!jQuery('#sc_card_cvc').hasClass('empty') && !jQuery('#sc_card_cvc').hasClass('sfc-complete')) {
-				scFormFalse("{l s='Your CVC is not correct, please check it!' mod='safecharge'}");
+				scFormFalse("{l s='Your CVC is not correct, please check it!' mod='nuvei'}");
 				return;
 			}
 			
@@ -735,7 +735,7 @@
 				}
 
 				if(!formValid) {
-					scFormFalse("{l s='Please, fill all fileds, of the selected payment method!' mod='safecharge'}");
+					scFormFalse("{l s='Please, fill all fileds, of the selected payment method!' mod='nuvei'}");
 					return;
 				}
 
@@ -771,25 +771,25 @@
 				return;
 			}
 			else if(resp.result == 'DECLINED') {
-				scFormFalse("{l s='Your Payment was DECLINED. Please try another payment method!' mod='safecharge'}");
+				scFormFalse("{l s='Your Payment was DECLINED. Please try another payment method!' mod='nuvei'}");
 			}
 			else {
 				reloadForm = true;
 
 				if(resp.hasOwnProperty('errorDescription') && resp.errorDescription != '') {
 					scFormFalse(
-						"{l s='Error with your Payment. Please try again later!' mod='safecharge'}<br/>"
+						"{l s='Error with your Payment. Please try again later!' mod='nuvei'}<br/>"
 						+ resp.errorDescription
 					);
 				}
 				else if(resp.hasOwnProperty('reason') && '' != resp.reason) {
 					scFormFalse(
-						"{l s='Error with your Payment. Please try again later!' mod='safecharge'}<br/>"
+						"{l s='Error with your Payment. Please try again later!' mod='nuvei'}<br/>"
 						+ resp.reason
 					);
 				}
 				else {
-					scFormFalse("{l s='Error with your Payment. Please try again later!' mod='safecharge'}");
+					scFormFalse("{l s='Error with your Payment. Please try again later!' mod='nuvei'}");
 				}
 			}
 		}
@@ -798,18 +798,18 @@
 			
 			if(resp.hasOwnProperty('errorDescription') && resp.errorDescription != '') {
 				scFormFalse(
-					"{l s='Error with your Payment. Please try again later!' mod='safecharge'}<br/>"
+					"{l s='Error with your Payment. Please try again later!' mod='nuvei'}<br/>"
 					+ resp.errorDescription
 				);
 			}
 			else if(resp.hasOwnProperty('reason') && '' != resp.reason) {
 				scFormFalse(
-					"{l s='Error with your Payment. Please try again later!' mod='safecharge'}<br/>"
+					"{l s='Error with your Payment. Please try again later!' mod='nuvei'}<br/>"
 					+ resp.reason
 				);
 			}
 			else {
-				scFormFalse("{l s='Error with your Payment. Please try again later!' mod='safecharge'}");
+				scFormFalse("{l s='Error with your Payment. Please try again later!' mod='nuvei'}");
 			}
 			
 			return;
@@ -858,7 +858,7 @@
 			console.error('prepareSCFields sessionToken is missing.');
 			
 			if('' != scAPMsErrorMsg) {
-				scFormFalse("{l s=$scAPMsErrorMsg mod='safecharge'}");
+				scFormFalse("{l s=$scAPMsErrorMsg mod='nuvei'}");
 			}
 			
 			return;
@@ -989,7 +989,7 @@
 	}
 	
 	function deleteScUpo(upoId) {
-		if(confirm("{l s='Do you want to delete this UPO?' mod='safecharge'}")) {
+		if(confirm("{l s='Do you want to delete this UPO?' mod='nuvei'}")) {
 			var thisElem = $('#sc_remove_upo_' + upoId);
 			var parentLabel = thisElem.closest('label');
 			
@@ -1038,7 +1038,7 @@
 			{/if}
 			
 			if (
-				$('input[name=payment-option]:checked').attr('data-module-name') == 'safecharge'
+				$('input[name=payment-option]:checked').attr('data-module-name') == 'nuvei'
 				&& $('#payment-confirmation button[type="submit"]').length > 0
 			) {
 				$('#payment-confirmation button[type="submit"]')

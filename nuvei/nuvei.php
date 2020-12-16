@@ -10,23 +10,22 @@ if(!isset($_SESSION)) {
 	session_start();
 }
 
-require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'sc_config.php';
-require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'SC_CLASS.php';
-require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'sc_versions_resolver.php';
+require_once _PS_MODULE_DIR_ . 'nuvei' . DIRECTORY_SEPARATOR . 'sc_config.php';
+require_once _PS_MODULE_DIR_ . 'nuvei' . DIRECTORY_SEPARATOR . 'SC_CLASS.php';
+require_once _PS_MODULE_DIR_ . 'nuvei' . DIRECTORY_SEPARATOR . 'sc_versions_resolver.php';
 
-class SafeCharge extends PaymentModule
+class Nuvei extends PaymentModule
 {
     private $_html = '';
     
     public function __construct()
     {
-        $this->name						= 'safecharge';
+        $this->name						= 'nuvei';
         $this->tab						= SafeChargeVersionResolver::set_tab();
-        $this->version					= '1.8';
+        $this->version					= '2.0';
         $this->author					= 'Nuvei';
         $this->need_instance			= 1;
-//        $this->ps_versions_compliancy	= array('min' => '1.7', 'max' => _PS_VERSION_);
-        $this->ps_versions_compliancy	= array('min' => '1.7', 'max' => '1.7.6.4');
+        $this->ps_versions_compliancy	= array('min' => '1.7', 'max' => '1.7.6.4'); // curent version - _PS_VERSION_
         $this->bootstrap				= true;
         $this->controllers				= array('payment', 'validation');
         $this->is_eu_compatible			= 1;
@@ -64,7 +63,6 @@ class SafeCharge extends PaymentModule
             || !$this->registerHook('displayAdminOrderLeft')
             || !$this->registerHook('actionOrderSlipAdd')
             || !$this->registerHook('actionModuleInstallBefore')
-//            || !$this->registerHook('displayFooter')
             || !$this->installTab('AdminCatalog', 'AdminSafeChargeAjax', 'SafeChargeAjax')
             || !$this->addOrderState()
         ) {
@@ -198,8 +196,9 @@ class SafeCharge extends PaymentModule
             }
         }
         
-        $this->smarty->assign('img_path', '/modules/safecharge/views/img/');
-        $this->smarty->assign(
+        $this->smarty->assign('img_path', '/modules/nuvei/views/img/');
+        
+		$this->smarty->assign(
 			'defaultDmnUrl',
 			$this->getNotifyUrl()
 		);
@@ -212,7 +211,7 @@ class SafeCharge extends PaymentModule
 		
 		if(empty($url)) {
 			$url = $this->context->link
-				->getModuleLink('safecharge', 'payment', array(
+				->getModuleLink('nuvei', 'payment', array(
 					'prestaShopAction'  => 'getDMN',
 //					'sc_create_logs'    => $_SESSION['sc_create_logs'],
 					'sc_stop_dmn'       => SC_STOP_DMN,
@@ -229,18 +228,6 @@ class SafeCharge extends PaymentModule
 		return $url;
 	}
 	
-//	public function hookDisplayFooter($params)
-//	{
-////		var_dump(@$params);
-////		var_dump(Tools::getValue('configure'));
-//		
-//		$this->createLog(@$params, '@$params');
-//		$this->createLog(Tools::getValue('configure'), 'configure');
-//		
-//		
-//		$this->context->controller->addJS(_MODULE_DIR_ . 'safecharge/views/js/sc_public.js');
-//	}
-    
     public function hookPaymentOptions($params)
     {
 		if($this->isPayment() !== true){
@@ -254,7 +241,6 @@ class SafeCharge extends PaymentModule
 		
 		$this->createLog('hookPaymentOptions');
 		$this->getPaymentMethods();
-//		$this->prepareOrderData();
 		
 		global $smarty;
 		
@@ -262,12 +248,13 @@ class SafeCharge extends PaymentModule
 		
         $newOption
 			->setModuleName($this->name)
-            ->setCallToActionText($this->trans('Pay by Nuvei', array(), 'Modules.safecharge'));
+            ->setCallToActionText($this->trans('Pay by Nuvei', array(), 'Modules.nuvei'))
+			->setLogo(_MODULE_DIR_ . 'nuvei/views/img/nuvei.gif');
             
 		if(Configuration::get('NUVEI_ADD_CHECKOUT_STEP') == 0) {
             $newOption
 				->setAction($this->context->link->getModuleLink($this->name, 'payment'))
-				->setAdditionalInformation($smarty->fetch('module:safecharge/views/templates/front/apms.tpl'));
+				->setAdditionalInformation($smarty->fetch('module:nuvei/views/templates/front/apms.tpl'));
 		}
 		else {
 			$newOption->setAction($this->context->link->getModuleLink($this->name, 'addStep', array(
@@ -308,6 +295,7 @@ class SafeCharge extends PaymentModule
 		// not SC order
 		if(
 			strpos($payment, 'safecharge') === false
+			&& strpos($payment, 'nuvei') === false
 			&& strpos($payment, 'nuvei payments') === false
 		) {
 			return false;
@@ -397,6 +385,7 @@ class SafeCharge extends PaymentModule
 		if(
 			!empty($order_data->payment)
 			&& strpos($payment, 'safecharge') === false
+			&& strpos($payment, 'nuvei') === false
 			&& strpos($payment, 'nuvei payment') === false
 		) {
 			return false;
@@ -427,6 +416,7 @@ class SafeCharge extends PaymentModule
 			|| empty($_REQUEST['id_order'])
 			|| (
 				strpos($payment_name, 'safecharge') === false
+				&& strpos($payment_name, 'nuvei') === false
 				&& strpos($payment_name, 'nuvei payment') === false
 			) // not SC order
 		) {
@@ -537,7 +527,7 @@ class SafeCharge extends PaymentModule
             return false;
         }
         
-        $cpanel_url = $test_mode == 'yes' ? SC_TEST_CPANEL_URL : SC_LIVE_CPANEL_URL;
+        $cpanel_url = ($test_mode == 'yes' ? 'sandbox' : 'cpanel') . '.safecharge.com';
         
         $msg = '';
         $error_note = $this->l('Request for Refund #') . $last_slip_id 
@@ -875,7 +865,7 @@ class SafeCharge extends PaymentModule
 		$this->context->smarty->assign('showAPMsName',		Configuration::get('NUVEI_SHOW_APMS_NAMES'));
 		$this->context->smarty->assign('customAPMsNote',	Configuration::get('NUVEI_APMS_NOTE'));
 		$this->context->smarty->assign('customStyle',		Configuration::get('NUVEI_PMS_STYLE'));
-		$this->context->smarty->assign('formAction',		$this->context->link->getModuleLink('safecharge', 'payment'));
+		$this->context->smarty->assign('formAction',		$this->context->link->getModuleLink('nuvei', 'payment'));
 		$this->context->smarty->assign('webMasterId',		SC_PRESTA_SHOP . _PS_VERSION_);
 		$this->context->smarty->assign('sourceApplication',	SC_SOURCE_APPLICATION);
 		$this->context->smarty->assign('languageCode',		substr($this->context->language->locale, 0, 2));
@@ -883,13 +873,13 @@ class SafeCharge extends PaymentModule
 		$this->context->smarty->assign('scAPMsErrorMsg',	'');
 		
 		$this->context->smarty->assign('ooAjaxUrl',			$this->context->link->getModuleLink(
-			'safecharge',
+			'nuvei',
 			'payment',
 			array('prestaShopAction' => 'createOpenOrder')
 		));
 
 		$this->context->smarty->assign('scDeleteUpoUrl',	$this->context->link->getModuleLink(
-			'safecharge',
+			'nuvei',
 			'payment',
 			array('prestaShopAction' => 'deleteUpo')
 		));
@@ -939,13 +929,13 @@ class SafeCharge extends PaymentModule
 			$notify_url     = $this->getNotifyUrl();
 			
 			$error_url		= $this->context->link->getModuleLink(
-				'safecharge',
+				'nuvei',
 				'payment',
 				array('prestaShopAction' => 'showError')
 			);
 
 			$success_url	= $this->context->link->getModuleLink(
-				'safecharge',
+				'nuvei',
 				'payment',
 				array(
 					'prestaShopAction'	=> 'showCompleted',
@@ -1184,7 +1174,7 @@ class SafeCharge extends PaymentModule
 		
 		$res = $db->getRow('SELECT * '
 			. 'FROM ' . _DB_PREFIX_ . "order_state "
-			. "WHERE module_name = 'SafeCharge' "
+			. "WHERE module_name = 'Nuvei' "
 			. "ORDER BY id_order_state DESC;");
 		
 //		if (
@@ -1198,7 +1188,7 @@ class SafeCharge extends PaymentModule
 
 			$order_state->invoice		= false;
 			$order_state->send_email	= false;
-			$order_state->module_name	= 'SafeCharge';
+			$order_state->module_name	= 'Nuvei';
 			$order_state->color			= '#4169E1';
 			$order_state->hidden		= false;
 			$order_state->logable		= true;
@@ -1217,7 +1207,7 @@ class SafeCharge extends PaymentModule
 			}
 			
 			// on success add icon
-			$source = _PS_MODULE_DIR_ . 'safecharge/views/img/nuvei.png';
+			$source = _PS_MODULE_DIR_ . 'nuvei/views/img/nuvei.png';
 			$destination = _PS_ROOT_DIR_ . '/img/os/' . (int)$order_state->id . '.gif';
 			copy($source, $destination);
 
@@ -1226,66 +1216,7 @@ class SafeCharge extends PaymentModule
 		}
 		// update if need to
 		else {
-			try {
-				if(intval($res['logable']) != 1) {
-					$sql = "UPDATE " . _DB_PREFIX_  . "order_state "
-						. "SET logable = '1' "
-						. "WHERE module_name = 'SafeCharge' "
-							. "AND id_order_state = " . $res['id_order_state'];
-
-					$db->execute($sql);
-
-					Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $res['id_order_state']);
-				}
-				
-				// try to add the Nuvei Status
-				// search for the old name
-				$search = $db->getRow('SELECT * '
-					. 'FROM ' . _DB_PREFIX_ . "order_state_lang "
-					. "WHERE name LIKE '%Nuvei%' ");
-
-				// add the new state
-				if(empty($search)) {
-					// create new order state
-					$order_state = new OrderState();
-
-					$order_state->invoice		= false;
-					$order_state->send_email	= false;
-					$order_state->module_name	= 'SafeCharge';
-					$order_state->color			= '#4169E1';
-					$order_state->hidden		= false;
-					$order_state->logable		= true;
-					$order_state->delivery		= false;
-
-					$order_state->name	= array();
-					$languages			= Language::getLanguages(false);
-
-					// set the name for all lanugaes
-					foreach ($languages as $language) {
-						$order_state->name[ $language['id_lang'] ] = 'Awaiting Nuvei payment';
-					}
-
-					if(!$order_state->add()) {
-						$this->createLog('addOrderState() Error - The new Nuvei State was not added.');
-						return false;
-					}
-
-					// on success add icon
-					$source = _PS_MODULE_DIR_ . 'safecharge/views/img/nuvei.png';
-					$destination = _PS_ROOT_DIR_ . '/img/os/' . (int)$order_state->id . '.gif';
-					copy($source, $destination);
-
-					// set status in the config
-					Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $order_state->id);
-				}
-				else {
-					Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $res['id_order_state']);
-				}
-			}
-			catch(Exception $e) {
-				$this->createLog($e->getMessage(), 'exception');
-				$this->createLog($e->getTrace(), 'exception');
-			}
+			Configuration::updateValue('SC_OS_AWAITING_PAIMENT', (int) $res['id_order_state']);
 		}
 		
 		return true;
@@ -1342,15 +1273,15 @@ class SafeCharge extends PaymentModule
     {
         if (Tools::getValue('submitUpdate')) {
             if (!Tools::getValue('SC_MERCHANT_SITE_ID')) {
-                $this->_postErrors[] = $this->l('SafeCharge "Merchant site ID" is required.');
+                $this->_postErrors[] = $this->l('Nuvei "Merchant site ID" is required.');
             }
             
             if (!Tools::getValue('SC_MERCHANT_ID')) {
-                $this->_postErrors[] = $this->l('SafeCharge "Merchant ID" is required.');
+                $this->_postErrors[] = $this->l('Nuvei "Merchant ID" is required.');
             }
             
             if (!Tools::getValue('SC_SECRET_KEY')) {
-                $this->_postErrors[] = $this->l('SafeCharge "Secret key" is required.');
+                $this->_postErrors[] = $this->l('Nuvei "Secret key" is required.');
             }
         }
     }

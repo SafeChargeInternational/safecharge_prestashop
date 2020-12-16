@@ -9,8 +9,8 @@ if (!session_id()) {
     session_start();
 }
 
-require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'sc_config.php';
-require_once _PS_MODULE_DIR_ . 'safecharge' . DIRECTORY_SEPARATOR . 'SC_CLASS.php';
+require_once _PS_MODULE_DIR_ . 'nuvei' . DIRECTORY_SEPARATOR . 'sc_config.php';
+require_once _PS_MODULE_DIR_ . 'nuvei' . DIRECTORY_SEPARATOR . 'SC_CLASS.php';
 
 class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
 {
@@ -85,11 +85,9 @@ class AdminSafeChargeAjaxController extends ModuleAdminControllerCore
         $params['checksum'] = $checksum;
         
         if($_POST['scAction'] == 'settle') {
-//            $url = $test_mode == 'no' ? SC_LIVE_SETTLE_URL : SC_TEST_SETTLE_URL;
 			$method = 'settleTransaction';
         }
         elseif($_POST['scAction'] == 'void') {
-//            $url = $test_mode == 'no' ? SC_LIVE_VOID_URL : SC_TEST_VOID_URL;
 			$method = 'voidTransaction';
         }
         

@@ -1,7 +1,10 @@
 # SafeCharge Prestashop Changelog
 
-#1.9
+#2.0
 ```
+	* Stop dmn parameter will works only on sandbox mode.
+	* Removed unused constants.
+	* Changed files paths and classes names according new directory.
 	* Changed the name of the plugin directory to "nuvei".
 ```
 

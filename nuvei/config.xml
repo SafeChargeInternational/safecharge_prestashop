@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <module>
-    <name>safecharge</name>
+    <name>nuvei</name>
     <displayName><![CDATA[Nuvei]]></displayName>
-    <version><![CDATA[1.7]]></version>
+    <version><![CDATA[2.0]]></version>
     <description><![CDATA[Accepts payments by Nuvei.]]></description>
     <author><![CDATA[Nuvei]]></author>
     <tab><![CDATA[payments_gateways]]></tab>

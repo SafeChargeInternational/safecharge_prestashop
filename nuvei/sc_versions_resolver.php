@@ -23,7 +23,7 @@ class SafeChargeVersionResolver
     public static function get_payment_l($smarty, $link, $name)
     {
         if (version_compare(_PS_VERSION_, '1.5', '>=')) {
-            return $link->getModuleLink('safecharge', 'payment');
+            return $link->getModuleLink('nuvei', 'payment');
         }
         
         return 'modules/'.$name.'/payment.php';

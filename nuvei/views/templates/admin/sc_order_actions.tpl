@@ -43,21 +43,21 @@
 
 {if empty($scData.resp_transaction_type)}
     <span class="span label label-danger">
-        <i class="icon-warning-sign"></i>&nbsp;{l s='Missing Order Transaction Type.' mod='safecharge'}
+        <i class="icon-warning-sign"></i>&nbsp;{l s='Missing Order Transaction Type.' mod='nuvei'}
     </span>&nbsp;
 {/if}
 
 {if empty($scData.related_transaction_id)}
     <span class="span label label-danger">
-        <i class="icon-warning-sign"></i>&nbsp;{l s='Missing Order Transaction ID.' mod='safecharge'}
+        <i class="icon-warning-sign"></i>&nbsp;{l s='Missing Order Transaction ID.' mod='nuvei'}
     </span>&nbsp;
 {/if}
 
 {if !empty($scData.resp_transaction_type) and $scData.resp_transaction_type eq "Auth" and !empty($scData.order_state) and $scData.order_state eq $state_sc_await_paiment}
-    <button type="button" id="sc_settle_btn" class="btn btn-default" onclick="scOrderAction('settle', {$orderId})" title="{l s='You will be redirected to Orders list.' mod='safecharge'}">
+    <button type="button" id="sc_settle_btn" class="btn btn-default" onclick="scOrderAction('settle', {$orderId})" title="{l s='You will be redirected to Orders list.' mod='nuvei'}">
         <i class="icon-thumbs-up"></i>
         <i class="icon-repeat fast-right-spinner hidden"></i>
-        {l s='Settle' mod='safecharge'}
+        {l s='Settle' mod='nuvei'}
     </button>
 {/if}
 
@@ -65,7 +65,7 @@
 	<button type="button" id="sc_void_btn" class="btn btn-default" onclick="scOrderAction('void', {$orderId})">
 		<i class="icon-retweet"></i>
 		<i class="icon-repeat fast-right-spinner hidden"></i>
-		{l s='Void' mod='safecharge'}
+		{l s='Void' mod='nuvei'}
 	</button>
 {/if}
     
@@ -75,11 +75,11 @@
         
         switch(action) {
             case 'settle':
-                question = '{l s='Are you sure you want to Settle this order?' mod='safecharge'}';
+                question = '{l s='Are you sure you want to Settle this order?' mod='nuvei'}';
                 break;
                 
             case 'void':
-                question = '{l s='Are you sure you want to Cancel this order?' mod='safecharge'}';
+                question = '{l s='Are you sure you want to Cancel this order?' mod='nuvei'}';
                 break;
             
             default:
@@ -126,7 +126,7 @@
             
             //If an error occur during the ajax call.
             if (ajax.readyState == 4 && ajax.status == 404) {
-                alert('{l s='Error during AJAX call.' mod='safecharge'}');
+                alert('{l s='Error during AJAX call.' mod='nuvei'}');
                 enableScBtns(action);
             }
             
