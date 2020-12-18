@@ -1102,6 +1102,8 @@ class NuveiPaymentModuleFrontController extends ModuleFrontController
 						. 'PPP_TransactionID ' . @$request['PPP_TransactionID']
 						. ', TransactionID = ' . @$request['TransactionID'];
                 }
+				
+				$status_id = ''; // set it empty to avoid adding duplicate status in the history
                 
                 break;
                 

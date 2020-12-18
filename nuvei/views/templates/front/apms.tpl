@@ -761,6 +761,7 @@
 	// process after we get the response from the webSDK
 	function afterSdkResponse(resp) {
 		console.log(resp);
+		debugger;
 		
 		var reloadForm = false;
 

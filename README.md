@@ -11,8 +11,8 @@ If you have previously installed plugin (before v2.0)
 
 How to install:
 
-1. Download the plugin.
-2. Zip the nuvei folder,
+1. Download the plugin and extract the zip.
+2. Open the result folder and zip the nuvei folder,
 3. Go to admin page Modules > Modules & Services, click on Upload Module button and pass the zip file.
 
 Manual install:
