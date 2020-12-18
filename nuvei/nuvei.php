@@ -249,7 +249,7 @@ class Nuvei extends PaymentModule
         $newOption
 			->setModuleName($this->name)
             ->setCallToActionText($this->trans('Pay by Nuvei', array(), 'Modules.nuvei'))
-			->setLogo(_MODULE_DIR_ . 'nuvei/views/img/nuvei.gif');
+			->setLogo(_MODULE_DIR_ . 'nuvei/views/img/nuvei-v2.gif');
             
 		if(Configuration::get('NUVEI_ADD_CHECKOUT_STEP') == 0) {
             $newOption
