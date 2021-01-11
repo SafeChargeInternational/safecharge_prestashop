@@ -22,7 +22,7 @@ class Nuvei extends PaymentModule
     {
         $this->name						= 'nuvei';
         $this->tab						= SafeChargeVersionResolver::set_tab();
-        $this->version					= '2.0';
+        $this->version					= '2.1';
         $this->author					= 'Nuvei';
         $this->need_instance			= 1;
         $this->ps_versions_compliancy	= array('min' => '1.7', 'max' => '1.7.6.4'); // curent version - _PS_VERSION_
@@ -637,14 +637,16 @@ class Nuvei extends PaymentModule
 		
 		$params = $this->openOrder();
 		
-		$this->createLog($params, 'getPaymentMethods() $params');
+//		$this->createLog($params, 'getPaymentMethods() params');
 		
 		# get APMs
+		$customer			= new Customer($this->context->cart->id_customer);
 		$payment_methods	= array();
 		$upos				= array();
 		$time				= date('YmdHis', time());
 		$hash				= Configuration::get('SC_HASH_TYPE');
 		$secret				= Configuration::get('SC_SECRET_KEY');
+		$ask_save_upo		= false;
 			
 		$apms_params		= array(
 			'merchantId'        => $params['merchantId'],
@@ -682,14 +684,14 @@ class Nuvei extends PaymentModule
 			$upo_params = array(
 				'merchantId'		=> $apms_params['merchantId'],
 				'merchantSiteId'	=> $apms_params['merchantSiteId'],
-				'userTokenId'		=> $params['userTokenId'],
+				'userTokenId'		=> $customer->email,
 				'clientRequestId'	=> $apms_params['clientRequestId'],
 				'timeStamp'			=> $time,
 			);
 
 			$upo_params['checksum'] = hash($hash, implode('', $upo_params) . $secret);
-			
 			$upo_res				= $this->callRestApi('getUserUPOs', $upo_params);
+			$ask_save_upo			= true;
 
 			if(!empty($upo_res['paymentMethods']) && is_array($upo_res['paymentMethods'])) {
 				foreach($upo_res['paymentMethods'] as $data) {
@@ -719,6 +721,8 @@ class Nuvei extends PaymentModule
 		# get UPOs END
 		
 		$this->context->smarty->assign('sessionToken',		$params['sessionToken']);
+		$this->context->smarty->assign('userTokenId',		$customer->email);
+		$this->context->smarty->assign('askSaveUpo',		$ask_save_upo);
 		$this->context->smarty->assign('paymentMethods',	$payment_methods);
 		$this->context->smarty->assign('upos',				$upos);
 	}
@@ -893,8 +897,6 @@ class Nuvei extends PaymentModule
 			$country_inv        = new Country((int)($address_invoice->id_country), Configuration::get('PS_LANG_DEFAULT'));
 			$amount				= (string) number_format($cart->getOrderTotal(), 2, '.', '');
 			
-			$this->context->smarty->assign('userTokenId', $customer->email);
-			
 			$address_delivery	= $address_invoice;
 			$country_delivery	= $country_inv;
             
@@ -917,7 +919,6 @@ class Nuvei extends PaymentModule
 				}
 
 				$this->context->smarty->assign('sessionToken', $resp['sessionToken']);
-				$this->context->smarty->assign('userTokenId', $resp['userTokenId']);
 
 				// pass billing country
 				$resp['billingAddress']['country'] = $country_inv->iso_code;
@@ -966,7 +967,6 @@ class Nuvei extends PaymentModule
 				),
 
 				'deviceDetails'     => SC_CLASS::get_device_details($this->version),
-				'userTokenId'       => $customer->email,
 
 				'billingAddress'    => array(
 					"firstName"	=> $address_invoice->firstname,
@@ -1012,7 +1012,7 @@ class Nuvei extends PaymentModule
 
 			$oo_params['merchantDetails']['customField3']	= json_encode($products_data);
 			$oo_params['userDetails']						= $oo_params['billingAddress'];
-
+			
 			$oo_params['checksum'] = hash(
 				$hash,
 				$oo_params['merchantId'] . $oo_params['merchantSiteId'] . $oo_params['clientRequestId']
@@ -1039,7 +1039,6 @@ class Nuvei extends PaymentModule
 				'amount'			=> $oo_params['amount'],
 				'items'				=> $oo_params['merchantDetails']['customField2'],
 				'sessionToken'		=> $resp['sessionToken'],
-				'userTokenId'		=> $oo_params['userTokenId'],
 				'clientRequestId'	=> $oo_params['clientRequestId'],
 				'orderId'			=> $resp['orderId'],
 				'billingAddress'	=> array('country' => $oo_params['billingAddress']['country']),
@@ -1099,7 +1098,6 @@ class Nuvei extends PaymentModule
 			empty($_SESSION['nuvei_last_open_order_details'])
 			|| empty($_SESSION['nuvei_last_open_order_details']['sessionToken'])
 			|| empty($_SESSION['nuvei_last_open_order_details']['orderId'])
-			|| empty($_SESSION['nuvei_last_open_order_details']['userTokenId'])
 			|| empty($_SESSION['nuvei_last_open_order_details']['clientRequestId'])
 		) {
 			$this->createLog('update_order() - Missing last Order session data.');
@@ -1127,7 +1125,6 @@ class Nuvei extends PaymentModule
 			'orderId'			=> $_SESSION['nuvei_last_open_order_details']['orderId'],
 			'merchantId'		=> Configuration::get('SC_MERCHANT_ID'),
 			'merchantSiteId'	=> Configuration::get('SC_MERCHANT_SITE_ID'),
-			'userTokenId'		=> $_SESSION['nuvei_last_open_order_details']['userTokenId'],
 			'clientRequestId'	=> $_SESSION['nuvei_last_open_order_details']['clientRequestId'],
 			'currency'			=> $currency->iso_code,
 			'amount'			=> $cart_amount,

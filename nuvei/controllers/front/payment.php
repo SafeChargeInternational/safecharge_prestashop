@@ -187,6 +187,10 @@ class NuveiPaymentModuleFrontController extends ModuleFrontController
 					Tools::redirect(Tools::redirect($error_url));
 				}
 				
+				if(isset($_SESSION['nuvei_last_open_order_details'])) {
+					unset($_SESSION['nuvei_last_open_order_details']);
+				}
+				
 				$this->module->createLog(
 					Tools::getValue('sc_transaction_id'),
 					'processOreder() - the webSDK Order was saved.'
@@ -261,7 +265,6 @@ class NuveiPaymentModuleFrontController extends ModuleFrontController
 			$params = array(
 				'merchantId'        => Configuration::get('SC_MERCHANT_ID'),
 				'merchantSiteId'    => Configuration::get('SC_MERCHANT_SITE_ID'),
-				'userTokenId'       => $is_user_logged ? $customer->email : '',
 				'clientUniqueId'    => $this->setCuid($cart->id),
 				'clientRequestId'   => date('YmdHis', time()) .'_'. uniqid(),
 				'currency'          => $currency->iso_code,
@@ -318,7 +321,7 @@ class NuveiPaymentModuleFrontController extends ModuleFrontController
 				'price'     => $params['amount'],
 				'quantity'  => 1
 			);
-
+			
 			$params['checksum'] = hash(
 				Configuration::get('SC_HASH_TYPE'),
 				$params['merchantId']
@@ -332,16 +335,24 @@ class NuveiPaymentModuleFrontController extends ModuleFrontController
 			
 			// UPO
 			if(is_numeric($sc_payment_method)) {
-				$endpoint_method = 'payment';
-				$params['paymentOption']['userPaymentOptionId'] = $sc_payment_method;
+				$endpoint_method								= 'payment';
+				$params['paymentOption']['userPaymentOptionId']	= $sc_payment_method;
+				$params['userTokenId']							= $customer->email;
 			}
 			// APM
 			else {
-				$endpoint_method = 'paymentAPM';
-				$params['paymentMethod'] = $sc_payment_method;
+				$endpoint_method			= 'paymentAPM';
+				$params['paymentMethod']	= $sc_payment_method;
 				
-				if(isset($_POST[$sc_payment_method])) {
-					$params['userAccountDetails'] = $_POST[$sc_payment_method];
+//				if(isset($_POST[$sc_payment_method])) {
+//					$params['userAccountDetails'] = $_POST[$sc_payment_method];
+//				}
+				if(Tools::getValue($sc_payment_method) !== false) {
+					$params['userAccountDetails'] = Tools::getValue($sc_payment_method);
+				}
+				
+				if($is_user_logged && Tools::getValue('nuvei_save_upo') == 1) {
+					$params['userTokenId'] = $customer->email;
 				}
 			}
 			
@@ -401,6 +412,10 @@ class NuveiPaymentModuleFrontController extends ModuleFrontController
 			if(!$res) {
 				$this->module->createLog(@$_REQUEST, 'Order was not validated');
 				Tools::redirect($error_url);
+			}
+			
+			if(isset($_SESSION['nuvei_last_open_order_details'])) {
+				unset($_SESSION['nuvei_last_open_order_details']);
 			}
 			
 			$this->module->createLog(@$_REQUEST, 'processOreder() - the APM/UPO Order was saved.');
@@ -624,6 +639,10 @@ class NuveiPaymentModuleFrontController extends ModuleFrontController
 							
 							echo 'DMN Error - Order was not validated';
 							exit;
+						}
+						
+						if(isset($_SESSION['nuvei_last_open_order_details'])) {
+							unset($_SESSION['nuvei_last_open_order_details']);
 						}
 					}
 					catch(Exception $e) {
@@ -1379,6 +1398,10 @@ class NuveiPaymentModuleFrontController extends ModuleFrontController
 
 		if(!$res) {
 			Tools::redirect($error_url);
+		}
+		
+		if(isset($_SESSION['nuvei_last_open_order_details'])) {
+			unset($_SESSION['nuvei_last_open_order_details']);
 		}
 		
 		$this->module->createLog('beforeSuccess() - the Order was saved.');

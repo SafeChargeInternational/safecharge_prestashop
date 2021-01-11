@@ -1,4 +1,9 @@
-# SafeCharge Prestashop Changelog
+# Nuvei Prestashop Changelog
+
+#2.1
+```
+	* Added checkbox for the user to confirm save of used Payment method.
+```
 
 #2.0
 ```

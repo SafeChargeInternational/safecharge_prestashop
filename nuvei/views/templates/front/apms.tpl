@@ -496,6 +496,15 @@
     <input type="hidden" name="lst" id="sc_lst" value="{if !empty($sessionToken)}{$sessionToken}{/if}" />
     <input type="hidden" name="sc_transaction_id" id="sc_transaction_id" value="" />
 	
+	{if $askSaveUpo}
+		<div class="payment-option">
+			<label>
+				<span><input type="checkbox" name="nuvei_save_upo" value="0" id="nuvei_save_upo" /></span>
+				<span>{l s='Would you like Nuvei to keep the selected payment method as Preferred?' mod='nuvei'}</span>
+			</label>
+		</div>
+	{/if}
+	
 	{if isset($scAddStep)}
 		<div id="payment-confirmation">
 			<div class="ps-shown-by-js">
@@ -633,8 +642,11 @@
 			merchantId      : "{$merchantId}",
 			merchantSiteId  : "{$merchantSiteId}",
 			webMasterId		: "{$webMasterId}",
-			userTokenId		: "{if !empty($userTokenId)}{$userTokenId}{/if}"
 		};
+		
+		if(jQuery('input[name="nuvei_save_upo"]').is(':checked')) {
+			scPaymentParams.userTokenId = "{if !empty($userTokenId)}{$userTokenId}{/if}";
+		}
 
 		// use cards
 		if(selectedPM == 'cc_card') {
@@ -691,6 +703,8 @@
 				scFormFalse();
 				return;
 			}
+			
+			scPaymentParams.userTokenId = "{if !empty($userTokenId)}{$userTokenId}{/if}";
 			
 			scPaymentParams.paymentOption = {
 				userPaymentOptionId: selectedPM,
@@ -876,6 +890,16 @@
 	
 	function createSCFields() {
 		var _self = $('input[name="sc_payment_method"]:checked');
+		
+		// hide/show save Upo Confirm block
+		var saveUpoConsfirmBlock = $('#nuvei_save_upo').closest('.payment-option');
+		
+		if(undefined !== _self.attr('data-upo-name')) {
+			saveUpoConsfirmBlock.hide();
+		}
+		else {
+			saveUpoConsfirmBlock.show();
+		}
 			
 		// hide all pm fields
 		$('#scForm .sc_fields_holder').fadeOut("fast");
@@ -1024,6 +1048,12 @@
 	
 	document.addEventListener('DOMContentLoaded', function(event) {
         prepareSCFields();
+
+		$('#nuvei_save_upo').on('change', function() {
+			var _self = $(this);
+				
+			_self.val(_self.is(':checked') ? 1 : 0);
+		});
 
 		$('body').on('change', 'input[name="sc_payment_method"]', function() {
 			createSCFields();
