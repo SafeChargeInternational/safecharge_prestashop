@@ -105,6 +105,10 @@
 		margin-right: 0.5rem
 	}
 	
+	#scForm .payment-option label span:last-child {
+		margin: 2px;
+	}
+	
 	#scForm .payment-option label span:last-child { float: right; line-height: 36px; }
 	
 	#scForm .payment-option label .custom-radio input[type="radio"] {
@@ -144,7 +148,7 @@
 	
 	#scForm .payment-option .sc_fields_holder {
 		margin-top: 1rem;
-		margin-left: 3rem;
+		margin-left: 2.2rem;
 		display: none;
 	}
 	
@@ -170,7 +174,6 @@
 	}
 	
 	#scForm .close {
-{*		float: right;*}
 		position: absolute;
 		top: 10px;
 		right: 10px;
@@ -195,7 +198,6 @@
 	}
 	
 	body .sc_hide { display: none !important; }
-	
 
     /* Chrome, Firefox, Opera, Safari 10.1+ */
     #scForm #sc_apms_list .apm_field input::placeholder,
@@ -226,6 +228,10 @@
 		border: 2px solid lightgray;
 		border-radius: 0px;
 		background-color: white;
+	}
+	
+	#scForm .SfcField, #scForm .sc_fields_holder input::placeholder {
+		text-transform: capitalize;
 	}
 	
 	#scForm .SfcField {
@@ -276,7 +282,7 @@
 	}
 	
 	#sc_loading_window .sc_content {
-		margin-top: 40px;
+		margin: 40px;
 	}
 	
 	#sc_loading_window .sc_header span {
@@ -353,9 +359,6 @@
 	
 <div id="sc_loading_window" class="sc_hide">
 	<div class="sc_modal">
-		<div class="sc_header"><span onclick="closeScLoadingModal()">&times;</span></div>
-		<hr/>
-		
 		<div class="sc_content">
 			<h3><img src="/modules/nuvei/views/img/loading.png" class="fast-right-spinner" alt="sync...">
 			{l s='Processing your Payment...' mod='nuvei'}</h3>
@@ -447,11 +450,10 @@
 						{if $pm.paymentMethod == 'cc_card'}
 							<img src="/modules/nuvei/views/img/visa_mc_maestro.svg" alt="{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}"  class="sc_visa_mc_maestro_logo" />
 							<span></span>
-						{elseif !empty($pm.logoURL)}
-							<img src="{$pm.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}" />&nbsp;
-							{if $showAPMsName eq 1}
-								<span>{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}</span
-							>{/if}
+						{else}
+							{if !empty($pm.logoURL)}<img src="{$pm.logoURL|replace:'/svg/':'/svg/solid-white/'}" alt="{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}" />&nbsp;{/if}
+						
+							{if $showAPMsName eq 1}	<span>{if isset($pm.paymentMethodDisplayName[0].message)}{$pm.paymentMethodDisplayName[0].message}{/if}</span>{/if}
 						{/if}
 					</label>
 						
@@ -474,9 +476,9 @@
 								<input	id="{$pm.paymentMethod}_{$field.name}" 
 										class=""
 										name="{$pm.paymentMethod}[{$field.name}]" 
-										type="{$field.type}" 
+										type="{if $pm.paymentMethod eq 'apmgw_Neteller'}email{else}{$field.type}{/if}" 
 										{if isset($field.regex) and $field.regex}pattern="{$field.regex}"{/if} 
-										placeholder="{if !empty($field.caption[0].message)}{$field.caption[0].message}{elseif !empty($field.name)}{$field.name}{/if}"
+										placeholder="{if !empty($field.caption[0].message)}{$field.caption[0].message}{elseif !empty($field.name)}{if $pm.paymentMethod eq 'apmgw_Neteller'}{$field.name|replace:'netteler':'neteller'}{else}{$field.name|replace:'_':' '}{/if}{/if}"
 										data-sc-field-name="{$field.name}"
 								/>
 							{/foreach}
@@ -749,12 +751,13 @@
 				}
 
 				if(!formValid) {
-					scFormFalse("{l s='Please, fill all fileds, of the selected payment method!' mod='nuvei'}");
+					scFormFalse("{l s='Please, fill all fields of the selected payment method!' mod='nuvei'}");
 					return;
 				}
 
 				// perpare object for the SDK, just in case
-				scPaymentParams.paymentOption.alternativePaymentMethod[apmField.attr('data-sc-field-name')] = apmField.val();
+				scPaymentParams.paymentOption
+					.alternativePaymentMethod[apmField.attr('data-sc-field-name')] = apmField.val();
 			});
 			
 			// direct APMs can use the SDK
@@ -768,7 +771,9 @@
 			// direct APMs can use the SDK END
 			
 			// Non-direct APMs - submit the form
-			$('form#scForm').submit();
+			if(formValid) {
+				$('form#scForm').submit();
+			}
 		}
     }
 

@@ -22,7 +22,7 @@ class Nuvei extends PaymentModule
     {
         $this->name						= 'nuvei';
         $this->tab						= SafeChargeVersionResolver::set_tab();
-        $this->version					= '2.1';
+        $this->version					= '2.2';
         $this->author					= 'Nuvei';
         $this->need_instance			= 1;
         $this->ps_versions_compliancy	= array('min' => '1.7', 'max' => '1.7.6.4'); // curent version - _PS_VERSION_

@@ -1,7 +1,7 @@
 {extends file='page.tpl'}
 {block name='page_content'}
 	<div class="alert alert-danger" style="font-size:20px;">
-		<p>{l s='Your Order is FAILED, DECLINED or was CANCELD.' mod='nuvei'}</p>
+		<p>{l s='Your Payment failed. Your Order Status is FAILED, DECLINED or CANCELLED. Please try again.' mod='nuvei'}</p>
 		
 		{if count($cart['products']) > 0}
 			<p>{l s='You can try again, by clicking on your Cart.' mod='nuvei'}</p>
