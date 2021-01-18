@@ -2,6 +2,7 @@
 
 #2.2
 ```
+	* Added option in the admin to set Payment method text in the checkout.
 	* Small UI changes.
 ```
 
