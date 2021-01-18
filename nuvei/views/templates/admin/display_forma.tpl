@@ -138,6 +138,13 @@
             </div>
 					
 			<div class="form-group">
+                <label class="control-label col-lg-3">{l s='The Payment method text on the checkout' mod='nuvei'}</label>
+                <div class="col-lg-9">
+                    <input type="text" name="NUVEI_CHECKOUT_MSG" value="{Configuration::get('NUVEI_CHECKOUT_MSG')}" />
+                </div>
+            </div>
+					
+			<div class="form-group">
                 <label class="control-label col-lg-3">{l s='Show help message over each Payment method' mod='nuvei'}</label>
                 <div class="col-lg-9">
                     <input type="text" name="NUVEI_APMS_NOTE" value="{Configuration::get('NUVEI_APMS_NOTE')}" />

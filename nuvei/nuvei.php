@@ -181,6 +181,7 @@ class Nuvei extends PaymentModule
             Configuration::updateValue('NUVEI_PMS_STYLE',			Tools::getValue('NUVEI_PMS_STYLE'));
             Configuration::updateValue('NUVEI_ADD_CHECKOUT_STEP',	Tools::getValue('NUVEI_ADD_CHECKOUT_STEP'));
             Configuration::updateValue('NUVEI_DMN_URL',				Tools::getValue('NUVEI_DMN_URL'));
+            Configuration::updateValue('NUVEI_CHECKOUT_MSG',		Tools::getValue('NUVEI_CHECKOUT_MSG'));
             
 			Configuration::updateValue(
 				'NUVEI_SAVE_ORDER_AFTER_APM_PAYMENT',
@@ -246,9 +247,14 @@ class Nuvei extends PaymentModule
 		
         $newOption = new PaymentOption();
 		
+		$option_text = Configuration::get('NUVEI_CHECKOUT_MSG');
+		if(!$option_text || empty($option_text)) {
+			$option_text = $this->trans('Pay by Nuvei', array(), 'Modules.nuvei');
+		}
+		
         $newOption
 			->setModuleName($this->name)
-            ->setCallToActionText($this->trans('Pay by Nuvei', array(), 'Modules.nuvei'))
+            ->setCallToActionText($option_text)
 			->setLogo(_MODULE_DIR_ . 'nuvei/views/img/nuvei-v2.gif');
             
 		if(Configuration::get('NUVEI_ADD_CHECKOUT_STEP') == 0) {
