@@ -182,6 +182,7 @@ class Nuvei extends PaymentModule
             Configuration::updateValue('NUVEI_ADD_CHECKOUT_STEP',	Tools::getValue('NUVEI_ADD_CHECKOUT_STEP'));
             Configuration::updateValue('NUVEI_DMN_URL',				Tools::getValue('NUVEI_DMN_URL'));
             Configuration::updateValue('NUVEI_CHECKOUT_MSG',		Tools::getValue('NUVEI_CHECKOUT_MSG'));
+            Configuration::updateValue('NUVEI_PRESELECT_PAYMENT',	Tools::getValue('NUVEI_PRESELECT_PAYMENT'));
             
 			Configuration::updateValue(
 				'NUVEI_SAVE_ORDER_AFTER_APM_PAYMENT',
@@ -869,18 +870,19 @@ class Nuvei extends PaymentModule
 		$call_open_order	= true;
 		
 		# set some parameters
-		$this->context->smarty->assign('merchantId',		Configuration::get('SC_MERCHANT_ID'));
-		$this->context->smarty->assign('merchantSiteId',	Configuration::get('SC_MERCHANT_SITE_ID'));
-		$this->context->smarty->assign('preselectCC',		Configuration::get('NUVEI_PRESELECT_CC'));
-		$this->context->smarty->assign('showAPMsName',		Configuration::get('NUVEI_SHOW_APMS_NAMES'));
-		$this->context->smarty->assign('customAPMsNote',	Configuration::get('NUVEI_APMS_NOTE'));
-		$this->context->smarty->assign('customStyle',		Configuration::get('NUVEI_PMS_STYLE'));
-		$this->context->smarty->assign('formAction',		$this->context->link->getModuleLink('nuvei', 'payment'));
-		$this->context->smarty->assign('webMasterId',		SC_PRESTA_SHOP . _PS_VERSION_);
-		$this->context->smarty->assign('sourceApplication',	SC_SOURCE_APPLICATION);
-		$this->context->smarty->assign('languageCode',		substr($this->context->language->locale, 0, 2));
-		$this->context->smarty->assign('isTestEnv',			$test_mode);
-		$this->context->smarty->assign('scAPMsErrorMsg',	'');
+		$this->context->smarty->assign('merchantId',            Configuration::get('SC_MERCHANT_ID'));
+		$this->context->smarty->assign('merchantSiteId',        Configuration::get('SC_MERCHANT_SITE_ID'));
+		$this->context->smarty->assign('preselectCC',           Configuration::get('NUVEI_PRESELECT_CC'));
+		$this->context->smarty->assign('showAPMsName',          Configuration::get('NUVEI_SHOW_APMS_NAMES'));
+		$this->context->smarty->assign('customAPMsNote',        Configuration::get('NUVEI_APMS_NOTE'));
+		$this->context->smarty->assign('customStyle',           Configuration::get('NUVEI_PMS_STYLE'));
+		$this->context->smarty->assign('preselectNuveiPayment', Configuration::get('NUVEI_PRESELECT_PAYMENT'));
+		$this->context->smarty->assign('formAction',            $this->context->link->getModuleLink('nuvei', 'payment'));
+		$this->context->smarty->assign('webMasterId',           SC_PRESTA_SHOP . _PS_VERSION_);
+		$this->context->smarty->assign('sourceApplication',     SC_SOURCE_APPLICATION);
+		$this->context->smarty->assign('languageCode',          substr($this->context->language->locale, 0, 2));
+		$this->context->smarty->assign('isTestEnv',             $test_mode);
+		$this->context->smarty->assign('scAPMsErrorMsg',        '');
 		
 		$this->context->smarty->assign('ooAjaxUrl',			$this->context->link->getModuleLink(
 			'nuvei',

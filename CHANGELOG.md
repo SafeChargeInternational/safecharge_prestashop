@@ -1,8 +1,13 @@
 # Nuvei Prestashop Changelog
 
+#2.3
+```
+	* Add the option to preselect Nuvei Payment on the Checkout page.
+```
+
 #2.2
 ```
-	* Added option in the admin to set Payment method text in the checkout.
+	* Added an option in the admin to set Payment method text in the checkout.
 	* Small UI changes.
 ```
 

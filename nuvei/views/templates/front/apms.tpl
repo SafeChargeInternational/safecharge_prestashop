@@ -501,8 +501,10 @@
 	{if $askSaveUpo}
 		<div class="payment-option">
 			<label>
-				<span><input type="checkbox" name="nuvei_save_upo" value="0" id="nuvei_save_upo" /></span>
-				<span>{l s='Would you like Nuvei to keep the selected payment method as Preferred?' mod='nuvei'}</span>
+				<span>
+					<input type="checkbox" name="nuvei_save_upo" value="0" id="nuvei_save_upo" />&nbsp;
+					{l s='Would you like Nuvei to keep the selected payment method as Preferred?' mod='nuvei'}
+				</span>
 			</label>
 		</div>
 	{/if}
@@ -920,7 +922,7 @@
 		if(lastCvcHolder !== '') {
 			$(lastCvcHolder).html('');
 		}
-
+		
 		if(typeof _self.attr('data-upo-name') != 'undefined') {
 			$('#sc_upo_name').val(_self.attr('data-upo-name'));
 
@@ -1050,6 +1052,26 @@
 			});
 		}
 	}
+	
+	{if $preselectNuveiPayment eq 1}
+		window.onload = function() {
+			console.log('window loaded');
+
+			$('input[name=payment-option]').each(function() {
+				var nuveiElem = $(this);
+
+				if('nuvei' == nuveiElem.attr('data-module-name')) {
+					nuveiElem.trigger('click')
+
+					var apmsHolder = '#' + nuveiElem.attr('id') + '-additional-information';
+
+					if($(apmsHolder).length == 1 && $(apmsHolder).css('display') != 'block') {
+						$(apmsHolder).css('display', 'block');
+					}
+				}
+			});
+		};
+	{/if}
 	
 	document.addEventListener('DOMContentLoaded', function(event) {
         prepareSCFields();

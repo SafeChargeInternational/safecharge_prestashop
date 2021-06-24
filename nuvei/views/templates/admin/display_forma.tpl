@@ -172,6 +172,16 @@
             </div>
 				
             <div class="form-group">
+                <label class="control-label col-lg-3">{l s='Preselect Nuvei Payment' mod='nuvei'}</label>
+                <div class="col-lg-9">
+                    <select name="NUVEI_PRESELECT_PAYMENT">
+                        <option value="0" {if Configuration::get('NUVEI_PRESELECT_PAYMENT') eq 0}selected{/if}>{l s='No' mod='nuvei'}</option>
+                        <option value="1" {if Configuration::get('NUVEI_PRESELECT_PAYMENT') eq 1}selected{/if}>{l s='Yes' mod='nuvei'}</option>
+                    </select>
+                </div>
+            </div>
+				
+            <div class="form-group">
                 <label class="control-label col-lg-3">{l s='Notification (DMN) URL'}</label>
                 <div class="col-lg-9">
                     <input type="text" name="NUVEI_DMN_URL" readonly="" value="{if Configuration::get('NUVEI_DMN_URL') neq ''}{Configuration::get('NUVEI_DMN_URL')}{/if}" placeholder="{$defaultDmnUrl}" style="display: inline-block; width: 80%;" />
